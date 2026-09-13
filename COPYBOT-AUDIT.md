@@ -81,3 +81,95 @@ Leader-Statistiken sind Pflichtfelder. Alle Prüfungen mit Exit-Code 2 bestätig
 - Kontoalter und Reputation des Autors konnten in dieser Sitzung nicht geprüft
   werden, da dafür Schreib-Zugangsdaten nötig gewesen wären.
 - Geprüft wurde genau dieser Commit. Künftige Commits sind damit nicht abgedeckt.
+
+---
+
+# Nachtrag: Trockenlauf und Wirtschaftlichkeit
+
+## Warum kein echter Paper-Trade möglich war
+
+Die Entdeckung neuer Signale läuft ausschließlich über einen
+Polygon-Mempool-Stream (`eth_subscribe` auf `newPendingTransactions` mit
+vollständigen Transaktionsobjekten). Einen zweiten Entdeckungspfad gibt es
+nicht; der öffentliche Aktivitäts-Endpunkt dient nur dem Vorbefüllen
+historischer Positionen.
+
+Zusätzlich verweigert die Netzwerkpolicy dieser Umgebung den Zugriff auf
+`data-api.polymarket.com`, `clob.polymarket.com` und `polygon.drpc.org`
+(jeweils HTTP 403 auf CONNECT). Ein Live-Trockenlauf gegen echte Marktdaten
+ist von hier aus nicht durchführbar.
+
+Stattdessen wurde die Entscheidungslogik offline gegen die echten
+Bibliotheksfunktionen der Engine gerechnet (`budget::target_shares`,
+`budget::effective_pct`, `venue::buy_limit`, `venue::sell_limit`).
+
+## Wichtige Korrektur: Slippage-Parameter
+
+`buy_slippage_c` und `sell_slippage_c` sind **keine erwartete Slippage**,
+sondern absolute Limitbänder in Dollar. In `lanes.rs` gilt
+`buy_limit((preis + buy_slippage_c).min(0.99))`.
+
+Die Beispielkonfiguration setzt `buy_slippage_c = 0.15`. Das erlaubt:
+
+| Signalpreis | zulässiges Kauflimit | maximaler Aufschlag |
+| --- | --- | --- |
+| 0.05 | 0.200 | 300 % |
+| 0.10 | 0.250 | 150 % |
+| 0.30 | 0.450 | 50 % |
+| 0.70 | 0.850 | 21 % |
+
+`sell_slippage_c = 1.0` zusammen mit `sell_floor_frac = 0.0` ergibt ein
+Verkaufslimit von 0.01 auf jedem Preisniveau. Das ist faktisch
+"zu jedem Preis verkaufen". Beide Bänder gehören vor dem ersten Live-Einsatz
+deutlich enger gesetzt.
+
+## Ergebnis der Rechnung
+
+Angenommen wurden realistische Ausführungskosten von 1,5 Cent beim Einstieg
+und 1,0 Cent beim Ausstieg. Das ist eine eigene Annahme, deutlich
+konservativer als die Bänder oben zulassen.
+
+Mindestrendite, die der Leader erreichen muss, damit der Kopierer bei null
+herauskommt:
+
+| Signalpreis | Leader braucht mindestens |
+| --- | --- |
+| 0.05 | 50,0 % |
+| 0.10 | 25,0 % |
+| 0.30 | 8,3 % |
+| 0.50 | 5,0 % |
+| 0.90 | 2,8 % |
+
+Anteil der Leader-Rendite, der beim Kopierer ankommt (Signalpreis 0.30):
+
+| Leader | Kopierer | Anteil |
+| --- | --- | --- |
+| 5 % | −3,2 % | negativ |
+| 10 % | 1,6 % | 16 % |
+| 20 % | 11,1 % | 56 % |
+| 50 % | 39,7 % | 79 % |
+| 100 % | 87,3 % | 87 % |
+
+Entscheidend ist der letzte Fall: ein wirklich guter Leader mit 55 Prozent
+Trefferquote, +30 Prozent auf Gewinner und −25 Prozent auf Verlierer, also
++5,25 Prozent im Schnitt pro Trade:
+
+| Signalpreis | Leader-Schnitt | unser Schnitt |
+| --- | --- | --- |
+| 0.10 | +5,25 % | **−17,17 %** |
+| 0.30 | +5,25 % | **−2,94 %** |
+| 0.50 | +5,25 % | +0,24 % |
+| 0.70 | +5,25 % | +1,64 % |
+
+## Schlussfolgerung
+
+Die Ausführungskosten sind ein fester Abzug pro Trade, kein prozentualer.
+Deshalb treffen sie günstige Kontrakte prozentual am härtesten und wirken auf
+Gewinner wie Verlierer gleichermaßen. Ein Leader mit kleinem, aber echtem
+Vorteil wird dadurch zuverlässig in einen Verlust verwandelt.
+
+Profitabel ist das Kopieren nur, wenn der Leader große Bewegungen pro Trade
+erzielt und überwiegend in teureren Kontrakten handelt. Ein dünner Vorteil
+überlebt die Reibung nicht. Nicht berücksichtigt sind dabei noch
+Polymarket-Gebühren, Gaskosten und die Verzerrung durch das Glattstellen beim
+ersten Verkauf des Leaders.
