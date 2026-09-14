@@ -1,1 +1,8 @@
 .claude/settings.local.json
+
+# Signaturmaterial - niemals committen
+*.key
+*.pem
+*.seed
+secrets/
+technocore-sonnet/private/
