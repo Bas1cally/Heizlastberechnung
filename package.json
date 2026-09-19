@@ -1,23 +1,41 @@
 {
-  "name": "typesafe-decisions",
+  "name": "jev-btc-5m",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.33.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test dist/test/*.test.js",
-    "triage": "npm run build && node dist/src/example/triage.js",
-    "check": "npm run build && node dist/src/check.js"
-  },
-  "devDependencies": {
-    "@types/node": "^22.10.2",
-    "typescript": "^5.7.2"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "bot:observe": "tsx scripts/observe.ts",
+    "bot:paper": "tsx scripts/paper.ts",
+    "bot:shadow": "tsx scripts/shadow.ts",
+    "replay": "tsx scripts/replay.ts",
+    "report": "tsx scripts/report.ts",
+    "benchmark:jev": "tsx scripts/benchmark-jev.ts"
   },
   "dependencies": {
-    "@typesafe-ai/sdk": "^0.6.0"
+    "@polymarket/client": "0.10.0",
+    "@typesafe-ai/sdk": "0.6.0",
+    "viem": "2.56.8",
+    "ws": "8.21.3",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.2",
+    "@types/ws": "8.18.1",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2",
+    "vitest": "5.0.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

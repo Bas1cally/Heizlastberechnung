@@ -1,4 +1,9 @@
 node_modules/
 dist/
 .env
+reports/*.json
+reports/*.csv
+data/
 *.log
+*.sqlite
+*.sqlite-journal
