@@ -10,7 +10,8 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test dist/test/*.test.js",
-    "triage": "npm run build && node dist/src/example/triage.js"
+    "triage": "npm run build && node dist/src/example/triage.js",
+    "check": "npm run build && node dist/src/check.js"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

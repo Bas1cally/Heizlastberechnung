@@ -12,7 +12,30 @@ GitHub name still reflects that. Nothing from it is used here.
 ```bash
 npm install
 cp .env.example .env     # fill in TYPESAFE_API_KEY
-npm test                 # 11 tests, no network needed
+npm run check            # does the setup actually work?
+```
+
+`npm run check` is the one to run first. It tests three things in order, so a
+failure points at exactly one of them:
+
+1. a key is configured (no request made),
+2. the API is reachable and the key is accepted (`models.list()` — costs no
+   tokens),
+3. a real judgment comes back (one noul — costs a few tokens).
+
+```
+  ok    API key is set
+  ok    base URL https://api.typesafe.ai, default model jev-latest
+  FAIL  reach and authenticate: The API was never reached.
+
+This is not a credentials problem - the request did not complete, so the key
+was never accepted or rejected. [...]
+```
+
+Then:
+
+```bash
+npm test                 # 20 tests, no network needed
 npm run triage -- --dry-run
 npm run triage           # sends the request
 ```
@@ -21,10 +44,13 @@ npm run triage           # sends the request
 
 | Path | Purpose |
 | --- | --- |
+| `src/check.ts` | The setup check described above |
+| `src/typesafe/diagnose.ts` | Maps an SDK failure to a headline and a concrete next step |
 | `src/typesafe/policy.ts` | Thresholds, weighting, and mapping a fractional score to its nearest rubric level |
 | `src/example/triage.ts` | Four independent judgments over one support message, in a single request |
 | `test/contract.test.ts` | Pins the API contract: endpoint, auth header, request and answer shapes |
 | `test/policy.test.ts` | Threshold and weighting behaviour |
+| `test/diagnose.test.ts` | That each failure mode reports the right cause |
 
 The client, question builders (`noul`, `choice`, `score`) and error types come
 from the SDK; `src/index.ts` re-exports them next to the policy helpers so
