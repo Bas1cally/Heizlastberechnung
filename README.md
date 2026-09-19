@@ -35,7 +35,7 @@ was never accepted or rejected. [...]
 Then:
 
 ```bash
-npm test                 # 20 tests, no network needed
+npm test                 # 26 tests, no network needed
 npm run triage -- --dry-run
 npm run triage           # sends the request
 ```
@@ -44,6 +44,7 @@ npm run triage           # sends the request
 
 | Path | Purpose |
 | --- | --- |
+| `src/typesafe/env.ts` | Loads `.env` so the scripts work without shell setup |
 | `src/check.ts` | The setup check described above |
 | `src/typesafe/diagnose.ts` | Maps an SDK failure to a headline and a concrete next step |
 | `src/typesafe/policy.ts` | Thresholds, weighting, and mapping a fractional score to its nearest rubric level |
@@ -51,6 +52,7 @@ npm run triage           # sends the request
 | `test/contract.test.ts` | Pins the API contract: endpoint, auth header, request and answer shapes |
 | `test/policy.test.ts` | Threshold and weighting behaviour |
 | `test/diagnose.test.ts` | That each failure mode reports the right cause |
+| `test/env.test.ts` | `.env` parsing, including quotes and CRLF |
 
 The client, question builders (`noul`, `choice`, `score`) and error types come
 from the SDK; `src/index.ts` re-exports them next to the policy helpers so

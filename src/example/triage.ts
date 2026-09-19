@@ -20,6 +20,9 @@ import {
   noul,
   score,
 } from "../index.js";
+import { loadEnvFile } from "../typesafe/env.js";
+
+loadEnvFile();
 
 const state = {
   channel: "email",

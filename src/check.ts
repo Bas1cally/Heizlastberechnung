@@ -9,6 +9,9 @@
 
 import { TypeSafeClient, noul } from "@typesafe-ai/sdk";
 import { describeFailure } from "./typesafe/diagnose.js";
+import { loadEnvFile } from "./typesafe/env.js";
+
+loadEnvFile();
 
 const tick = (msg: string) => console.log(`  ok    ${msg}`);
 const cross = (msg: string) => console.log(`  FAIL  ${msg}`);
