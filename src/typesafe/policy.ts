@@ -1,15 +1,16 @@
 /**
  * Thresholds live here, not in the questions.
  *
- * Judgments stay raw and reusable; policy turns them into behaviour. Changing
- * a threshold or a weight is then a code change with no new inference, as long
- * as the evidence and the question meanings are unchanged.
+ * The SDK returns raw judgments; this turns them into behaviour. Keeping the
+ * two apart means changing a threshold or a weight is a code change with no
+ * new inference, as long as the evidence and the question meanings are
+ * unchanged.
  *
  * Pick the numbers by evaluating them on your own data and the cost of being
  * wrong in each direction - they are not properties of the model.
  */
 
-import type { NoulAnswer } from "./types.js";
+import type { NoulResponse, ScoreResponse } from "@typesafe-ai/sdk";
 
 export type Band = "act" | "review" | "ignore";
 
@@ -23,18 +24,18 @@ export interface Thresholds {
 /**
  * Split a noul probability into act / review / ignore.
  *
- * The middle band is the useful part: a probability near 0.5 means yes and no
- * are close to equally likely, which is exactly the case a person should see
- * rather than a coin flip in code.
+ * The middle band is the point: `noul` near 0.5 means yes and no are about
+ * equally likely, which is a case a person should see rather than a coin flip
+ * in code. It does not mean "medium intensity".
  */
-export function band(answer: NoulAnswer, thresholds: Thresholds): Band {
+export function band(answer: NoulResponse, thresholds: Thresholds): Band {
   if (thresholds.act < thresholds.review) {
     throw new RangeError(
       `act threshold (${thresholds.act}) must not be below review threshold (${thresholds.review})`,
     );
   }
-  if (answer.probability >= thresholds.act) return "act";
-  if (answer.probability >= thresholds.review) return "review";
+  if (answer.noul >= thresholds.act) return "act";
+  if (answer.noul >= thresholds.review) return "review";
   return "ignore";
 }
 
@@ -46,15 +47,34 @@ export function band(answer: NoulAnswer, thresholds: Thresholds): Band {
  * rule - express that as separate conditions, not as a weight.
  */
 export function weightedScore(
-  parts: ReadonlyArray<{ answer: NoulAnswer; weight: number }>,
+  parts: ReadonlyArray<{ answer: NoulResponse; weight: number }>,
 ): number {
   const totalWeight = parts.reduce((sum, p) => sum + p.weight, 0);
   if (totalWeight <= 0) {
     throw new RangeError("weightedScore needs a positive total weight");
   }
-  const weighted = parts.reduce(
-    (sum, p) => sum + p.answer.probability * p.weight,
-    0,
-  );
+  const weighted = parts.reduce((sum, p) => sum + p.answer.noul * p.weight, 0);
   return weighted / totalWeight;
+}
+
+/**
+ * The rubric description nearest to an expected score.
+ *
+ * A score is an expected value and may fall between rubric levels, so 1.6 has
+ * no exact legend entry. Rounding gives the closest described level, which is
+ * what you want for display; keep the raw `score` for ranking and thresholds.
+ */
+export function nearestLevel(answer: ScoreResponse): string {
+  const legend = answer.legend as Readonly<Record<string, unknown>>;
+  const levels = Object.keys(legend)
+    .map(Number)
+    .filter((n) => Number.isFinite(n))
+    .sort((a, b) => a - b);
+  if (levels.length === 0) return String(answer.score);
+
+  const nearest = levels.reduce((best, level) =>
+    Math.abs(level - answer.score) < Math.abs(best - answer.score) ? level : best,
+  );
+  const description = legend[String(nearest)];
+  return typeof description === "string" ? description : String(nearest);
 }

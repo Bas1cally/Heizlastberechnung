@@ -1,27 +1,23 @@
-export {
-  DecisionsClient,
-  ApiError,
-  ConfigError,
-  NetworkError,
-  configFromEnv,
-  buildRequestBody,
-} from "./typesafe/client.js";
-export type { ClientConfig, State } from "./typesafe/client.js";
-export { decodeAnswers, unwrapAnswers, DecodeError } from "./typesafe/decode.js";
-export { band, weightedScore } from "./typesafe/policy.js";
+export { band, weightedScore, nearestLevel } from "./typesafe/policy.js";
 export type { Band, Thresholds } from "./typesafe/policy.js";
-export { noul, choice, score } from "./typesafe/types.js";
+
+// The client, question builders and error types come from the official SDK.
+export {
+  TypeSafeClient,
+  APIError,
+  APIConnectionError,
+  APITimeoutError,
+  AuthenticationError,
+  RateLimitError,
+  TypeSafeError,
+  choice,
+  noul,
+  score,
+} from "@typesafe-ai/sdk";
 export type {
-  Answer,
-  AnswerFor,
-  AnswersFor,
-  ChoiceAnswer,
-  ChoiceQuestion,
-  Criteria,
-  NoulAnswer,
-  NoulQuestion,
-  Question,
-  QuestionSet,
-  ScoreAnswer,
-  ScoreQuestion,
-} from "./typesafe/types.js";
+  ChoiceResponse,
+  NoulResponse,
+  ScoreResponse,
+  SystemOneResult,
+  Usage,
+} from "@typesafe-ai/sdk";

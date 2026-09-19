@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { band, weightedScore } from "../src/index.js";
-import type { NoulAnswer } from "../src/index.js";
+import { band, nearestLevel, weightedScore } from "../src/index.js";
+import type { NoulResponse, ScoreResponse } from "../src/index.js";
 
-const p = (probability: number): NoulAnswer => ({ type: "noul", probability });
+const p = (noul: number): NoulResponse => ({ type: "noul", noul });
 const thresholds = { act: 0.8, review: 0.45 };
 
 test("bands a probability into act, review and ignore", () => {
@@ -22,13 +22,28 @@ test("rejects thresholds that are the wrong way round", () => {
 });
 
 test("weights compensating signals", () => {
-  const combined = weightedScore([
-    { answer: p(1), weight: 3 },
-    { answer: p(0), weight: 1 },
-  ]);
-  assert.equal(combined, 0.75);
+  assert.equal(
+    weightedScore([
+      { answer: p(1), weight: 3 },
+      { answer: p(0), weight: 1 },
+    ]),
+    0.75,
+  );
 });
 
 test("refuses a zero total weight", () => {
   assert.throws(() => weightedScore([{ answer: p(1), weight: 0 }]), RangeError);
+});
+
+test("maps a fractional score to the nearest described level", () => {
+  const answer = {
+    type: "score",
+    score: 1.6,
+    confidence: 0.7,
+    legend: { 0: "calm", 1: "irritated", 2: "angry" },
+    probabilities: { 0: 0.1, 1: 0.2, 2: 0.7 },
+  } as unknown as ScoreResponse;
+  // 1.6 is closer to 2 than to 1 - a score is an expected value and need not
+  // land on a rubric level.
+  assert.equal(nearestLevel(answer), "angry");
 });
