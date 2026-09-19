@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ApiError, ConfigError, DecisionsClient, configFromEnv, noul } from "../src/index.js";
+import {
+  ApiError,
+  ConfigError,
+  DecisionsClient,
+  NetworkError,
+  configFromEnv,
+  noul,
+} from "../src/index.js";
 import type { ClientConfig } from "../src/index.js";
 
 const questions = { is_urgent: noul({ instructions: "urgent?" }) };
@@ -114,4 +121,37 @@ test("honours a configured base URL", async () => {
   );
   await client.decide("s", questions);
   assert.equal(url, "https://api.venice.ai/api/v1/decisions");
+});
+
+test("reports an unreachable host as a NetworkError, not a raw failure", async () => {
+  const client = clientWith(async () => {
+    throw new TypeError("fetch failed", { cause: new Error("tunnel refused") });
+  }, { maxRetries: 0 });
+
+  await assert.rejects(client.decide("s", questions), (err: unknown) => {
+    assert.ok(err instanceof NetworkError, "expected a NetworkError");
+    assert.match(err.message, /could not reach https:\/\/api\.typesafe\.ai/);
+    assert.match(err.message, /tunnel refused/);
+    // The point of the message: a blocked tunnel is not a credentials problem.
+    assert.match(err.message, /credentials were not sent/);
+    return true;
+  });
+});
+
+test("does not disguise an HTTP error as a network error", async () => {
+  const client = clientWith(
+    async () => new Response("nope", { status: 403 }),
+    { maxRetries: 0 },
+  );
+  await assert.rejects(client.decide("s", questions), ApiError);
+});
+
+test("reports an exhausted retry budget as a NetworkError", async () => {
+  let calls = 0;
+  const client = clientWith(async () => {
+    calls++;
+    return new Response("busy", { status: 503 });
+  });
+  await assert.rejects(client.decide("s", questions), ApiError);
+  assert.equal(calls, 3, "should have used the full retry budget");
 });

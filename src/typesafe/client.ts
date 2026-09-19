@@ -25,6 +25,33 @@ export class ApiError extends Error {
   }
 }
 
+/** The request never reached the API: DNS, TLS, a timeout, or a proxy that
+ *  refused the tunnel. The key is irrelevant here - it was never sent. */
+export class NetworkError extends Error {
+  constructor(
+    readonly url: string,
+    readonly cause: unknown,
+  ) {
+    super(
+      `could not reach ${url}: ${NetworkError.describe(cause).replace(/\.+$/, "")}. ` +
+        "The request never left this machine, so credentials were not sent. " +
+        "Check network access to the host, and proxy settings if you are behind one.",
+    );
+    this.name = "NetworkError";
+  }
+
+  private static describe(cause: unknown): string {
+    if (cause instanceof DOMException && cause.name === "TimeoutError") {
+      return "the request timed out";
+    }
+    const inner = (cause as { cause?: unknown })?.cause;
+    for (const candidate of [inner, cause]) {
+      if (candidate instanceof Error && candidate.message) return candidate.message;
+    }
+    return String(cause);
+  }
+}
+
 export class ConfigError extends Error {
   constructor(message: string) {
     super(message);
@@ -141,6 +168,7 @@ export class DecisionsClient {
         lastError = err;
       }
     }
-    throw lastError;
+    if (lastError instanceof ApiError) throw lastError;
+    throw new NetworkError(url, lastError);
   }
 }

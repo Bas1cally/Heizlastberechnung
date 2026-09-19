@@ -2,6 +2,7 @@ export {
   DecisionsClient,
   ApiError,
   ConfigError,
+  NetworkError,
   configFromEnv,
   buildRequestBody,
 } from "./typesafe/client.js";

@@ -14,6 +14,7 @@ import {
   ApiError,
   ConfigError,
   DecisionsClient,
+  NetworkError,
   band,
   buildRequestBody,
   choice,
@@ -99,7 +100,7 @@ async function main(): Promise<void> {
 main().catch((err: unknown) => {
   if (err instanceof ConfigError) {
     console.error(`config: ${err.message}`);
-  } else if (err instanceof ApiError) {
+  } else if (err instanceof NetworkError || err instanceof ApiError) {
     console.error(err.message);
   } else {
     console.error(err);

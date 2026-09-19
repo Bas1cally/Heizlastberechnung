@@ -72,6 +72,17 @@ from (`model` / `state` / `questions[id]{type,instructions}`).
 `TYPESAFE_BASE_URL` is configurable for the same reason: the correct host was
 not confirmable here. It defaults to `https://api.typesafe.ai`.
 
+## Errors
+
+Three distinct failures, so you can tell them apart in a log:
+
+| Error | Meaning |
+| --- | --- |
+| `ConfigError` | Missing key or an empty question set. Nothing was sent. |
+| `NetworkError` | The host was never reached — DNS, TLS, timeout, or a proxy refusing the tunnel. **Credentials were not sent**, so this is never a key problem. |
+| `ApiError` | The API answered, and refused. Carries `status` and the response body. |
+| `DecodeError` | The API answered successfully but in a shape `decode.ts` does not recognise. Names the question and shows what arrived. |
+
 ## Running behind a proxy
 
 Node's built-in `fetch` ignores `HTTPS_PROXY` unless you opt in:
