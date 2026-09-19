@@ -9,6 +9,7 @@
 
 import { TypeSafeClient, noul } from "@typesafe-ai/sdk";
 import { describeFailure } from "./typesafe/diagnose.js";
+import { formatProbability } from "./typesafe/policy.js";
 import { loadEnvFile } from "./typesafe/env.js";
 
 loadEnvFile();
@@ -57,7 +58,7 @@ async function main(): Promise<void> {
       questions: { is_urgent: noul("Does this need attention today?") },
     });
     tick(
-      `judgment returned by ${model}: is_urgent = ${answers.is_urgent.noul.toFixed(2)} ` +
+      `judgment returned by ${model}: is_urgent = ${formatProbability(answers.is_urgent.noul)} ` +
         `(${usage.input_tokens} in / ${usage.output_tokens} out)`,
     );
   } catch (err) {

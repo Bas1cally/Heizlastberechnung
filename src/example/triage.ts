@@ -16,6 +16,7 @@ import {
   TypeSafeError,
   band,
   choice,
+  formatProbability,
   nearestLevel,
   noul,
   score,
@@ -73,10 +74,10 @@ async function main(): Promise<void> {
   // Typed by question: `.noul` on a noul, `.choice` on a choice, `.score` on a
   // score. Reading the wrong one is a compile error.
   console.log(`model:         ${model}`);
-  console.log(`topic:         ${answers.topic.choice} (confidence ${answers.topic.confidence.toFixed(2)})`);
+  console.log(`topic:         ${answers.topic.choice} (confidence ${formatProbability(answers.topic.confidence)})`);
   console.log(`frustration:   ${answers.frustration.score.toFixed(2)} - ${nearestLevel(answers.frustration)}`);
-  console.log(`urgent:        ${answers.is_urgent.noul.toFixed(2)} -> ${band(answers.is_urgent, THRESHOLDS)}`);
-  console.log(`money blocked: ${answers.is_money_blocked.noul.toFixed(2)}`);
+  console.log(`urgent:        ${formatProbability(answers.is_urgent.noul)} -> ${band(answers.is_urgent, THRESHOLDS)}`);
+  console.log(`money blocked: ${formatProbability(answers.is_money_blocked.noul)}`);
   console.log(`tokens:        ${usage.input_tokens} in / ${usage.output_tokens} out`);
 
   const route = band(answers.is_urgent, THRESHOLDS);

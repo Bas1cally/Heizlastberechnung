@@ -78,3 +78,19 @@ export function nearestLevel(answer: ScoreResponse): string {
   const description = legend[String(nearest)];
   return typeof description === "string" ? description : String(nearest);
 }
+
+/**
+ * Format a probability without overstating it.
+ *
+ * `toFixed(2)` turns 0.9996 into "1.00", which reads as certainty. A routing
+ * decision made on that misreads the model. This keeps the distinction between
+ * "exactly 1" and "very close to 1" visible.
+ */
+export function formatProbability(p: number): string {
+  if (!Number.isFinite(p)) return String(p);
+  if (p >= 1) return "1";
+  if (p <= 0) return "0";
+  if (p > 0.999) return ">0.999";
+  if (p < 0.001) return "<0.001";
+  return p.toFixed(3);
+}

@@ -1,4 +1,9 @@
-export { band, weightedScore, nearestLevel } from "./typesafe/policy.js";
+export {
+  band,
+  weightedScore,
+  nearestLevel,
+  formatProbability,
+} from "./typesafe/policy.js";
 export type { Band, Thresholds } from "./typesafe/policy.js";
 
 // The client, question builders and error types come from the official SDK.

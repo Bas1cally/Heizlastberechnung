@@ -60,8 +60,9 @@ application code has one import.
 
 ## The contract
 
-Taken from the SDK's shipped type declarations and compiled client, and pinned
-by `test/contract.test.ts`:
+Taken from the SDK's shipped type declarations and compiled client, pinned by
+`test/contract.test.ts`, and **confirmed against a live response**: every field
+below resolved as declared when the example ran for real.
 
 ```
 POST https://api.typesafe.ai/v1/systemone
@@ -114,6 +115,23 @@ Node's built-in `fetch` ignores `HTTPS_PROXY` unless you opt in:
 ```bash
 NODE_USE_ENV_PROXY=1 npm run triage
 ```
+
+## Observed in practice
+
+From a real run (`jev-latest` resolved to `jev-1.13.0`):
+
+| Call | Questions | Input | Output |
+| --- | --- | --- | --- |
+| `npm run check` | 1 noul | 281 | 23 |
+| `npm run triage` | 2 noul + 1 choice + 1 score | 609 | 103 |
+
+Output tokens track the number of questions (roughly 25 each here). Input
+tokens track the size of the state **and the criteria text** — verbose rubric
+descriptions are paid for on every single call, not once.
+
+Two models were listed on the account: `jev-latest` and `jev-preview`. The
+response reports the model that actually served it, so log
+`result.model` rather than assuming the alias.
 
 ## Cost
 

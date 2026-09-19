@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { band, nearestLevel, weightedScore } from "../src/index.js";
+import {
+  band,
+  formatProbability,
+  nearestLevel,
+  weightedScore,
+} from "../src/index.js";
 import type { NoulResponse, ScoreResponse } from "../src/index.js";
 
 const p = (noul: number): NoulResponse => ({ type: "noul", noul });
@@ -46,4 +51,12 @@ test("maps a fractional score to the nearest described level", () => {
   // 1.6 is closer to 2 than to 1 - a score is an expected value and need not
   // land on a rubric level.
   assert.equal(nearestLevel(answer), "angry");
+});
+
+test("does not round a near-certain probability up to 1", () => {
+  assert.equal(formatProbability(0.9996), ">0.999");
+  assert.equal(formatProbability(1), "1");
+  assert.equal(formatProbability(0.927), "0.927");
+  assert.equal(formatProbability(0.0004), "<0.001");
+  assert.equal(formatProbability(0), "0");
 });
