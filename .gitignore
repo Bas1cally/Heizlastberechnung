@@ -7,3 +7,7 @@ data/
 *.log
 *.sqlite
 *.sqlite-journal
+.sync/
+logs/
+reports/*.txt
+reports/*.gz

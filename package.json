@@ -26,6 +26,7 @@
     "acceptance": "tsx scripts/acceptance.ts",
     "resolve": "tsx scripts/resolve.ts",
     "summary": "tsx scripts/summary.ts",
+    "sync": "tsx scripts/sync.ts",
     "dashboard": "tsx scripts/dashboard.ts",
     "kill": "tsx scripts/control.ts kill",
     "resume": "tsx scripts/control.ts resume"

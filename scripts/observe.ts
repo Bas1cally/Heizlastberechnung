@@ -11,6 +11,8 @@ import { createPublicClient } from "@polymarket/client";
 import { loadEnvFile } from "../src/app/env.js";
 import { loadConfig } from "../src/app/config.js";
 import { createLogger } from "../src/observability/logger.js";
+import { teeSink } from "../src/observability/file-sink.js";
+import { spawn } from "node:child_process";
 import { createClock } from "../src/feeds/clock.js";
 import { createJevCall } from "../src/jev/client.js";
 import { openDatabase } from "../src/persistence/database.js";
@@ -23,7 +25,12 @@ import { PriceTape } from "../src/feeds/price-tape.js";
 
 loadEnvFile();
 const cfg = loadConfig();
-const log = createLogger({ level: (process.env["LOG_LEVEL"] as never) ?? "info" });
+const log = createLogger({ level: (process.env["LOG_LEVEL"] as never) ?? "info", write: teeSink("logs/observe.log") });
+// Every 15 minutes the reports, a compact database export and the log tails
+// are pushed to the git branch `reports` (scripts/sync.ts). --no-sync to skip.
+const syncChild = process.argv.includes("--no-sync") ? undefined
+  : spawn(process.execPath, ["node_modules/tsx/dist/cli.mjs", "scripts/sync.ts", "--every", process.env["SYNC_EVERY_MIN"] ?? "15"], { stdio: "ignore", env: process.env });
+syncChild?.on("exit", (code) => log.warn("sync loop exited", { code }));
 
 if (!cfg.typesafeApiKey) {
   log.error("TYPESAFE_API_KEY is not set");
@@ -62,6 +69,7 @@ const shutdown = async (signal: string) => {
     process.exit(130);
   }
   shuttingDown = true;
+  syncChild?.kill();
   log.info("shutting down - press Ctrl+C again to force", { signal });
   // A socket that refuses to close must not keep the process alive.
   const deadline = setTimeout(() => { log.warn("shutdown timed out, exiting"); process.exit(0); }, 3_000);

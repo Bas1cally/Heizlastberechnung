@@ -20,6 +20,8 @@ import { createPublicClient } from "@polymarket/client";
 import { loadEnvFile } from "../src/app/env.js";
 import { loadConfig } from "../src/app/config.js";
 import { createLogger } from "../src/observability/logger.js";
+import { teeSink } from "../src/observability/file-sink.js";
+import { spawn } from "node:child_process";
 import { createClock } from "../src/feeds/clock.js";
 import { createJevCall } from "../src/jev/client.js";
 import { openDatabase } from "../src/persistence/database.js";
@@ -34,7 +36,12 @@ import { DEFAULT_FILL_PARAMS } from "../src/replay/paper-fill-model.js";
 
 loadEnvFile();
 const cfg = loadConfig();
-const log = createLogger({ level: (process.env["LOG_LEVEL"] as never) ?? "info" });
+const log = createLogger({ level: (process.env["LOG_LEVEL"] as never) ?? "info", write: teeSink("logs/paper.log") });
+// Every 15 minutes the reports, a compact database export and the log tails
+// are pushed to the git branch `reports` (scripts/sync.ts). --no-sync to skip.
+const syncChild = process.argv.includes("--no-sync") ? undefined
+  : spawn(process.execPath, ["node_modules/tsx/dist/cli.mjs", "scripts/sync.ts", "--every", process.env["SYNC_EVERY_MIN"] ?? "15"], { stdio: "ignore", env: process.env });
+syncChild?.on("exit", (code) => log.warn("sync loop exited", { code }));
 const argv = process.argv.slice(2);
 const opt = (n: string, d: number) => { const i = argv.indexOf(`--${n}`); const v = i >= 0 ? Number(argv[i + 1]) : d; return Number.isFinite(v) ? v : d; };
 const latencyMs = opt("latency", Number(process.env["PAPER_LATENCY_MS"] ?? 350));
@@ -71,6 +78,7 @@ let shuttingDown = false;
 const shutdown = async (signal: string) => {
   if (shuttingDown) { log.warn("forced exit"); process.exit(130); }
   shuttingDown = true;
+  syncChild?.kill();
   log.info("shutting down - press Ctrl+C again to force", { signal });
   setTimeout(() => { log.warn("shutdown timed out, exiting"); process.exit(0); }, 3_000).unref();
   try { await current?.stop(); await tape.stop(); } catch (err) { log.warn("stop failed", { err }); }
