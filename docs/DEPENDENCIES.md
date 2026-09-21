@@ -225,8 +225,9 @@ path the bot's merge/redeem adapters (brief §20, §21) must follow:
   adapter and was credited to the wallet as **pUSD** (Polymarket's USDC
   wrapper, `Polymarket U... (pUSD)`). Balance reconciliation must read pUSD,
   not USDC.e.
-- $5.00 for 7.142856 shares implies an entry price of exactly $0.7000 — the
-  activity line's quoted price decides whether a taker fee was charged.
+- The activity line shows the buy: **7.142856 shares at 71.5¢ for $5.10**
+  (7.142856 × 0.715 = 5.107). Amount equals price × shares, so no taker fee
+  was charged on top; the redemption paid 7.142856 × $1.00 = $7.14 in full.
 
 The SDK exposes this path as `client.redeemPositions({ marketId | conditionId
 | positionId })` and `client.mergePositions(...)`, both returning a
@@ -235,8 +236,11 @@ through the gasless workflow (`prepareGaslessTransaction` in the client
 types). The raw viem `ctfRedeemPositionsCall` builders remain available but
 are not the path Polymarket's own UI takes.
 
-Still open: the fee schedule. The market page shows none; the buy activity
-line for the $5 position will settle it empirically.
+**Fees, empirically (2026-09-21): none.** No taker fee on the buy, no
+deduction on redemption, no user-side gas. `DEFAULT_FILL_PARAMS` keeps
+`takerFee = makerFee = 0` and `mergeGas = 0` on that evidence. This is an
+observation about one market on one day, not a guarantee; re-check the
+activity line whenever Polymarket changes its fee policy.
 
 ## Not verified here
 

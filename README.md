@@ -46,7 +46,8 @@ thinks right now, feed health, Jev's P(Up) against the market's Up price over
 the current market, the calibration grade, today's decisions and token spend,
 the trading view (paper or live, never mixed), recent markets, messages, and
 the emergency stop with a confirmation. Set `TYPESAFE_USD_PER_MTOKEN` in
-`.env` to see an estimated daily cost.
+`.env` to see an estimated daily cost. Polymarket fees on these markets were
+observed to be zero (see `docs/DEPENDENCIES.md`); paper results assume that.
 
 ## Requirements
 
