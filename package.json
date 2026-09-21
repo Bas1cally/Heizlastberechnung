@@ -17,7 +17,8 @@
     "bot:shadow": "tsx scripts/shadow.ts",
     "replay": "tsx scripts/replay.ts",
     "report": "tsx scripts/report.ts",
-    "benchmark:jev": "tsx scripts/benchmark-jev.ts"
+    "benchmark:jev": "tsx scripts/benchmark-jev.ts",
+    "discover": "tsx scripts/discover.ts"
   },
   "dependencies": {
     "@polymarket/client": "0.10.0",

@@ -18,14 +18,18 @@ Phase 1 groundwork. **No order path exists yet, in any mode.**
 | Probability-vs-price edge | `src/analytics/edge-analysis.ts` |
 | Jev question set | `src/jev/questions.ts` |
 | Hard risk gate incl. state-version staleness | `src/risk/risk-gate.ts` |
-| 51 unit tests | `pnpm test` |
+| Market discovery (Gamma), book + Chainlink feeds with reconnect | `src/market/`, `src/feeds/` |
+| Versioned market state, feature engine, Jev state builder | `src/market/market-state.ts`, `src/jev/state-builder.ts` |
+| Decision engine: coalescing, abort of superseded requests | `src/jev/decision-engine.ts` |
+| SQLite audit trail (`node:sqlite`), Jev response cache, latency stages | `src/persistence/` |
+| `pnpm discover`, `pnpm bot:observe` | `scripts/` |
+| 100+ unit tests, no network needed | `pnpm test` |
 
 | Next | |
 | --- | --- |
-| Market discovery, orderbook WS, settlement feed | `src/feeds/`, `src/market/` |
-| Feature engine wiring, `pnpm bot:observe` | `scripts/observe.ts` |
-| Persistence and decision audit | `src/persistence/` |
-| Replay, paper fills, calibration | `src/replay/`, `src/analytics/` |
+| Confirm discovery pattern and WS semantics on a live run | `pnpm discover`, `pnpm bot:observe` |
+| Jev benchmark (`scripts/benchmark-jev.ts`) | latency + stability over recorded states |
+| Replay engine, paper fill model, calibration reports | `src/replay/`, `src/analytics/` |
 
 ## Requirements
 
@@ -35,8 +39,13 @@ Phase 1 groundwork. **No order path exists yet, in any mode.**
 ```bash
 pnpm install
 cp .env.example .env    # fill in TYPESAFE_API_KEY
-pnpm test
+pnpm test               # unit tests, no network
+pnpm discover           # what Gamma returns for the discovery query - confirm slug/labels
+pnpm bot:observe        # Phase 1 observer; never submits an order
 ```
+
+`LOG_LEVEL=debug` for verbose JSON logs. Decisions, ticks, books and latency
+land in `data/bot.sqlite` (override with `DATABASE_URL`).
 
 ## Documentation
 

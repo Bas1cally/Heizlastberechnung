@@ -56,11 +56,42 @@ interfaces in `src/persistence/`, so PostgreSQL remains a later swap.
 
 Read from the installed declarations, with the file each claim came from.
 
+**Realtime client API** — `@polymarket/client/dist/types-*.d.ts`
+
+`createPublicClient()` needs no credentials. `client.subscribe([...specs])`
+returns `AsyncIterable<Event> & { close(): Promise<void> }`; the feeds
+iterate it with `for await`. Specs used:
+
+```
+{ topic: 'market', assetIds: [...], customFeatureEnabled: true }
+{ topic: 'prices.crypto.chainlink', symbols: ['btc/usd'] }
+```
+
+With `customFeatureEnabled` the market stream additionally emits
+`best_bid_ask`, `new_market` and `market_resolved`. The realtime endpoints in
+the compiled client are `wss://ws-subscriptions-clob.polymarket.com/ws/market`
+and `wss://ws-live-data.polymarket.com`.
+
+**Settlement price** — the `prices.crypto.chainlink` topic delivers
+`{ symbol, timestamp (epoch ms), value (decimal string or number) }`. A
+`prices.crypto.chainlink.twap` topic exists with `windowSeconds: 30 | 60`.
+Observe mode therefore needs no Polygon RPC.
+
+**Market discovery** — `client.listEvents({ titleSearch, tagSlug, slug,
+closed, pageSize, order, ascending, ... })` returns `Paginated<Event[]>` with
+`firstPage()` → `{ items, hasMore, nextCursor }`. A Gamma market carries `id`,
+`conditionId`, `slug`, `question`, `outcomes: string[]`, `clobTokenIds`,
+`startDate`/`endDate` (ISO), `active`, `closed`, `orderPriceMinTickSize`,
+`orderMinSize`. `listMarkets` and `listSeries` exist with similar filters.
+
+**CLOB order book (REST)** — `client.fetchOrderBook({ assetId })`. Its type
+states: *bids ascending (lowest first), asks descending (highest first)* —
+the reverse of walk order. `src/feeds/book-normalizer.ts` always re-sorts.
+
 **WebSocket market data** — `@polymarket/bindings/dist/subscriptions/index.d.ts`
 
-Subscription topics are `market`, `user` and `comments`. The `market` topic
-carries a `book` event whose payload (after the schema's transform) is
-camelCased:
+The `market` topic carries a `book` event whose payload (after the schema's
+transform) is camelCased:
 
 ```
 conditionId, market, assetId, tokenId,
@@ -103,6 +134,21 @@ probabilities}`, `{type:"score", score, confidence, legend, probabilities}`,
 wrapped in `{model, answers, usage}`. A score is a number and may fall between
 rubric levels. Two models were listed on the account: `jev-latest` and
 `jev-preview`; `jev-latest` resolved to `jev-1.13.0`.
+
+## Assumptions that only a live run can confirm
+
+- `book` is a full snapshot and `price_change` carries level deltas with
+  `size: "0"` meaning removal. Standard CLOB semantics, matches the shapes.
+- How BTC 5-minute markets are titled and labelled. Discovery defaults to
+  `titleSearch: "Bitcoin Up or Down"` and maps outcome labels `Up`/`Down`
+  (also Yes/No, Higher/Lower). Anything else fails loudly. `pnpm discover`
+  prints the real candidates so `MARKET_TITLE_SEARCH`, `MARKET_TAG_SLUG` can
+  be pinned.
+- The settlement start price is the first Chainlink value seen at or after
+  the market's open. Confirm against the market description's resolution
+  rule; `MarketStateStore.setSettlementStartPrice` exists for an override.
+- Gamma's `startDate` may be the listing time, not the open; the 5-minute
+  window is anchored on `endDate` when `startDate` is implausibly early.
 
 ## Not verified here
 
