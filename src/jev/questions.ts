@@ -34,7 +34,7 @@ export const QUESTIONS = {
   ),
 
   settlement_direction: choice(
-    "At settlement, will the market resolve UP or DOWN, judged from the settlement start price, the current settlement price and the time remaining?",
+    "At settlement, will the market resolve UP or DOWN? The settlement price is the 60-second Chainlink TWAP of BTC/USD (`settlementCurrentPrice`), compared with its value at the start of the window (`settlementStartPrice`). `spotPrice` leads the TWAP; `spotVsTwapBps` shows where the TWAP is being pulled in the seconds remaining.",
     {
       UP: "The settlement price at close will be greater than or equal to the start price. An exact tie resolves UP.",
       DOWN: "The settlement price at close will be strictly below the start price.",

@@ -29,9 +29,12 @@ export interface MarketState {
   readonly upBook: OrderBook | undefined;
   readonly downBook: OrderBook | undefined;
 
+  /** Settlement quantity: the 60 s Chainlink TWAP. Start = first value at or after open. */
   readonly settlementStartPrice: number | undefined;
   readonly settlementCurrentPrice: number | undefined;
   readonly settlementUpdatedAtMs: number | undefined;
+  /** Chainlink spot, which leads the TWAP; the gap is information near the close. */
+  readonly spotPrice: number | undefined;
 
   readonly inventory: InventoryAccounting;
   readonly openOrderCount: number;
@@ -50,6 +53,7 @@ export class MarketStateStore {
   private startPrice: number | undefined;
   private currentPrice: number | undefined;
   private settlementAtMs: number | undefined;
+  private spot: number | undefined;
   private openOrders = 0;
 
   constructor(
@@ -96,6 +100,11 @@ export class MarketStateStore {
     this.bump();
   }
 
+  setSpotPrice(price: number): void {
+    this.spot = price;
+    this.bump();
+  }
+
   /** Explicit override when the true open price is known from elsewhere. */
   setSettlementStartPrice(price: number): void {
     this.startPrice = price;
@@ -124,6 +133,7 @@ export class MarketStateStore {
       settlementStartPrice: this.startPrice,
       settlementCurrentPrice: this.currentPrice,
       settlementUpdatedAtMs: this.settlementAtMs,
+      spotPrice: this.spot,
       inventory: this.inventory,
       openOrderCount: this.openOrders,
     };

@@ -27,6 +27,13 @@ export interface SubscriptionLike<T> extends AsyncIterable<T> {
 }
 export type ChainlinkSubscribeFn = (symbols: readonly string[]) => Promise<SubscriptionLike<ChainlinkEvent>>;
 
+/**
+ * Which Chainlink stream feeds what. The market rules (read from the live
+ * market page) resolve on the 60-second TWAP of BTC/USD, so that stream is
+ * the settlement price; the spot stream is for movement features only.
+ */
+export type ChainlinkSource = "chainlink" | "chainlink-twap60" | "chainlink-twap30";
+
 export interface ChainlinkFeedOptions {
   readonly symbol: string;
   readonly subscribe: ChainlinkSubscribeFn;

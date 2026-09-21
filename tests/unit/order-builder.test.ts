@@ -14,7 +14,7 @@ const state = (inv = { upShares: 0, downShares: 0, avgUpEntry: 0, avgDownEntry: 
   nowMs: 0, secondsRemaining: 100,
   upBook: book("UP", [[0.45, 40], [0.46, 100], [0.47, 500]]),
   downBook: book("DOWN", [[0.55, 30], [0.56, 200]]),
-  settlementStartPrice: 1, settlementCurrentPrice: 1, settlementUpdatedAtMs: 0,
+  settlementStartPrice: 1, settlementCurrentPrice: 1, settlementUpdatedAtMs: 0, spotPrice: 1,
   inventory: computeInventory(inv), openOrderCount: 0,
 });
 const limits = { maxOrderSizeShares: 100, riskAllowanceUsd: 1000, tickSize: 0.001, minOrderSize: 5 };

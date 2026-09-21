@@ -76,7 +76,7 @@ export function collectState(db: Db, nowMs: number): Record<string, unknown> {
     const probs = a.action?.probabilities ? Object.entries(a.action.probabilities as Record<string, number>).sort((x, y) => y[1] - x[1]).slice(0, 3) : [];
     lastDecision = {
       slug: last.slug, at: last.timestamp_ms, ageS: Number(((nowMs - last.timestamp_ms) / 1000).toFixed(1)),
-      secondsRemaining: s.market?.secondsRemaining, distanceBps: s.market?.distanceBps, settlementStart: s.market?.settlementStartPrice, settlementCurrent: s.market?.settlementCurrentPrice,
+      secondsRemaining: s.market?.secondsRemaining, distanceBps: s.market?.distanceBps, settlementStart: s.market?.settlementStartPrice, settlementCurrent: s.market?.settlementCurrentPrice, spotPrice: s.market?.spotPrice, spotVsTwapBps: s.market?.spotVsTwapBps,
       upBid: s.orderbook?.upBid, upAsk: s.orderbook?.upAsk, downBid: s.orderbook?.downBid, downAsk: s.orderbook?.downAsk, pairAskCost: s.orderbook?.pairAskCost, pairEdge: s.orderbook?.pairEdge,
       inventory: s.inventory, pUp: dir?.pUp, pDown: dir?.pDown, unresolved: dir?.unresolvedMass,
       action: last.requested_action, actionProbs: probs, risk: last.risk_result, riskReason: last.risk_reason, jevMs: last.jev_latency_ms, model: last.model, tokens: [last.input_tokens, last.output_tokens], materialReason: last.material_reason,

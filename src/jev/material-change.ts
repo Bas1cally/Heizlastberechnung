@@ -37,6 +37,7 @@ export type MaterialReason =
   | "quote"
   | "pair"
   | "settlement"
+  | "spot"
   | "time_bucket"
   | "inventory"
   | "data_quality";
@@ -55,6 +56,8 @@ export function materialChange(
   if (Math.abs(a.pairAskCost - b.pairAskCost) >= t.pairCost || Math.abs(a.pairExecutableQty - b.pairExecutableQty) >= t.pairQty) return "pair";
 
   if (Math.abs(prev.market.distanceBps - next.market.distanceBps) >= t.distanceBps) return "settlement";
+  // Spot leads the TWAP; a spot move changes where settlement is heading.
+  if (Math.abs(prev.market.spotVsTwapBps - next.market.spotVsTwapBps) >= t.distanceBps) return "spot";
   if (timeBucket(prev.market.secondsRemaining) !== timeBucket(next.market.secondsRemaining)) return "time_bucket";
 
   const i = prev.inventory;

@@ -36,6 +36,7 @@ export function buildJevState(input: StateBuilderInput): JevInputState {
 
   const start = state.settlementStartPrice ?? 0;
   const current = state.settlementCurrentPrice ?? start;
+  const spot = state.spotPrice ?? current;
 
   return {
     market: {
@@ -44,6 +45,8 @@ export function buildJevState(input: StateBuilderInput): JevInputState {
       settlementCurrentPrice: r(current, 2),
       distanceUsd: r(current - start, 2),
       distanceBps: r(distanceBps(start, current), 2),
+      spotPrice: r(spot, 2),
+      spotVsTwapBps: r(distanceBps(current, spot), 2),
     },
     movement: {
       return1s: r(returnBps(prices, 1_000), 2),

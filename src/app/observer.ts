@@ -25,7 +25,10 @@ export interface ObserverDeps {
   readonly log: Logger;
   readonly clock: Clock;
   readonly marketSubscribe: SubscribeFn;
+  /** Chainlink spot stream: movement features. */
   readonly chainlinkSubscribe: ChainlinkSubscribeFn;
+  /** Chainlink TWAP stream (60 s): the settlement quantity. Falls back to spot when absent. */
+  readonly chainlinkTwapSubscribe?: ChainlinkSubscribeFn;
   readonly jevCall: JevCall;
   readonly repo: DecisionRepository;
   readonly display?: (line: string) => void;
@@ -53,6 +56,7 @@ export class MarketObserver {
   private readonly engine: DecisionEngine;
   private readonly books: BookFeed;
   private readonly chainlink: ChainlinkFeed;
+  private readonly twap: ChainlinkFeed | undefined;
   private lastPacketMono = Number.NaN;
   private lastStateMono = Number.NaN;
   private decisions = 0;
@@ -153,6 +157,7 @@ export class MarketObserver {
       },
     });
 
+    const hasTwap = !!deps.chainlinkTwapSubscribe;
     this.chainlink = new ChainlinkFeed({
       symbol: cfg.chainlinkSymbol,
       subscribe: deps.chainlinkSubscribe,
@@ -162,19 +167,37 @@ export class MarketObserver {
       onTick: (t) => {
         this.lastPacketMono = clock.mono();
         this.prices.push({ ts: t.ts, price: t.price });
-        this.store.setSettlementPrice(t.price, t.ts);
+        this.store.setSpotPrice(t.price);
+        // Without a TWAP stream the spot stands in for settlement (older behaviour).
+        if (!hasTwap) this.store.setSettlementPrice(t.price, t.ts);
         this.lastStateMono = clock.mono();
         this.persist("tick", () => deps.repo.saveTick(market.marketId, "chainlink", t.ts, clock.wall(), t.price));
         this.maybeDecide();
       },
     });
+    this.twap = hasTwap
+      ? new ChainlinkFeed({
+          symbol: cfg.chainlinkSymbol,
+          subscribe: deps.chainlinkTwapSubscribe!,
+          now: clock.mono,
+          log: log.child({ feed: "chainlink-twap" }),
+          onStreamError: (reason) => this.persist("error", () => deps.repo.saveError("chainlink-twap-ws", reason, market.marketId, clock.wall())),
+          onTick: (t) => {
+            this.lastPacketMono = clock.mono();
+            this.store.setSettlementPrice(t.price, t.ts);
+            this.lastStateMono = clock.mono();
+            this.persist("tick", () => deps.repo.saveTick(market.marketId, `chainlink-twap${cfg.chainlinkTwapSeconds}`, t.ts, clock.wall(), t.price));
+            this.maybeDecide();
+          },
+        })
+      : undefined;
   }
 
   /** Kill-switch health, operator control and heartbeat. Cheap; runs on every event. */
   private housekeeping(): void {
     const { clock, repo, log } = this.deps;
     const nowMono = clock.mono();
-    this.kill.evaluate({ nowMono, chainlinkAgeMs: this.chainlink.ageMs(), marketWsAgeMs: this.books.ageMs(), clockDriftMs: clock.driftMs(), dailyPnlUsd: 0 });
+    this.kill.evaluate({ nowMono, chainlinkAgeMs: this.settlementAgeMs(), marketWsAgeMs: this.books.ageMs(), clockDriftMs: clock.driftMs(), dailyPnlUsd: 0 });
 
     if (nowMono - this.lastControlPollMono >= 1_000) {
       this.lastControlPollMono = nowMono;
@@ -186,8 +209,13 @@ export class MarketObserver {
     }
     if (nowMono - this.lastHeartbeatMono >= 2_000) {
       this.lastHeartbeatMono = nowMono;
-      this.persist("heartbeat", () => repo.heartbeat(this.deps.processName ?? "observer", { phase: "observing", market: this.market.slug, decisions: this.decisions, killed: this.kill.state().tripped, chainlinkAgeS: Number((this.chainlink.ageMs() / 1000).toFixed(1)), bookAgeS: Number((this.books.ageMs() / 1000).toFixed(1)) }, clock.wall()));
+      this.persist("heartbeat", () => repo.heartbeat(this.deps.processName ?? "observer", { phase: "observing", market: this.market.slug, decisions: this.decisions, killed: this.kill.state().tripped, chainlinkAgeS: Number((this.settlementAgeMs() / 1000).toFixed(1)), spotAgeS: Number((this.chainlink.ageMs() / 1000).toFixed(1)), bookAgeS: Number((this.books.ageMs() / 1000).toFixed(1)) }, clock.wall()));
     }
+  }
+
+  /** Age of the settlement stream: TWAP when subscribed, else spot. */
+  private settlementAgeMs(): number {
+    return this.twap ? this.twap.ageMs() : this.chainlink.ageMs();
   }
 
   killState(): KillState {
@@ -203,7 +231,7 @@ export class MarketObserver {
     const missing = [
       snap.upBook ? null : "upBook",
       snap.downBook ? null : "downBook",
-      snap.settlementCurrentPrice === undefined ? "chainlinkPrice" : null,
+      snap.settlementCurrentPrice === undefined ? (this.twap ? "twapPrice" : "chainlinkPrice") : null,
       drifted ? `clockDrift(${Math.round(clock.driftMs())}ms > ${cfg.maxClockDriftMs}ms)` : null,
     ].filter((x): x is string => x !== null);
 
@@ -222,7 +250,7 @@ export class MarketObserver {
     const state = buildJevState({
       state: snap,
       prices: this.prices,
-      chainlinkAgeMs: this.chainlink.ageMs(),
+      chainlinkAgeMs: this.settlementAgeMs(),
       bookAgeMs: this.books.ageMs(),
       pairQty: cfg.limits.maxOrderSizeShares,
     });
@@ -261,7 +289,7 @@ export class MarketObserver {
         action: d.requestedAction,
         orderSizeShares: cfg.limits.maxOrderSizeShares,
         secondsRemaining: snap.secondsRemaining,
-        chainlinkAgeMs: this.chainlink.ageMs(),
+        chainlinkAgeMs: this.settlementAgeMs(),
         orderbookAgeMs: this.books.ageMs(),
         jevLatencyMs: d.jevLatencyMs,
         marketLiquidityShares: Math.min(depth(snap.upBook?.asks ?? []), depth(snap.downBook?.asks ?? [])),
@@ -311,7 +339,7 @@ export class MarketObserver {
     const risk = verdict.result === "APPROVED" ? "APPROVED" : `REJECTED (${verdict.reason})`;
     out(
       [
-        `BTC-5M ${this.market.slug} | ${s.market.secondsRemaining.toFixed(1)}s | Δ ${s.market.distanceBps >= 0 ? "+" : ""}${s.market.distanceBps.toFixed(2)}bps`,
+        `BTC-5M ${this.market.slug} | ${s.market.secondsRemaining.toFixed(1)}s | TWAP Δ ${s.market.distanceBps >= 0 ? "+" : ""}${s.market.distanceBps.toFixed(2)}bps | spot vs TWAP ${s.market.spotVsTwapBps >= 0 ? "+" : ""}${s.market.spotVsTwapBps.toFixed(2)}bps`,
         `UP ${s.orderbook.upBid.toFixed(3)}/${s.orderbook.upAsk.toFixed(3)}  DOWN ${s.orderbook.downBid.toFixed(3)}/${s.orderbook.downAsk.toFixed(3)}  PAIR ${s.orderbook.pairAskCost.toFixed(4)} (edge ${s.orderbook.pairEdge.toFixed(4)} @ ${s.orderbook.pairExecutableQty})`,
         `JEV: UP ${pct(dir.pUp)}  DOWN ${pct(dir.pDown)}  unresolved ${formatProbability(dir.unresolvedMass)}`,
         `ACTION: ${probs}   -> ${d.requestedAction}  [${risk}]`,
@@ -333,6 +361,7 @@ export class MarketObserver {
   async run(graceMs = 15_000): Promise<void> {
     this.books.start();
     this.chainlink.start();
+    this.twap?.start();
     const { clock } = this.deps;
     while (!this.stopped && clock.wall() < this.market.closesAtMs + graceMs) {
       // Health, kill switch and heartbeat must not depend on feed events:
@@ -346,6 +375,6 @@ export class MarketObserver {
   async stop(): Promise<void> {
     if (this.stopped) return;
     this.stopped = true;
-    await Promise.all([this.books.stop(), this.chainlink.stop()]);
+    await Promise.all([this.books.stop(), this.chainlink.stop(), this.twap?.stop()]);
   }
 }

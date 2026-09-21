@@ -158,6 +158,9 @@ describe("buildJevState", () => {
     const s = buildJevState({ state: store.snapshot(282_600), prices, chainlinkAgeMs: 120, bookAgeMs: 40, pairQty: 100 });
     expect(s.market.secondsRemaining).toBe(17.4);
     expect(s.market.distanceBps).toBeCloseTo(18.2, 2);
+    // Without a spot feed the spot defaults to the settlement price: no gap.
+    expect(s.market.spotPrice).toBe(100_182);
+    expect(s.market.spotVsTwapBps).toBe(0);
     expect(s.orderbook.pairAskCost).toBeCloseTo(1.0, 5);
     expect(s.orderbook.pairExecutableQty).toBe(100);
     expect(s.inventory.pairedShares).toBe(500);

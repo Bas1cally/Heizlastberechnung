@@ -20,8 +20,11 @@ export function loadMarketOutcomes(db: Db, nowMs: number): MarketOutcomeRow[] {
   const markets = db.all<{ market_id: string; slug: string; opened_at_ms: number; closes_at_ms: number; resolved_outcome: string | null }>(
     `SELECT market_id, slug, opened_at_ms, closes_at_ms, resolved_outcome FROM markets ORDER BY opened_at_ms`);
   return markets.map((m) => {
-    const ticks = db.all<{ ts_ms: number; price: number }>(
-      `SELECT ts_ms, price FROM ticks WHERE market_id = ? AND source = 'chainlink' ORDER BY ts_ms`, [m.market_id])
+    // The markets settle on the 60 s TWAP; use that stream when it was recorded, else spot.
+    const twap = db.all<{ ts_ms: number; price: number }>(
+      `SELECT ts_ms, price FROM ticks WHERE market_id = ? AND source LIKE 'chainlink-twap%' ORDER BY ts_ms`, [m.market_id]);
+    const ticks = (twap.length > 0 ? twap : db.all<{ ts_ms: number; price: number }>(
+      `SELECT ts_ms, price FROM ticks WHERE market_id = ? AND source = 'chainlink' ORDER BY ts_ms`, [m.market_id]))
       .map((t) => ({ tsMs: t.ts_ms, price: t.price }));
     const derived = m.closes_at_ms <= nowMs ? deriveOutcome(ticks, m.opened_at_ms, m.closes_at_ms) : undefined;
     const fromFeed = outcomeFromLabel(m.resolved_outcome);

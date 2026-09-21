@@ -20,7 +20,7 @@ import { openDatabase } from "../src/persistence/database.js";
 import { DecisionRepository } from "../src/persistence/repositories/decisions.js";
 import { findCurrentMarket, type DiscoveryClient } from "../src/market/market-discovery.js";
 import { nextWindow, windowAt } from "../src/market/window.js";
-import { chainlinkSubscribe, marketSubscribe, type RealtimeClientLike } from "../src/feeds/sdk-subscriptions.js";
+import { chainlinkSubscribe, chainlinkTwapSubscribe, marketSubscribe, type RealtimeClientLike } from "../src/feeds/sdk-subscriptions.js";
 import { MarketObserver } from "../src/app/observer.js";
 import { ShadowEngine } from "../src/execution/shadow-engine.js";
 import { sdkSigner, signingSurface } from "../src/execution/sdk-signer.js";
@@ -108,6 +108,7 @@ while (!shuttingDown) {
       cfg, log: mlog, clock, repo, jevCall,
       marketSubscribe: marketSubscribe(publicClient as unknown as RealtimeClientLike),
       chainlinkSubscribe: chainlinkSubscribe(publicClient as unknown as RealtimeClientLike),
+      chainlinkTwapSubscribe: chainlinkTwapSubscribe(publicClient as unknown as RealtimeClientLike, cfg.chainlinkTwapSeconds),
       executionMode: "simulated",
       processName: "shadow",
       onKill: (state) => { mlog.error("kill: no further orders will be signed", { reasons: state.reasons }); engine.flush(() => undefined); },

@@ -17,7 +17,7 @@ import { openDatabase } from "../src/persistence/database.js";
 import { DecisionRepository } from "../src/persistence/repositories/decisions.js";
 import { findCurrentMarket, type DiscoveryClient } from "../src/market/market-discovery.js";
 import { nextWindow, windowAt } from "../src/market/window.js";
-import { chainlinkSubscribe, marketSubscribe, type RealtimeClientLike } from "../src/feeds/sdk-subscriptions.js";
+import { chainlinkSubscribe, chainlinkTwapSubscribe, marketSubscribe, type RealtimeClientLike } from "../src/feeds/sdk-subscriptions.js";
 import { MarketObserver } from "../src/app/observer.js";
 
 loadEnvFile();

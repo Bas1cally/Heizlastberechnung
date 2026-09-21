@@ -3,7 +3,7 @@ import { materialChange, timeBucket } from "../../src/jev/material-change.js";
 import type { JevInputState } from "../../src/jev/decision-types.js";
 
 const base: JevInputState = {
-  market: { secondsRemaining: 200, settlementStartPrice: 85000, settlementCurrentPrice: 85001, distanceUsd: 1, distanceBps: 0.12 },
+  market: { secondsRemaining: 200, settlementStartPrice: 85000, settlementCurrentPrice: 85001, distanceUsd: 1, distanceBps: 0.12, spotPrice: 85003, spotVsTwapBps: 0.24 },
   movement: { return1s: 0, return3s: 0, return5s: 0, return10s: 0, return30s: 0, realizedVol5s: 0, realizedVol10s: 0, realizedVol30s: 0 },
   orderbook: { upBid: 0.45, upAsk: 0.46, downBid: 0.54, downAsk: 0.55, upDepth: 1000, downDepth: 1000, pairAskCost: 1.01, pairExecutableQty: 100, pairEdge: -0.01, upSpread: 0.01, downSpread: 0.01, imbalanceUp: 0, imbalanceDown: 0 },
   inventory: { upShares: 0, downShares: 0, avgUpEntry: 0, avgDownEntry: 0, pairedShares: 0, unpairedUpShares: 0, unpairedDownShares: 0, pnlIfUp: 0, pnlIfDown: 0, guaranteedPairPnl: 0 },
@@ -33,6 +33,11 @@ describe("materialChange", () => {
   it("fires on settlement movement past half a bp, not on rounding jitter", () => {
     expect(materialChange(base, { ...base, market: { ...base.market, distanceBps: 0.8 } }, 100)).toBe("settlement");
     expect(materialChange(base, { ...base, market: { ...base.market, distanceBps: 0.3 } }, 100)).toBeUndefined();
+  });
+
+  it("fires when spot moves away from the TWAP, which is where settlement is heading", () => {
+    expect(materialChange(base, { ...base, market: { ...base.market, spotVsTwapBps: 1.2 } }, 100)).toBe("spot");
+    expect(materialChange(base, { ...base, market: { ...base.market, spotVsTwapBps: 0.5 } }, 100)).toBeUndefined();
   });
 
   it("fires when the remaining-time bucket changes", () => {

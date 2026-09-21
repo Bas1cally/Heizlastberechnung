@@ -48,3 +48,15 @@ describe("MarketStateStore", () => {
     expect(s.snapshot(999_000).secondsRemaining).toBe(0);
   });
 });
+
+describe("spot beside settlement", () => {
+  it("keeps the spot price separate from the TWAP the market settles on", () => {
+    const s = store();
+    s.setSettlementPrice(100_000, 1_000);
+    s.setSettlementPrice(100_010, 2_000);
+    s.setSpotPrice(100_050);
+    const snap = s.snapshot(2_000);
+    expect(snap.settlementCurrentPrice).toBe(100_010);
+    expect(snap.spotPrice).toBe(100_050);
+  });
+});

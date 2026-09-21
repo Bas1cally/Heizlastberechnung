@@ -52,5 +52,6 @@ await Promise.all([
   watch("market", [{ topic: "market", assetIds: [m.upAssetId, m.downAssetId], customFeatureEnabled: true }]),
   watch("chainlink", [{ topic: "prices.crypto.chainlink", symbols: [cfg.chainlinkSymbol] }]),
   watch("chainlink-all", [{ topic: "prices.crypto.chainlink" }]),
+  watch("twap60", [{ topic: "prices.crypto.chainlink.twap", windowSeconds: 60, symbols: [cfg.chainlinkSymbol] }]),
 ]);
 process.exit(0);

@@ -89,3 +89,33 @@ describe("replay engine", () => {
     void repo;
   });
 });
+
+describe("TWAP vs spot ticks", () => {
+  it("settles on the TWAP stream and uses spot for movement when both were recorded", async () => {
+    const { db, repo } = recordedSource();
+    repo.saveTick("m1", "chainlink-twap60", 1_000_000, 1_000_250, 85_500);
+    repo.saveTick("m1", "chainlink-twap60", 1_003_000, 1_003_250, 85_520);
+    const seen: Array<{ settlement: number; spot: number }> = [];
+    const out = new DecisionRepository(openDatabase(":memory:"));
+    await replayMarket({
+      identity, events: loadReplayEvents(db, "m1"), limits: DEFAULT_LIMITS, heartbeatMs: 60_000, minIntervalMs: 0,
+      cached: () => undefined, call: async () => ({ answers: answers("HOLD"), model: "jev", usage: { input_tokens: 1, output_tokens: 1 } }), freshJev: false, out,
+      onDecision: (d) => seen.push({ settlement: d.state.market.settlementCurrentPrice, spot: d.state.market.spotPrice }),
+    });
+    const last = seen[seen.length - 1]!;
+    expect(last.settlement).toBe(85_520);   // TWAP
+    expect(last.spot).toBe(85_100);         // spot tick at +5s from recordedSource
+    expect(seen.every((s) => s.settlement === 85_500 || s.settlement === 85_520)).toBe(true);
+  });
+
+  it("falls back to spot as settlement for recordings without a TWAP stream", async () => {
+    const { db } = recordedSource();
+    const seen: number[] = [];
+    await replayMarket({
+      identity, events: loadReplayEvents(db, "m1"), limits: DEFAULT_LIMITS, heartbeatMs: 60_000, minIntervalMs: 0,
+      cached: () => undefined, call: async () => ({ answers: answers("HOLD"), model: "jev", usage: { input_tokens: 1, output_tokens: 1 } }), freshJev: false,
+      out: new DecisionRepository(openDatabase(":memory:")), onDecision: (d) => seen.push(d.state.market.settlementCurrentPrice),
+    });
+    expect(seen[seen.length - 1]).toBe(85_100);
+  });
+});

@@ -17,7 +17,7 @@ import { evaluateRisk, type RiskVerdict } from "../risk/risk-gate.js";
 import type { RiskLimits } from "../risk/limits.js";
 import { buildOrders, type OrderIntent } from "../execution/order-builder.js";
 import { DEFAULT_FILL_PARAMS, fillMarketable, fillResting, isMarketable, seededRandom, type FillParams, type FillResult } from "./paper-fill-model.js";
-import type { ReplayEvent } from "./replay-engine.js";
+import { applyTick, type ReplayEvent } from "./replay-engine.js";
 
 /**
  * Paper trading over recorded markets (brief §38). The full simulated
@@ -93,6 +93,7 @@ export async function paperMarket(o: PaperOptions): Promise<PaperMarketResult> {
   let orderSeq = 0;
 
   o.out.upsertMarket(o.identity, o.events[0]?.atMs ?? 0);
+  const hasTwap = o.events.some((e) => e.kind === "tick" && e.source?.startsWith("chainlink-twap"));
 
   const recordOrder = (order: OrderIntent, decisionId: string, materialVersion: bigint, status: string, atMs: number): string => {
     const id = `paper-${o.identity.marketId}-${++orderSeq}`;
@@ -138,9 +139,8 @@ export async function paperMarket(o: PaperOptions): Promise<PaperMarketResult> {
 
   for (const ev of o.events) {
     if (ev.kind === "tick") {
-      prices.push({ ts: ev.tsMs!, price: ev.price! });
-      store.setSettlementPrice(ev.price!, ev.tsMs!);
-      lastTickAt = ev.atMs;
+      applyTick(ev, hasTwap, prices, store);
+      if (!hasTwap || ev.source?.startsWith("chainlink-twap")) lastTickAt = ev.atMs;
     } else {
       const book = normalizeBook({ assetId: ev.assetId!, bids: ev.bids!, asks: ev.asks!, receivedAtMs: ev.atMs });
       store.setBook(book);

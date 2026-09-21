@@ -38,6 +38,8 @@ const EnvSchema = z.object({
   // Market window length; the slug is derived from the clock (src/market/window.ts).
   MARKET_DURATION_SECONDS: num(300),
   CHAINLINK_SYMBOL: z.string().default("btc/usd"),
+  /** TWAP window the markets resolve on (market rules: 60 s). */
+  CHAINLINK_TWAP_SECONDS: z.string().optional().transform((v) => (v === "30" ? 30 : 60)).pipe(z.union([z.literal(30), z.literal(60)])),
 
   // Decision cadence.
   JEV_COALESCE_MS: num(15),
@@ -55,6 +57,7 @@ export interface AppConfig {
   readonly limits: RiskLimits;
   readonly marketDurationSeconds: number;
   readonly chainlinkSymbol: string;
+  readonly chainlinkTwapSeconds: 30 | 60;
   readonly jev: { readonly coalesceMs: number; readonly minIntervalMs: number; readonly heartbeatMs: number };
   readonly maxClockDriftMs: number;
   readonly hasPolymarketKey: boolean;
@@ -106,6 +109,7 @@ export function loadConfig(
     },
     marketDurationSeconds: e.MARKET_DURATION_SECONDS,
     chainlinkSymbol: e.CHAINLINK_SYMBOL,
+    chainlinkTwapSeconds: e.CHAINLINK_TWAP_SECONDS,
     jev: { coalesceMs: e.JEV_COALESCE_MS, minIntervalMs: e.JEV_MIN_INTERVAL_MS, heartbeatMs: e.JEV_HEARTBEAT_MS },
     maxClockDriftMs: e.MAX_CLOCK_DRIFT_MS,
     hasPolymarketKey: Boolean(e.POLYMARKET_PRIVATE_KEY?.trim()),

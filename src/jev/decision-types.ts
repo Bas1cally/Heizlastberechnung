@@ -28,6 +28,10 @@ export interface JevInputState {
     readonly settlementCurrentPrice: number;
     readonly distanceUsd: number;
     readonly distanceBps: number;
+    /** Chainlink spot; the TWAP the market settles on lags it. */
+    readonly spotPrice: number;
+    /** (spot - settlementCurrent) / settlementCurrent in bps: where the TWAP is being pulled. */
+    readonly spotVsTwapBps: number;
   };
   readonly movement: {
     readonly return1s: number;

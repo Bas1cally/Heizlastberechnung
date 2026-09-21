@@ -30,6 +30,8 @@ import type { RiskLimits } from "../risk/limits.js";
 export interface ReplayEvent {
   readonly atMs: number;
   readonly kind: "tick" | "book";
+  /** For ticks: "chainlink" (spot) or "chainlink-twap60" (settlement). */
+  readonly source?: string;
   readonly price?: number;
   readonly tsMs?: number;
   readonly assetId?: string;
@@ -38,12 +40,12 @@ export interface ReplayEvent {
 }
 
 export function loadReplayEvents(db: Db, marketId: string): ReplayEvent[] {
-  const ticks = db.all<{ ts_ms: number; received_at_ms: number; price: number }>(
-    `SELECT ts_ms, received_at_ms, price FROM ticks WHERE market_id = ? AND source = 'chainlink'`, [marketId]);
+  const ticks = db.all<{ ts_ms: number; received_at_ms: number; price: number; source: string }>(
+    `SELECT ts_ms, received_at_ms, price, source FROM ticks WHERE market_id = ?`, [marketId]);
   const books = db.all<{ asset_id: string; received_at_ms: number; bids_json: string; asks_json: string }>(
     `SELECT asset_id, received_at_ms, bids_json, asks_json FROM orderbook_snapshots WHERE market_id = ?`, [marketId]);
   const events: ReplayEvent[] = [
-    ...ticks.map((t): ReplayEvent => ({ atMs: t.received_at_ms, kind: "tick", price: t.price, tsMs: t.ts_ms })),
+    ...ticks.map((t): ReplayEvent => ({ atMs: t.received_at_ms, kind: "tick", source: t.source, price: t.price, tsMs: t.ts_ms })),
     ...books.map((b): ReplayEvent => ({ atMs: b.received_at_ms, kind: "book", assetId: b.asset_id, bids: JSON.parse(b.bids_json), asks: JSON.parse(b.asks_json) })),
   ];
   // Stable, causal order: by receive time, ticks before books at equal times.
@@ -56,6 +58,18 @@ export function loadMarketIdentity(db: Db, marketId: string): MarketIdentity | u
   if (!m) return undefined;
   return { marketId: m.market_id, conditionId: m.condition_id, slug: m.slug, question: m.question, upAssetId: m.up_asset_id, downAssetId: m.down_asset_id,
     openedAtMs: m.opened_at_ms, closesAtMs: m.closes_at_ms, tickSize: m.tick_size ?? undefined, minOrderSize: m.min_order_size ?? undefined };
+}
+
+/** Route a recorded tick: TWAP -> settlement, spot -> movement (and settlement when no TWAP was recorded). */
+export function applyTick(ev: ReplayEvent, hasTwap: boolean, prices: PriceWindow, store: MarketStateStore): void {
+  const isTwap = ev.source?.startsWith("chainlink-twap") ?? false;
+  if (isTwap) {
+    store.setSettlementPrice(ev.price!, ev.tsMs!);
+    return;
+  }
+  prices.push({ ts: ev.tsMs!, price: ev.price! });
+  store.setSpotPrice(ev.price!);
+  if (!hasTwap) store.setSettlementPrice(ev.price!, ev.tsMs!);
 }
 
 export interface ReplayOptions {
@@ -90,12 +104,12 @@ export async function replayMarket(o: ReplayOptions): Promise<ReplayResult> {
   let decisions = 0, cacheHits = 0, jevCalls = 0, skippedNoJev = 0;
 
   o.out.upsertMarket(o.identity, o.events[0]?.atMs ?? 0);
+  const hasTwap = o.events.some((e) => e.kind === "tick" && e.source?.startsWith("chainlink-twap"));
 
   for (const ev of o.events) {
     if (ev.kind === "tick") {
-      prices.push({ ts: ev.tsMs!, price: ev.price! });
-      store.setSettlementPrice(ev.price!, ev.tsMs!);
-      lastTickAt = ev.atMs;
+      applyTick(ev, hasTwap, prices, store);
+      if (!hasTwap || ev.source?.startsWith("chainlink-twap")) lastTickAt = ev.atMs;
     } else {
       store.setBook(normalizeBook({ assetId: ev.assetId!, bids: ev.bids!, asks: ev.asks!, receivedAtMs: ev.atMs }));
       lastBookAt = ev.atMs;
