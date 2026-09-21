@@ -3,7 +3,8 @@ import type { Logger } from "../observability/logger.js";
 import type { Clock } from "../feeds/clock.js";
 import { BookFeed, type SubscribeFn } from "../feeds/polymarket-ws.js";
 import { ChainlinkFeed, type ChainlinkSubscribeFn } from "../feeds/chainlink-feed.js";
-import { MarketStateStore, type MarketIdentity } from "../market/market-state.js";
+import { MarketStateStore, type MarketIdentity, type MarketState } from "../market/market-state.js";
+import type { OrderBook } from "../market/types.js";
 import { computeInventory, EMPTY_POSITION } from "../inventory/accounting.js";
 import { PriceWindow } from "../features/returns.js";
 import { buildJevState } from "../jev/state-builder.js";
@@ -26,6 +27,12 @@ export interface ObserverDeps {
   readonly jevCall: JevCall;
   readonly repo: DecisionRepository;
   readonly display?: (line: string) => void;
+  /** Execution mode handed to the risk gate. "none" in observe. */
+  readonly executionMode?: "none" | "simulated";
+  /** Called for every APPROVED decision with the snapshot it was checked against. Shadow/paper-live plug in here. */
+  readonly onApproved?: (decision: Decision, snapshot: MarketState, decisionMono: number) => void | Promise<void>;
+  /** Called with every normalised book update (for engines that track post-decision book movement). */
+  readonly onBookUpdate?: (book: OrderBook, nowMono: number) => void;
 }
 
 /**
@@ -102,6 +109,7 @@ export class MarketObserver {
           this.lastPacketMono = clock.mono();
           this.store.setBook(book);
           this.lastStateMono = clock.mono();
+          deps.onBookUpdate?.(book, clock.mono());
           // Books change hundreds of times a second; one snapshot per asset
           // every 500 ms is plenty for replay and keeps the event loop free.
           const lastSave = this.lastBookSaveMono.get(book.assetId) ?? Number.NEGATIVE_INFINITY;
@@ -209,7 +217,7 @@ export class MarketObserver {
         openOrders: snap.openOrderCount,
         dailyPnlUsd: 0,
         consecutiveErrors: 0,
-        executionMode: "none",
+        executionMode: this.deps.executionMode ?? "none",
       },
       cfg.limits,
     );
@@ -228,6 +236,9 @@ export class MarketObserver {
     this.decisions++;
 
     this.render(d, verdict);
+    if (verdict.result === "APPROVED" && this.deps.onApproved) {
+      void Promise.resolve(this.deps.onApproved(d, snap, validatedMono)).catch((err: unknown) => log.error("onApproved failed", { err }));
+    }
     log.info("decision", {
       decisionId: d.decisionId, stateVersion: d.stateVersion, action: d.requestedAction,
       risk: verdict, jevMs: Number(d.jevLatencyMs.toFixed(1)), model: d.model, tokens: d.usage,
