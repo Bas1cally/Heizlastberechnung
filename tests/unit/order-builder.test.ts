@@ -83,6 +83,14 @@ describe("buildOrders", () => {
     expect(hedgeNow[0]!.style.type).toBe("FOK");
   });
 
+  it("caps a plain buy of the opposite side so that the set it completes never costs more than 1.00", () => {
+    // Holding 100 UP bought at .41: DOWN may cost at most .59; the book asks .65 -> rest at .59.
+    const held = state({ upShares: 100, downShares: 0, avgUpEntry: 0.41, avgDownEntry: 0 });
+    const legs = buildOrders("BUY_DOWN", "NORMAL", { ...held, downBook: book("DOWN", [[0.65, 500]]) }, { ...limits, tickSize: 0.01 });
+    expect(legs[0]).toMatchObject({ side: "DOWN", price: 0.59 });
+    expect(legs[0]!.style.type).toBe("GTC");
+  });
+
   it("drops an order below the minimum size", () => {
     expect(buildOrders("BUY_UP", "NORMAL", state(), { ...limits, riskAllowanceUsd: 1 })).toEqual([]);
   });

@@ -78,9 +78,13 @@ export function buildOrders(
   };
 
   const inv = state.inventory;
+  // Buying the side opposite to unpaired inventory completes sets: those may
+  // never cost more than maxPair in total, whatever the action was called.
+  const capUp = inv.unpairedDownShares > 0 ? maxPair - inv.avgDownEntry : undefined;
+  const capDown = inv.unpairedUpShares > 0 ? maxPair - inv.avgUpEntry : undefined;
   switch (action) {
-    case "BUY_UP": return [leg("UP", limits.maxOrderSizeShares, "max_order")].filter((x): x is OrderIntent => !!x);
-    case "BUY_DOWN": return [leg("DOWN", limits.maxOrderSizeShares, "max_order")].filter((x): x is OrderIntent => !!x);
+    case "BUY_UP": return [leg("UP", limits.maxOrderSizeShares, "max_order", capUp)].filter((x): x is OrderIntent => !!x);
+    case "BUY_DOWN": return [leg("DOWN", limits.maxOrderSizeShares, "max_order", capDown)].filter((x): x is OrderIntent => !!x);
     case "BUY_PAIR": {
       // Both legs at the same size, or neither: a half-filled pair is a directional bet.
       // The set may cost at most maxPair in total: any slack under it is split
