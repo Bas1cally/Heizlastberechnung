@@ -32,6 +32,7 @@ import { chainlinkSubscribe, chainlinkTwapSubscribe, marketSubscribe, type Realt
 import { MarketObserver } from "../src/app/observer.js";
 import { PriceTape } from "../src/feeds/price-tape.js";
 import { createUpdateCheck, EXIT_UPDATE } from "../src/app/self-update.js";
+import { buildHoldRateTable, type HoldRateTable } from "../src/analytics/hold-rate.js";
 import { PaperLiveEngine } from "../src/execution/paper-live-engine.js";
 import { DEFAULT_FILL_PARAMS } from "../src/replay/paper-fill-model.js";
 
@@ -67,6 +68,13 @@ tape.start();
 // Between markets: is there a newer commit? Under `pnpm auto` the bot then
 // exits with code 75 and is restarted on the new version; standalone it only says so.
 const updateCheck = createUpdateCheck();
+// Measured base rates for Jev (analytics/hold-rate.ts), rebuilt from the
+// database before each market so every market that is over counts.
+let holdTable: HoldRateTable | undefined;
+const refreshHoldTable = () => {
+  try { holdTable = buildHoldRateTable(db, clock.wall()); log.info("hold-rate table", { markets: holdTable.markets, cells: holdTable.toJSON().cells.length }); }
+  catch (err) { log.warn("hold-rate table failed; feature stays null", { err }); }
+};
 const maybeRestartForUpdate = async () => {
   const u = updateCheck(clock.mono());
   if (u.error) log.debug("update check failed", { error: u.error });
@@ -104,6 +112,7 @@ process.on("SIGTERM", () => void shutdown("SIGTERM"));
 let marketIndex = 0;
 while (!shuttingDown) {
   await maybeRestartForUpdate();
+  refreshHoldTable();
   const now = clock.wall();
   let found: Awaited<ReturnType<typeof findCurrentMarket>>;
   try {
@@ -142,6 +151,7 @@ while (!shuttingDown) {
       chainlinkSubscribe: chainlinkSubscribe(client as unknown as RealtimeClientLike),
       chainlinkTwapSubscribe: chainlinkTwapSubscribe(client as unknown as RealtimeClientLike, cfg.chainlinkTwapSeconds),
       settlementStart: startPriceFor(market.openedAtMs),
+      holdRate: (d, t) => holdTable?.estimate(d, t),
       executionMode: "simulated",
       processName: "paper",
       onKill: (state) => { mlog.error("kill: cancelling resting paper orders, no new ones", { reasons: state.reasons }); engine.kill(); },

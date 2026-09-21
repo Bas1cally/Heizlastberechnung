@@ -15,6 +15,7 @@ import { loadConfig } from "../src/app/config.js";
 import { openDatabase } from "../src/persistence/database.js";
 import { DecisionRepository } from "../src/persistence/repositories/decisions.js";
 import { createJevCall } from "../src/jev/client.js";
+import { buildHoldRateTable } from "../src/analytics/hold-rate.js";
 import { loadMarketIdentity, loadReplayEvents } from "../src/replay/replay-engine.js";
 import { loadMarketOutcomes } from "../src/analytics/observations.js";
 import { DEFAULT_FILL_PARAMS } from "../src/replay/paper-fill-model.js";
@@ -41,10 +42,12 @@ const results: PaperMarketResult[] = [];
 for (const m of outcomes) {
   const identity = loadMarketIdentity(src, m.marketId);
   if (!identity) continue;
+  const holdTable = buildHoldRateTable(src, identity.openedAtMs); // causal: only markets already over
   const r = await paperMarket({
     identity, events: loadReplayEvents(src, m.marketId), outcome: m.outcome!, limits: cfg.limits,
     heartbeatMs: cfg.jev.heartbeatMs, minIntervalMs: cfg.jev.minIntervalMs, latencyMs, fill: DEFAULT_FILL_PARAMS, seed, mergeGas: 0,
     cached: (h) => srcRepo.cachedAnswers(h), recorded: (at) => srcRepo.recordedAnswersAt(m.marketId, at), call, out, outDb, mode: "backtest",
+    holdRate: (d, t) => holdTable.estimate(d, t),
   });
   results.push(r);
   console.log(`${r.slug}  ${r.outcome.padEnd(4)}  dec ${String(r.decisions).padStart(3)} (rec ${r.recordedHits}, cache ${r.cacheHits}, jev ${r.jevCalls}) appr ${String(r.approved).padStart(3)}  orders ${String(r.orders).padStart(3)} fills ${String(r.fills).padStart(3)} part ${String(r.partials).padStart(2)} miss ${String(r.noFills).padStart(3)}  merges ${r.merges}  pos UP ${r.finalPosition.upShares}/DOWN ${r.finalPosition.downShares}  net ${r.netPnl.toFixed(3)}`);

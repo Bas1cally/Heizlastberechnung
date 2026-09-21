@@ -167,7 +167,8 @@ describe("buildJevState", () => {
     expect(s.inventory.pnlIfDown).toBe(-492.5);
     expect(s.dataQuality).toEqual({ chainlinkAgeMs: 120, bookAgeMs: 40 });
     const flat = JSON.stringify(s);
-    expect(flat).not.toContain("null");
+    // The only permitted null is the hold-rate feature before enough markets exist.
+    expect(flat.replace('"leadHeldRate":null', "")).not.toContain("null");
     expect(flat).not.toContain("NaN");
   });
 

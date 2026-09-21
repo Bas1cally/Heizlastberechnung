@@ -14,6 +14,7 @@ import { loadConfig } from "../src/app/config.js";
 import { openDatabase } from "../src/persistence/database.js";
 import { DecisionRepository } from "../src/persistence/repositories/decisions.js";
 import { createJevCall } from "../src/jev/client.js";
+import { buildHoldRateTable } from "../src/analytics/hold-rate.js";
 import { loadMarketIdentity, loadReplayEvents, replayMarket } from "../src/replay/replay-engine.js";
 
 loadEnvFile();
@@ -38,9 +39,10 @@ for (const id of ids) {
   const identity = loadMarketIdentity(src, id);
   if (!identity) continue;
   const events = loadReplayEvents(src, id);
+  const holdTable = buildHoldRateTable(src, identity.openedAtMs); // causal: only markets already over
   const r = await replayMarket({
     identity, events, limits: cfg.limits, heartbeatMs: cfg.jev.heartbeatMs, minIntervalMs: cfg.jev.minIntervalMs,
-    cached: (h) => srcRepo.cachedAnswers(h), recorded: (at) => srcRepo.recordedAnswersAt(id, at), call, freshJev: flag("fresh-jev"), out,
+    cached: (h) => srcRepo.cachedAnswers(h), recorded: (at) => srcRepo.recordedAnswersAt(id, at), call, freshJev: flag("fresh-jev"), out, holdRate: (d, t) => holdTable.estimate(d, t),
   });
   totals = { events: totals.events + r.events, decisions: totals.decisions + r.decisions, cacheHits: totals.cacheHits + r.cacheHits, recordedHits: totals.recordedHits + r.recordedHits, jevCalls: totals.jevCalls + r.jevCalls, skippedNoJev: totals.skippedNoJev + r.skippedNoJev };
   console.log(`${identity.slug}: ${r.events} events -> ${r.decisions} decisions (${r.cacheHits} cached, ${r.recordedHits} recorded, ${r.jevCalls} jev calls, ${r.skippedNoJev} skipped)`);

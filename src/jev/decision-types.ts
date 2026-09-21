@@ -32,6 +32,13 @@ export interface JevInputState {
     readonly spotPrice: number;
     /** (spot - settlementCurrent) / settlementCurrent in bps: where the TWAP is being pulled. */
     readonly spotVsTwapBps: number;
+    /**
+     * Measured base rate: in the recorded markets, the share of the time a
+     * lead of this size with this much time left was still the winning side
+     * at settlement. null when fewer than 20 samples exist for the bucket.
+     */
+    readonly leadHeldRate: number | null;
+    readonly leadHeldSamples: number;
   };
   readonly movement: {
     readonly return1s: number;

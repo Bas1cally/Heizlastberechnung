@@ -12,6 +12,8 @@ import { loadEnvFile } from "../src/app/env.js";
 import { loadConfig } from "../src/app/config.js";
 import { openDatabase } from "../src/persistence/database.js";
 import { loadMarketOutcomes, loadObservations, marketConsistency } from "../src/analytics/observations.js";
+import { buildHoldRateTable, DISTANCE_BUCKETS } from "../src/analytics/hold-rate.js";
+import { TIME_BUCKETS } from "../src/analytics/calibration.js";
 import { brierScore, calibrationByConfidence, calibrationByTime, edgeByPrice, edgeByTime, naiveEdge, toCsv } from "../src/analytics/calibration.js";
 
 loadEnvFile();
@@ -31,6 +33,7 @@ const byTime = edgeByTime(obs);
 const byPrice = edgeByPrice(obs);
 const edges = obs.map(naiveEdge);
 const consistency = marketConsistency(db, Date.now());
+const holdTable = buildHoldRateTable(db, Date.now());
 
 const summary = {
   generatedAt: new Date().toISOString(),
@@ -51,6 +54,7 @@ const summary = {
   edgeByTime: byTime,
   edgeByPrice: byPrice,
   consistency,
+  holdRates: holdTable.toJSON(),
   perMarket: outcomes.map((o) => ({ slug: o.slug, outcome: o.outcome ?? null, source: o.source, decisions: o.decisions, derivedStart: o.derivedStart ?? null, derivedEnd: o.derivedEnd ?? null })),
 };
 
@@ -78,6 +82,12 @@ if (cleanObs.length) {
   console.log("\nnaive edge by time          n   accuracy  executable  ask      jevEdge  pnl/share  win");
   for (const r of edgeByTime(cleanObs)) console.log(`  ${r.bucket.padEnd(12)} ${String(r.n).padStart(6)}   ${fmt(r.accuracy)}   ${String(r.executable).padStart(6)}      ${fmt(r.meanAsk)}   ${fmt(r.meanJevEdge)}   ${fmt(r.meanPnl)}     ${fmt(r.winRate)}`);
 } else console.log("\n(no market with a tape start price yet; the tables above include the recordings with late start prices)");
+console.log(`\nlead held to settlement (base rate Jev receives), ${holdTable.markets} market(s) recorded from the open; cells: held% (n), '-' below 20 samples`);
+console.log("  |lead|       " + TIME_BUCKETS.map((t) => t.label.padStart(10)).join(""));
+for (const d of DISTANCE_BUCKETS) {
+  const cells = TIME_BUCKETS.map((t) => { const e = holdTable.estimate(d.lo === 0 ? 0.5 : d.lo, t.lo === -Infinity ? 1 : t.lo); return (e ? `${(e.rate * 100).toFixed(0)}% (${e.samples})` : "-").padStart(10); });
+  console.log(`  ${d.label.padEnd(12)}${cells.join("")}`);
+}
 console.log("\noutcome cross-check per market   feed  TWAP  spot  market(UPmid)  Jev(last)      start: derived / Jev    first tick +s  last tick -s");
 for (const c of consistency) {
   const o = (x: string | undefined) => (x ?? "-").padEnd(5);

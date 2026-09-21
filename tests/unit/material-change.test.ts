@@ -3,7 +3,7 @@ import { materialChange, timeBucket } from "../../src/jev/material-change.js";
 import type { JevInputState } from "../../src/jev/decision-types.js";
 
 const base: JevInputState = {
-  market: { secondsRemaining: 200, settlementStartPrice: 85000, settlementCurrentPrice: 85001, distanceUsd: 1, distanceBps: 0.12, spotPrice: 85003, spotVsTwapBps: 0.24 },
+  market: { secondsRemaining: 200, settlementStartPrice: 85000, settlementCurrentPrice: 85001, distanceUsd: 1, distanceBps: 0.12, spotPrice: 85003, spotVsTwapBps: 0.24, leadHeldRate: null, leadHeldSamples: 0 },
   movement: { return1s: 0, return3s: 0, return5s: 0, return10s: 0, return30s: 0, realizedVol5s: 0, realizedVol10s: 0, realizedVol30s: 0 },
   orderbook: { upBid: 0.45, upAsk: 0.46, downBid: 0.54, downAsk: 0.55, upDepth: 1000, downDepth: 1000, pairAskCost: 1.01, pairExecutableQty: 100, pairEdge: -0.01, upSpread: 0.01, downSpread: 0.01, imbalanceUp: 0, imbalanceDown: 0 },
   inventory: { upShares: 0, downShares: 0, avgUpEntry: 0, avgDownEntry: 0, pairedShares: 0, unpairedUpShares: 0, unpairedDownShares: 0, pnlIfUp: 0, pnlIfDown: 0, guaranteedPairPnl: 0 },

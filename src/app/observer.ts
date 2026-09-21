@@ -39,6 +39,8 @@ export interface ObserverDeps {
    * discovery took - and wrong by however far BTC moved meanwhile.
    */
   readonly settlementStart?: SettlementStart | Promise<SettlementStart | undefined> | undefined;
+  /** Empirical hold-rate lookup for the Jev state (analytics/hold-rate.ts). */
+  readonly holdRate?: ((distanceBps: number, secondsRemaining: number) => { rate: number; samples: number } | undefined) | undefined;
   readonly repo: DecisionRepository;
   readonly display?: (line: string) => void;
   /** Execution mode handed to the risk gate. "none" in observe. */
@@ -322,6 +324,7 @@ export class MarketObserver {
       chainlinkAgeMs: this.settlementAgeMs(),
       bookAgeMs: this.books.ageMs(),
       pairQty: cfg.limits.maxOrderSizeShares,
+      holdRate: this.deps.holdRate,
     });
 
     // Only a material change earns a request (brief §10). Everything else

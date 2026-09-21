@@ -13,6 +13,8 @@ export interface StateBuilderInput {
   /** Size the pair cost is evaluated at. */
   readonly pairQty: number;
   readonly feePerSet?: number;
+  /** Empirical hold rate lookup (analytics/hold-rate.ts); absent means the feature is null. */
+  readonly holdRate?: ((distanceBps: number, secondsRemaining: number) => { rate: number; samples: number } | undefined) | undefined;
 }
 
 const r = (n: number, d = 6) => (Number.isFinite(n) ? Number(n.toFixed(d)) : 0);
@@ -37,6 +39,7 @@ export function buildJevState(input: StateBuilderInput): JevInputState {
   const start = state.settlementStartPrice ?? 0;
   const current = state.settlementCurrentPrice ?? start;
   const spot = state.spotPrice ?? current;
+  const held = input.holdRate?.(distanceBps(start, current), state.secondsRemaining);
 
   return {
     market: {
@@ -47,6 +50,8 @@ export function buildJevState(input: StateBuilderInput): JevInputState {
       distanceBps: r(distanceBps(start, current), 2),
       spotPrice: r(spot, 2),
       spotVsTwapBps: r(distanceBps(current, spot), 2),
+      leadHeldRate: held ? r(held.rate, 3) : null,
+      leadHeldSamples: held?.samples ?? 0,
     },
     movement: {
       return1s: r(returnBps(prices, 1_000), 2),

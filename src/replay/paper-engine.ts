@@ -41,6 +41,8 @@ export interface PaperOptions {
   readonly seed: number;
   readonly mergeGas: number;
   readonly cached: (inputHash: string) => { answers: string; model: string; latencyMs: number } | undefined;
+  /** Empirical hold-rate lookup; a replay should pass one built from markets that closed before this one. */
+  readonly holdRate?: ((distanceBps: number, secondsRemaining: number) => { rate: number; samples: number } | undefined) | undefined;
   /** Fallback when the hash misses: the decision recorded on this market nearest in time (see DecisionRepository.recordedAnswersAt). */
   readonly recorded?: (atMs: number) => { answers: string; model: string; latencyMs: number; decisionId: string } | undefined;
   readonly call: JevCall | undefined;
@@ -159,7 +161,7 @@ export async function paperMarket(o: PaperOptions): Promise<PaperMarketResult> {
     if (!snap.upBook || !snap.downBook || snap.settlementCurrentPrice === undefined) continue;
     if (ev.atMs - lastSubmitAt < o.minIntervalMs) continue;
 
-    const state = buildJevState({ state: snap, prices, chainlinkAgeMs: ev.atMs - lastTickAt, bookAgeMs: ev.atMs - lastBookAt, pairQty: o.limits.maxOrderSizeShares });
+    const state = buildJevState({ state: snap, prices, chainlinkAgeMs: ev.atMs - lastTickAt, bookAgeMs: ev.atMs - lastBookAt, pairQty: o.limits.maxOrderSizeShares, holdRate: o.holdRate });
     const reason = materialChange(lastJev, state, ev.atMs - lastSubmitAt, { ...DEFAULT_MATERIAL, heartbeatMs: o.heartbeatMs });
     if (!reason) continue;
     lastJev = state;

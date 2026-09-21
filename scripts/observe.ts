@@ -23,6 +23,7 @@ import { chainlinkSubscribe, chainlinkTwapSubscribe, marketSubscribe, type Realt
 import { MarketObserver } from "../src/app/observer.js";
 import { PriceTape } from "../src/feeds/price-tape.js";
 import { createUpdateCheck, EXIT_UPDATE } from "../src/app/self-update.js";
+import { buildHoldRateTable, type HoldRateTable } from "../src/analytics/hold-rate.js";
 
 loadEnvFile();
 const cfg = loadConfig();
@@ -55,6 +56,13 @@ tape.start();
 // Between markets: is there a newer commit? Under `pnpm auto` the bot then
 // exits with code 75 and is restarted on the new version; standalone it only says so.
 const updateCheck = createUpdateCheck();
+// Measured base rates for Jev (analytics/hold-rate.ts), rebuilt from the
+// database before each market so every market that is over counts.
+let holdTable: HoldRateTable | undefined;
+const refreshHoldTable = () => {
+  try { holdTable = buildHoldRateTable(db, clock.wall()); log.info("hold-rate table", { markets: holdTable.markets, cells: holdTable.toJSON().cells.length }); }
+  catch (err) { log.warn("hold-rate table failed; feature stays null", { err }); }
+};
 const maybeRestartForUpdate = async () => {
   const u = updateCheck(clock.mono());
   if (u.error) log.debug("update check failed", { error: u.error });
@@ -69,7 +77,8 @@ const maybeRestartForUpdate = async () => {
 // lands (the TWAP stream can lag the open by several seconds).
 const startPriceFor = (openedAtMs: number) => tape.waitForStart(openedAtMs, 12_000)
   .then((s) => (s.twap ? { price: s.twap.price, ts: s.twap.ts, source: `chainlink-twap${cfg.chainlinkTwapSeconds}` } : undefined));
-const repo = new DecisionRepository(openDatabase(cfg.databaseUrl));
+const db = openDatabase(cfg.databaseUrl);
+const repo = new DecisionRepository(db);
 const jevCall = createJevCall({ apiKey: cfg.typesafeApiKey, model: cfg.typesafeModel, timeoutMs: 5_000 });
 
 log.info("observer starting", { mode: cfg.mode, liveTradingEnabled: cfg.liveTradingEnabled, db: cfg.databaseUrl, model: cfg.typesafeModel ?? "jev-latest" });
@@ -96,6 +105,7 @@ process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
 while (!shuttingDown) {
   await maybeRestartForUpdate();
+  refreshHoldTable();
   const now = clock.wall();
   // A transport error here (a Gamma timeout, a DNS hiccup) is not a reason
   // to exit: log it, record it, wait, try again.
@@ -126,7 +136,8 @@ while (!shuttingDown) {
       marketSubscribe: marketSubscribe(client as unknown as RealtimeClientLike),
       chainlinkSubscribe: chainlinkSubscribe(client as unknown as RealtimeClientLike),
       chainlinkTwapSubscribe: chainlinkTwapSubscribe(client as unknown as RealtimeClientLike, cfg.chainlinkTwapSeconds),
-      settlementStart: startPriceFor(market.openedAtMs) },
+      settlementStart: startPriceFor(market.openedAtMs),
+      holdRate: (d, t) => holdTable?.estimate(d, t) },
     market,
   );
   try {
