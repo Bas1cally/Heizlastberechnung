@@ -27,6 +27,7 @@
     "analyze": "tsx scripts/analyze.ts",
     "acceptance": "tsx scripts/acceptance.ts",
     "resolve": "tsx scripts/resolve.ts",
+    "trader": "tsx scripts/trader.ts",
     "summary": "tsx scripts/summary.ts",
     "sync": "tsx scripts/sync.ts",
     "dashboard": "tsx scripts/dashboard.ts",

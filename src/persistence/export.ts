@@ -15,9 +15,10 @@ export function exportCompact(srcPath: string, outPath: string, sinceMs: number)
   const db = new DatabaseSync(srcPath);
   try {
     db.exec(`ATTACH DATABASE '${outPath.replace(/'/g, "''")}' AS out`);
-    const full = ["markets", "jev_requests", "jev_answers", "jev_cache", "orders", "fills", "inventory_snapshots", "merges", "redemptions", "latency_measurements", "shadow_orders", "pnl_snapshots", "control", "errors"];
+    const full = ["markets", "trader_activity", "jev_requests", "jev_answers", "jev_cache", "orders", "fills", "inventory_snapshots", "merges", "redemptions", "latency_measurements", "shadow_orders", "pnl_snapshots", "control", "errors"];
     const tables: Record<string, number> = {};
     for (const t of full) {
+      if (t === "trader_activity" && !(db.prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'trader_activity'`).get())) continue;
       db.exec(`CREATE TABLE out.${t} AS SELECT * FROM main.${t}`);
       tables[t] = (db.prepare(`SELECT COUNT(*) AS n FROM out.${t}`).get() as { n: number }).n;
     }
