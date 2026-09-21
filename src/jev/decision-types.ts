@@ -89,8 +89,10 @@ export interface JevInputState {
      * null when nothing is unpaired.
      */
     readonly hedgePriceCap: number | null;
-    /** Whether the opposite side is currently offered at or below hedgePriceCap. */
+    /** Whether the opposite side is currently offered at or below hedgePriceCap (it can be lifted at once). Late in a market the leader usually has no ask at all; the hedge is then a bid resting at the cap. */
     readonly hedgeAvailable: boolean;
+    /** Orders of ours resting in the book or in flight. A hedge already resting must not be placed again. */
+    readonly openOrders: number;
   };
   readonly dataQuality: {
     readonly chainlinkAgeMs: number;

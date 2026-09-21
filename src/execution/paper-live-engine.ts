@@ -1,6 +1,7 @@
 import type { Db } from "../persistence/database.js";
 import type { MarketIdentity, MarketState } from "../market/market-state.js";
 import type { OrderBook } from "../market/types.js";
+import type { Trade } from "../feeds/polymarket-ws.js";
 import { applyFill, computeInventory, EMPTY_POSITION, type Position } from "../inventory/accounting.js";
 import { marketPnl, settle, simulateMerge, type MergeResult } from "../inventory/settlement.js";
 import type { Decision } from "../jev/decision-engine.js";
@@ -16,6 +17,16 @@ import type { RiskLimits } from "../risk/limits.js";
  * configured latency; a resting order is watched until traded through or
  * expired; fills update a simulated position that is fed back into the
  * state; at resolution the position settles at the real outcome.
+ *
+ * Resting bids also fill as a MAKER, from the trades printed on the market
+ * channel: at placement the order joins the queue behind every bid at its
+ * price or better (price-time priority); each taker sell at or through its
+ * price consumes that queue first, whatever is left fills the order. This is
+ * how the reference trader gets his hedges (39 of 40 checked printed while
+ * the side had no ask at all), and it is the only way a paper hedge at
+ * 1.00 minus the tail can fill once the leader's ask side has emptied.
+ * A hedge (`completesSet`) rests until the close: cancelling and
+ * re-placing it would throw away its place in the queue.
  *
  * Nothing here can reach the exchange - there is no client in this module.
  */
@@ -33,7 +44,14 @@ export interface PaperLiveOptions {
 }
 
 interface PendingMarketable { order: OrderIntent; decisionId: string; arriveAtMono: number; version: bigint }
-interface Resting { order: OrderIntent; decisionId: string; placedAtMono: number; expiresAtMono: number; booksSeen: OrderBook[]; version: bigint; id: string }
+interface Resting {
+  order: OrderIntent; decisionId: string; placedAtMono: number; expiresAtMono: number; version: bigint; id: string;
+  /** Books (after the latency) whose ask reached the order's price; enough for the taker-side fill rules. */
+  booksSeen: OrderBook[];
+  /** Shares queued ahead at placement (bids at the order's price or better); undefined until the order is in the book. */
+  queueAhead: number | undefined;
+  filled: number;
+}
 
 export interface PaperLiveSummary {
   readonly orders: number; readonly fills: number; readonly partials: number; readonly noFills: number; readonly cancelled: number; readonly merges: number;
@@ -98,11 +116,40 @@ export class PaperLiveEngine {
     }
     for (let i = this.resting.length - 1; i >= 0; i--) {
       const r = this.resting[i]!;
-      if (r.order.assetId !== book.assetId) continue;
-      if (nowMono >= r.placedAtMono + this.o.latencyMs) r.booksSeen.push(book);
-      // Resolve early when traded through; otherwise wait for TTL.
+      if (r.order.assetId !== book.assetId || nowMono < r.placedAtMono + this.o.latencyMs) continue;
+      if (r.queueAhead === undefined) r.queueAhead = queueAheadOf(r.order, book);
       const ask = book.asks[0]?.price;
+      // Only books whose ask reached the price matter to the taker-side rules; keep those, bounded.
+      if (ask !== undefined && ask <= r.order.price + 1e-12 && r.booksSeen.length < 64) r.booksSeen.push(book);
+      // Resolve early when traded through; otherwise wait for TTL.
       if (ask !== undefined && ask < r.order.price - 1e-12) this.resolveResting(i, nowMono);
+    }
+  }
+
+  /** A match printed on the market channel: taker sells at or through a resting bid's price work through its queue and then fill it. */
+  onTrade(t: Trade, nowMono: number): void {
+    if (t.side !== "SELL" || t.size <= 0) return;
+    for (let i = this.resting.length - 1; i >= 0; i--) {
+      const r = this.resting[i]!;
+      if (r.order.assetId !== t.assetId || nowMono < r.placedAtMono + this.o.latencyMs) continue;
+      if (r.queueAhead === undefined) {
+        const book = this.latest.get(t.assetId);
+        if (!book) continue; // not in the book yet as far as the model knows
+        r.queueAhead = queueAheadOf(r.order, book);
+      }
+      // A sell above our price consumed bids that were ahead of us; one at or below our price reaches us once they are gone.
+      const ahead = r.queueAhead;
+      const consumed = Math.min(ahead, t.size);
+      r.queueAhead = ahead - consumed;
+      if (t.price > r.order.price + 1e-12) continue;
+      const reaching = t.size - consumed;
+      if (reaching <= 0) continue;
+      const qty = Math.min(reaching, r.order.size - r.filled);
+      if (qty <= 0) continue;
+      r.filled += qty;
+      const done = r.order.size - r.filled < 1e-9;
+      if (done) this.resting.splice(i, 1);
+      this.applyFillResult(r.id, r.decisionId, r.order, { status: done ? "FILLED" : "PARTIAL", filledQty: qty, avgPrice: r.order.price, fee: qty * this.o.fill.makerFee, reason: `maker fill: a taker sell of ${t.size} at ${t.price} reached the queue` }, r.version);
     }
   }
 
@@ -113,7 +160,17 @@ export class PaperLiveEngine {
 
   private resolveResting(i: number, _nowMono: number): void {
     const r = this.resting.splice(i, 1)[0]!;
-    this.applyFillResult(r.id, r.decisionId, r.order, fillResting(r.order, r.booksSeen, this.o.fill, this.rand), r.version);
+    const remaining = r.order.size - r.filled;
+    if (remaining <= 1e-9) return;
+    const res = fillResting({ ...r.order, size: remaining }, r.booksSeen, this.o.fill, this.rand);
+    if (res.filledQty <= 0 && r.filled > 0) {
+      // Partly filled by the queue, the rest never reached: the order ends PARTIAL, not NO_FILL.
+      this.o.db.run(`UPDATE orders SET status = 'PARTIAL', updated_ms = ? WHERE order_id = ?`, [this.o.wall(), r.id]);
+      this.o.log("paper fill", { orderId: r.id, side: r.order.side, type: r.order.style.type, price: r.order.price, size: r.order.size, status: "PARTIAL", filled: r.filled, at: r.order.price, reason: res.reason });
+      this.publish();
+      return;
+    }
+    this.applyFillResult(r.id, r.decisionId, r.order, res, r.version);
   }
 
   cancelAll(reason: string): void {
@@ -158,7 +215,9 @@ export class PaperLiveEngine {
         this.pending.push({ order, decisionId: d.decisionId, arriveAtMono: decisionMono + this.o.latencyMs, version: d.stateVersion });
       } else {
         const id = this.record(order, d.decisionId, d.stateVersion, "RESTING");
-        this.resting.push({ order, decisionId: d.decisionId, placedAtMono: decisionMono, expiresAtMono: decisionMono + (order.style.ttlMs ?? 20_000), booksSeen: [], version: d.stateVersion, id });
+        // A hedge keeps its place in the queue until the close; anything else lives for its TTL.
+        const ttl = order.completesSet ? Math.max(order.style.ttlMs ?? 20_000, this.o.market.closesAtMs - this.o.wall()) : (order.style.ttlMs ?? 20_000);
+        this.resting.push({ order, decisionId: d.decisionId, placedAtMono: decisionMono, expiresAtMono: decisionMono + ttl, booksSeen: [], version: d.stateVersion, id, queueAhead: undefined, filled: 0 });
       }
     }
     this.publish();
@@ -187,4 +246,9 @@ export class PaperLiveEngine {
   summary(): PaperLiveSummary {
     return { ...this.counts, merges: this.merges.length, position: this.position, settled: !!this.settled, ...(this.settled ? { outcome: this.settled.outcome, netPnl: this.settled.netPnl } : {}) };
   }
+}
+
+/** Shares queued ahead of a new bid: every bid at its price or better already in the book (price-time priority). */
+export function queueAheadOf(order: OrderIntent, book: OrderBook): number {
+  return book.bids.filter((l) => l.price >= order.price - 1e-12).reduce((s, l) => s + l.size, 0);
 }

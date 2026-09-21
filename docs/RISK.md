@@ -36,6 +36,13 @@ judgment's confidence. Hedges need no edge (a set at or under 1.00 costs
 nothing); opening a set outright needs it to cost at most 0.99. Without a
 measurement for the bucket the rule does not apply.
 
+A tail at or under `maxFreeTailPrice` (0.05) is exempt: its downside is
+its price, held by the unpaired-exposure limit, and the hedge that makes it
+free is a bid resting at 1.00 minus the tail, not something that has to be
+on the book at the moment of the buy (late in a market the leader has no
+ask at all; the reference trader's hedges were maker fills, 39 of 40
+checked).
+
 ## Defaults
 
 In `src/risk/limits.ts`, deliberately small: 100 USD per market, 250 total,

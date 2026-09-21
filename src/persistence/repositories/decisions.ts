@@ -78,6 +78,11 @@ export class DecisionRepository {
     this.db.run(`INSERT INTO ticks (market_id, source, ts_ms, received_at_ms, price) VALUES (?,?,?,?,?)`, [marketId, source, tsMs, receivedAtMs, price]);
   }
 
+  /** A match from the market channel; `side` is the taker's. */
+  saveTrade(marketId: string, assetId: string, tsMs: number | undefined, receivedAtMs: number, price: number, size: number, side: "BUY" | "SELL"): void {
+    this.db.run(`INSERT INTO trades (market_id, asset_id, ts_ms, received_at_ms, price, size, side) VALUES (?,?,?,?,?,?,?)`, [marketId, assetId, tsMs ?? null, receivedAtMs, price, size, side]);
+  }
+
   saveBook(marketId: string, assetId: string, receivedAtMs: number, bids: unknown, asks: unknown): void {
     this.db.run(`INSERT INTO orderbook_snapshots (market_id, asset_id, received_at_ms, bids_json, asks_json) VALUES (?,?,?,?,?)`,
       [marketId, assetId, receivedAtMs, JSON.stringify(bids), JSON.stringify(asks)]);

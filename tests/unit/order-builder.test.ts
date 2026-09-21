@@ -83,6 +83,14 @@ describe("buildOrders", () => {
     const hedgeNow = buildOrders("ADD_COMPLEMENT", "IMMEDIATE", { ...tail, downBook: book("DOWN", [[0.99, 5000]]) }, { ...limits, tickSize: 0.005 });
     expect(hedgeNow[0]).toMatchObject({ price: 0.99 });
     expect(hedgeNow[0]!.style.type).toBe("FOK");
+    // The measured late-market shape: the leader has no ask at all. The hedge is a GTC bid at the cap, sized by the tail, marked as completing a set.
+    const noAsk = buildOrders("ADD_COMPLEMENT", "IMMEDIATE", { ...tail, downBook: normalizeBook({ assetId: "DOWN", bids: [{ price: 0.99, size: 9000 }], asks: [], receivedAtMs: 0 }) }, { ...limits, tickSize: 0.005 });
+    expect(noAsk).toHaveLength(1);
+    expect(noAsk[0]).toMatchObject({ side: "DOWN", price: 0.99, size: 100, completesSet: true });
+    expect(noAsk[0]!.style.type).toBe("GTC");
+    // An uncapped leg has nothing to price against an empty ask side.
+    expect(buildOrders("BUY_DOWN", "IMMEDIATE", { ...state(), downBook: normalizeBook({ assetId: "DOWN", bids: [{ price: 0.99, size: 9000 }], asks: [], receivedAtMs: 0 }) }, limits)).toEqual([]);
+    expect(hedge[0]).toMatchObject({ completesSet: true });
   });
 
   it("caps a plain buy of the opposite side so that the set it completes never costs more than 1.00", () => {

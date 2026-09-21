@@ -28,6 +28,18 @@ CREATE TABLE IF NOT EXISTS ticks (
 );
 CREATE INDEX IF NOT EXISTS ticks_market_ts ON ticks(market_id, ts_ms);
 
+CREATE TABLE IF NOT EXISTS trades (
+  id INTEGER PRIMARY KEY,
+  market_id TEXT NOT NULL,
+  asset_id TEXT NOT NULL,
+  ts_ms INTEGER,
+  received_at_ms INTEGER NOT NULL,
+  price REAL NOT NULL,
+  size REAL NOT NULL,
+  side TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS trades_market_received ON trades(market_id, received_at_ms);
+
 CREATE TABLE IF NOT EXISTS orderbook_snapshots (
   id INTEGER PRIMARY KEY,
   market_id TEXT NOT NULL,

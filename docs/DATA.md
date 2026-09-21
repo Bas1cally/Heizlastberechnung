@@ -29,6 +29,7 @@ spot. Both are recorded so the lag itself is analysable.
 | --- | --- | --- | --- |
 | `markets` | market | discovery, resolution | timing comes from the slug; `resolved_outcome` is the feed's label (`Up`/`Down`) when a resolution event arrived |
 | `ticks` | price update | observer | `source` distinguishes spot and TWAP |
+| `trades` | match on the market channel | observer | `last_trade_price` events: price, size, `side` (the taker's, an assumption the bindings do not settle; a SELL consumed bids), server `ts_ms` when present; the paper engine's maker-fill queue runs on these |
 | `orderbook_snapshots` | asset x 500 ms | observer | top 10 levels each side, always re-sorted (bids descending, asks ascending); the feed changes hundreds of times a second, one snapshot per asset per 500 ms is kept |
 | `jev_requests` | Jev call | decision engine | full input state (`state_json`), `state_version` (material), `raw_state_version`, `material_reason`, tokens, latency |
 | `jev_answers` | Jev call | risk gate | full answer distributions, requested action, verdict and reason |

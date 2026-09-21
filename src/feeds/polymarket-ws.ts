@@ -30,11 +30,37 @@ export interface PriceChangeEvent {
     readonly timestamp?: number | null;
   };
 }
+/**
+ * A match printed on the market channel. `side` is taken to be the taker's
+ * side (a SELL consumed bids at `price`), which is standard CLOB semantics
+ * for last-trade messages; the bindings do not say. Verified indirectly: the
+ * reference trader's 0.99 hedges (39 of 40 checked) printed while that side
+ * had no ask at all, so they were maker fills against sellers.
+ */
+export interface LastTradeEvent {
+  readonly type: "last_trade_price";
+  readonly payload: {
+    readonly assetId: string;
+    readonly price: string | number;
+    readonly size?: string | number | null;
+    readonly side: "BUY" | "SELL";
+    readonly timestamp?: number | null;
+  };
+}
+export interface Trade {
+  readonly assetId: string;
+  readonly price: number;
+  readonly size: number;
+  /** Taker side. */
+  readonly side: "BUY" | "SELL";
+  /** Server timestamp when present, else local receive time (wall clock is the caller's business; this is the feed's `now`). */
+  readonly tsMs: number | undefined;
+}
 export interface ResolvedEvent {
   readonly type: "market_resolved";
   readonly payload: { readonly conditionId: string; readonly winningAssetId?: string | null; readonly winningOutcome?: string | null };
 }
-export type MarketWsEvent = BookEvent | PriceChangeEvent | ResolvedEvent | { readonly type: string; readonly payload?: unknown };
+export type MarketWsEvent = BookEvent | PriceChangeEvent | LastTradeEvent | ResolvedEvent | { readonly type: string; readonly payload?: unknown };
 
 export interface SubscriptionLike<T> extends AsyncIterable<T> {
   close(): Promise<void>;
@@ -46,6 +72,8 @@ export interface BookFeedHandlers {
   /** Server timestamp (ms precision) seen on a market event, for clock drift. */
   onServerTime?(serverMs: number): void;
   onResolved?(ev: ResolvedEvent["payload"]): void;
+  /** A match on one of the subscribed assets. */
+  onTrade?(trade: Trade): void;
   onReconnect?(attempt: number): void;
 }
 
@@ -143,6 +171,13 @@ export class BookFeed {
           touched.add(c.assetId);
         }
         for (const id of touched) this.opts.handlers.onBook(this.books.get(id)!);
+        return;
+      }
+      case "last_trade_price": {
+        const p = (ev as LastTradeEvent).payload;
+        const price = Number(p.price), size = Number(p.size ?? Number.NaN);
+        if (!Number.isFinite(price) || !Number.isFinite(size) || size <= 0 || (p.side !== "BUY" && p.side !== "SELL")) return;
+        this.opts.handlers.onTrade?.({ assetId: p.assetId, price, size, side: p.side, tsMs: typeof p.timestamp === "number" ? p.timestamp : undefined });
         return;
       }
       case "market_resolved":

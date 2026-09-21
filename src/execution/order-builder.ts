@@ -14,6 +14,8 @@ export interface OrderIntent {
   readonly style: OrderStyle;
   /** Why this size: the binding constraint. */
   readonly sizedBy: "max_order" | "depth" | "complement" | "pair" | "risk";
+  /** This leg pairs unpaired inventory into sets (a hedge). Engines keep such a bid resting until the close: re-placing it forfeits its queue position. */
+  readonly completesSet?: boolean;
 }
 
 export interface SizingLimits {
@@ -56,15 +58,19 @@ export function buildOrders(
   const leg = (side: "UP" | "DOWN", target: number, sizedBy: OrderIntent["sizedBy"], priceCap?: number): OrderIntent | undefined => {
     const book = side === "UP" ? state.upBook! : state.downBook!;
     const touch = bestAsk(book);
-    if (touch === undefined) return undefined;
-    let price = Math.min(0.999, Math.max(0.001, roundTick(touch + style.aggressionTicks * limits.tickSize, limits.tickSize)));
+    // No ask at all (the usual shape of the leader's book late in a market):
+    // only a capped leg can be priced, as a bid resting at its cap.
+    if (touch === undefined && priceCap === undefined) return undefined;
+    let price = touch === undefined ? 1 : Math.min(0.999, Math.max(0.001, roundTick(touch + style.aggressionTicks * limits.tickSize, limits.tickSize)));
     // A hedge above its cap would pay more than 1.00 for the pair: rest at the cap instead of crossing.
     if (priceCap !== undefined) {
       const cap = Math.floor(priceCap / limits.tickSize + 1e-9) * limits.tickSize;
       if (cap < limits.tickSize) return undefined;
       price = Math.min(price, Number(cap.toFixed(6)));
     }
-    const byDepth = price < touch - 1e-12 ? depth(book.asks) : obtainable(book, price);
+    const resting = touch === undefined || price < touch - 1e-12;
+    // A marketable leg takes what is offered at or under its price; a resting bid takes nothing from the ask side, so depth does not size it.
+    const byDepth = resting ? Number.POSITIVE_INFINITY : obtainable(book, price);
     const byRisk = price > 0 ? limits.riskAllowanceUsd / price : 0;
     const candidates: [number, OrderIntent["sizedBy"]][] = [
       [limits.maxOrderSizeShares, "max_order"], [target, sizedBy], [byDepth, "depth"], [byRisk, "risk"],
@@ -73,8 +79,8 @@ export function buildOrders(
     const rounded = Math.floor(size);
     if (rounded < limits.minOrderSize) return undefined;
     // Resting below the touch is a GTC bid whatever the urgency said: FOK/FAK at a price nobody offers fills nothing.
-    const effectiveStyle = price < touch - 1e-12 && (style.type === "FOK" || style.type === "FAK") ? { ...style, type: "GTC" as const, ttlMs: style.ttlMs ?? 20_000 } : style;
-    return { side, assetId: side === "UP" ? state.identity.upAssetId : state.identity.downAssetId, price: Number(price.toFixed(4)), size: rounded, style: effectiveStyle, sizedBy: by };
+    const effectiveStyle = resting && (style.type === "FOK" || style.type === "FAK") ? { ...style, type: "GTC" as const, ttlMs: style.ttlMs ?? 20_000 } : style;
+    return { side, assetId: side === "UP" ? state.identity.upAssetId : state.identity.downAssetId, price: Number(price.toFixed(4)), size: rounded, style: effectiveStyle, sizedBy: by, ...(priceCap !== undefined && sizedBy !== "pair" ? { completesSet: true } : {}) };
   };
 
   const inv = state.inventory;

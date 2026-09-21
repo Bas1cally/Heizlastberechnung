@@ -47,8 +47,6 @@ export interface RiskContext {
    */
   readonly buyPrice?: number | undefined;
   readonly measuredWinProbability?: number | undefined;
-  /** True when the opposite side is offered at no more than 1.00 minus buyPrice: the buy could be paired at no cost. */
-  readonly hedgeOnBook?: boolean | undefined;
 
   readonly secondsRemaining: number;
   readonly chainlinkAgeMs: number;
@@ -136,7 +134,10 @@ export function evaluateRisk(ctx: RiskContext, limits: RiskLimits): RiskVerdict 
   // trade however confident the judgment behind it.
   // A tail of a few cents with its hedge on the book is a free option (the set
   // can be completed at no more than 1.00), so it needs no edge of its own.
-  const freeOption = ctx.buyPrice !== undefined && ctx.buyPrice <= limits.maxFreeTailPrice && ctx.hedgeOnBook === true;
+  // A tail at a few cents is a bounded option, not a bet: the downside is its
+  // price (held by the unpaired-exposure limit), the hedge that makes it free
+  // is a bid resting at 1.00 minus the tail, filled by holders selling out.
+  const freeOption = ctx.buyPrice !== undefined && ctx.buyPrice <= limits.maxFreeTailPrice + 1e-9;
   if ((ctx.action === "BUY_UP" || ctx.action === "BUY_DOWN") && !freeOption && ctx.buyPrice !== undefined && ctx.measuredWinProbability !== undefined
     && ctx.buyPrice > ctx.measuredWinProbability - limits.minMeasuredEdge + 1e-9) {
     return reject("NO_MEASURED_EDGE");

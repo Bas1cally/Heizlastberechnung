@@ -171,6 +171,7 @@ while (!shuttingDown) {
       onKill: (state) => { mlog.error("kill: cancelling resting paper orders, no new ones", { reasons: state.reasons }); engine.kill(); },
       onKillCleared: () => { mlog.warn("kill cleared: paper orders may be built again"); engine.resume(); },
       onBookUpdate: (book, nowMono) => engine.onBook(book, nowMono),
+      onTrade: (t, nowMono) => engine.onTrade(t, nowMono),
       onApproved: (d, snap, decisionMono) => engine.onApproved(d, snap, decisionMono),
       onResolved: (outcome) => {
         if (!outcome) return;

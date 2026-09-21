@@ -96,6 +96,7 @@ export function buildJevState(input: StateBuilderInput): JevInputState {
       guaranteedPairPnl: r(state.inventory.guaranteedPairPnl, 2),
       hedgePriceCap: hedgeCap === null ? null : r(hedgeCap, 4),
       hedgeAvailable: hedgeCap !== null && hedgeAsk !== undefined && hedgeAsk <= hedgeCap + 1e-9,
+      openOrders: state.openOrderCount,
     },
     dataQuality: {
       chainlinkAgeMs: Math.round(Number.isFinite(input.chainlinkAgeMs) ? input.chainlinkAgeMs : 1e9),

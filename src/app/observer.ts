@@ -1,7 +1,7 @@
 import type { AppConfig } from "./config.js";
 import type { Logger } from "../observability/logger.js";
 import type { Clock } from "../feeds/clock.js";
-import { BookFeed, type SubscribeFn } from "../feeds/polymarket-ws.js";
+import { BookFeed, type SubscribeFn, type Trade } from "../feeds/polymarket-ws.js";
 import { ChainlinkFeed, type ChainlinkSubscribeFn } from "../feeds/chainlink-feed.js";
 import { MarketStateStore, type MarketIdentity, type MarketState } from "../market/market-state.js";
 import type { OrderBook } from "../market/types.js";
@@ -51,6 +51,8 @@ export interface ObserverDeps {
   readonly onApproved?: (decision: Decision, snapshot: MarketState, decisionMono: number) => void | Promise<void>;
   /** Called with every normalised book update (for engines that track post-decision book movement). */
   readonly onBookUpdate?: (book: OrderBook, nowMono: number) => void;
+  /** Called with every match printed on the market channel (the paper engine's maker-fill queue runs on these). */
+  readonly onTrade?: (trade: Trade, nowMono: number) => void;
   /** Label for the heartbeat the dashboard shows ("observer", "shadow"). */
   readonly processName?: string;
   /** Called when the kill switch trips: cancel resting orders, reconcile. Never liquidate. */
@@ -194,6 +196,10 @@ export class MarketObserver {
           const outcome = k === "up" || k === "yes" ? "UP" : k === "down" || k === "no" ? "DOWN"
             : p.winningAssetId === market.upAssetId ? "UP" : p.winningAssetId === market.downAssetId ? "DOWN" : undefined;
           deps.onResolved?.(outcome, p);
+        },
+        onTrade: (t) => {
+          this.persist("trade", () => deps.repo.saveTrade(market.marketId, t.assetId, t.tsMs, clock.wall(), t.price, t.size, t.side));
+          deps.onTrade?.(t, clock.mono());
         },
         onReconnect: (n) => log.warn("market feed reconnected", { attempt: n }),
       },
@@ -373,9 +379,7 @@ export class MarketObserver {
       const book = side === "UP" ? snap.upBook : snap.downBook;
       const ask = book ? bestAsk(book) : undefined;
       if (ask === undefined) return {};
-      const otherAsk = bestAsk(side === "UP" ? snap.downBook! : snap.upBook!);
-      const hedgeOnBook = otherAsk !== undefined && otherAsk <= 1 - ask + 1e-9;
-      return { buyPrice: ask, measuredWinProbability: side === leader ? held.rate : 1 - held.rate, hedgeOnBook };
+      return { buyPrice: ask, measuredWinProbability: side === leader ? held.rate : 1 - held.rate };
     })();
     const verdict: RiskVerdict = killed.tripped && !["HOLD", "ABSTAIN"].includes(d.requestedAction)
       ? { result: "REJECTED", reason: "KILL_SWITCH" }

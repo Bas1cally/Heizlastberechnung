@@ -10,7 +10,7 @@ const base: JevInputState = {
   market: { secondsRemaining: 60, settlementStartPrice: 85000, settlementCurrentPrice: 84990, distanceUsd: -10, distanceBps: -1.2, spotPrice: 84988, spotVsTwapBps: -0.2, leadHeldRate: 0.97, leadHeldSamples: 200 },
   movement: { return1s: 0, return3s: 0, return5s: 0, return10s: 0, return30s: 0, realizedVol5s: 0, realizedVol10s: 0, realizedVol30s: 0 },
   orderbook: { upBid: 0.0, upAsk: 0.01, downBid: 0.97, downAsk: 0.98, upDepth: 5000, downDepth: 400, pairAskCost: 0.99, pairExecutableQty: 400, pairEdge: 0.01, upSpread: 0.01, downSpread: 0.01, imbalanceUp: 0, imbalanceDown: 0, leader: "DOWN", leaderAsk: 0.98, leaderAskDepth: 400, tailAsk: 0.01, tailAskDepth: 5000 },
-  inventory: { upShares: 0, downShares: 0, avgUpEntry: 0, avgDownEntry: 0, pairedShares: 0, unpairedUpShares: 0, unpairedDownShares: 0, pnlIfUp: 0, pnlIfDown: 0, guaranteedPairPnl: 0, hedgePriceCap: null, hedgeAvailable: false },
+  inventory: { upShares: 0, downShares: 0, avgUpEntry: 0, avgDownEntry: 0, pairedShares: 0, unpairedUpShares: 0, unpairedDownShares: 0, pnlIfUp: 0, pnlIfDown: 0, guaranteedPairPnl: 0, hedgePriceCap: null, hedgeAvailable: false, openOrders: 0 },
   dataQuality: { chainlinkAgeMs: 100, bookAgeMs: 20 },
 };
 const st = (over: { market?: Partial<JevInputState["market"]>; orderbook?: Partial<JevInputState["orderbook"]>; inventory?: Partial<JevInputState["inventory"]> }): JevInputState => ({
@@ -20,11 +20,13 @@ const plain = { variant: "plain" as const };
 const plus = { variant: "plus" as const };
 
 describe("animalPolicy: flat", () => {
-  it("buys the tail inside the window when it is cheap and the leader is offered under 1 - tail", () => {
+  it("buys the tail inside the window when it is cheap, whether or not the leader is offered", () => {
     const d = animalPolicy(base, plain);
     expect(d.action).toBe("BUY_UP");
     expect(d.inventory).toBe("ADD_UP");
     expect(d.urgency).toBe("NORMAL");
+    // The measured case: the leader's ask side is empty (recorded as 1.00, depth 0). The hedge will be a resting bid.
+    expect(animalPolicy(st({ orderbook: { leaderAsk: 1, leaderAskDepth: 0 } }), plain).action).toBe("BUY_UP");
   });
 
   it("buys the other tail when UP leads", () => {
@@ -33,12 +35,11 @@ describe("animalPolicy: flat", () => {
     expect(d.inventory).toBe("ADD_DOWN");
   });
 
-  it("holds outside the window, when the tail is not cheap, and when no hedge is on the book", () => {
-    expect(animalPolicy(st({ market: { secondsRemaining: 200 } }), plain).action).toBe("HOLD");
-    expect(animalPolicy(st({ orderbook: { tailAsk: 0.03 } }), plain).action).toBe("HOLD");
-    // leader at 0.995 with the tail at 0.01 makes a set cost 1.005: no free option.
-    expect(animalPolicy(st({ orderbook: { leaderAsk: 0.995 } }), plain).why).toBe("no hedge on the book");
-    expect(animalPolicy(st({ orderbook: { leaderAskDepth: 0 } }), plain).action).toBe("HOLD");
+  it("holds outside the window, when the tail is not cheap or has no depth, and while a tail order is in flight", () => {
+    expect(animalPolicy(st({ market: { secondsRemaining: 200 } }), plain).why).toBe("outside the window");
+    expect(animalPolicy(st({ orderbook: { tailAsk: 0.03 } }), plain).why).toBe("tail not cheap");
+    expect(animalPolicy(st({ orderbook: { tailAskDepth: 0 } }), plain).action).toBe("HOLD");
+    expect(animalPolicy(st({ inventory: { openOrders: 1 } }), plain).why).toBe("tail order in flight");
   });
 
   it("initiates nothing in the last seconds or without a leader", () => {
@@ -57,37 +58,35 @@ describe("animalPolicy: flat", () => {
     // No measurement: window only.
     expect(animalPolicy(st({ market: { secondsRemaining: 200, leadHeldRate: null } }), plus).action).toBe("HOLD");
   });
-
-  it("plus: needs real hedge depth before buying a tail", () => {
-    expect(animalPolicy(st({ orderbook: { leaderAskDepth: 5 } }), plus).action).toBe("HOLD");
-    expect(animalPolicy(st({ orderbook: { leaderAskDepth: 5 } }), plain).action).toBe("BUY_UP");
-  });
 });
 
 describe("animalPolicy: with inventory", () => {
-  const unpaired = st({ inventory: { upShares: 100, unpairedUpShares: 100, avgUpEntry: 0.01, hedgePriceCap: 0.99, hedgeAvailable: true } });
+  const unpaired = st({ inventory: { upShares: 100, unpairedUpShares: 100, avgUpEntry: 0.01, hedgePriceCap: 0.99, hedgeAvailable: false } });
 
-  it("hedges an unpaired tail immediately when the leader is offered under the cap", () => {
+  it("asks for the hedge at once, offered or not: the builder rests it at the cap", () => {
     const d = animalPolicy(unpaired, plain);
     expect(d.action).toBe("ADD_COMPLEMENT");
     expect(d.inventory).toBe("PAIR");
     expect(d.urgency).toBe("IMMEDIATE");
+    expect(d.why).toMatch(/rest the hedge bid/);
+    expect(animalPolicy(st({ inventory: { ...unpaired.inventory, hedgeAvailable: true } }), plain).why).toMatch(/take it/);
   });
 
-  it("holds the unpaired tail while the hedge is not offered under the cap", () => {
-    const d = animalPolicy(st({ inventory: { ...unpaired.inventory, hedgeAvailable: false } }), plain);
+  it("holds while the hedge bid rests instead of placing it again", () => {
+    const d = animalPolicy(st({ inventory: { ...unpaired.inventory, openOrders: 1 } }), plain);
     expect(d.action).toBe("HOLD");
-    expect(d.inventory).toBe("NONE");
+    expect(d.why).toBe("hedge bid resting");
   });
 
-  it("plus: keeps the option open while spot is on the tail's side and there is time, hedges once time runs out", () => {
+  it("plus: pulls the hedge bid while spot is on the tail's side and there is time, bids once time runs out", () => {
     // UP tail held; spot above the start price means the reversal is under way.
-    const reversing = st({ ...unpaired, market: { spotPrice: 85010 } });
-    expect(animalPolicy({ ...reversing, inventory: unpaired.inventory }, plus).action).toBe("HOLD");
-    expect(animalPolicy({ ...reversing, inventory: unpaired.inventory }, plain).action).toBe("ADD_COMPLEMENT");
+    const reversing = st({ market: { spotPrice: 85010 }, inventory: unpaired.inventory });
+    expect(animalPolicy(reversing, plus).action).toBe("HOLD");
+    expect(animalPolicy(reversing, plain).action).toBe("ADD_COMPLEMENT");
+    expect(animalPolicy(st({ market: { spotPrice: 85010 }, inventory: { ...unpaired.inventory, openOrders: 1 } }), plus).action).toBe("CANCEL");
     const late = st({ market: { spotPrice: 85010, secondsRemaining: 10 }, inventory: unpaired.inventory });
     expect(animalPolicy(late, plus).action).toBe("ADD_COMPLEMENT");
-    // Spot back on the leader's side: hedge now.
+    // Spot back on the leader's side: bid now.
     expect(animalPolicy(st({ market: { spotPrice: 84980 }, inventory: unpaired.inventory }), plus).action).toBe("ADD_COMPLEMENT");
   });
 

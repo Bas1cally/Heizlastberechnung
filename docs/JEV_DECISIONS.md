@@ -149,6 +149,45 @@ at the cap when the leader asks more; the state carries `leader`,
 and `hedgeAvailable`; the action question explains the economics. Jev still
 chooses when to buy the tail and when to hedge; nothing here is a rule.
 
+## How the hedge really fills (measured 2026-09-21, first benchmark market)
+
+The first benchmark market showed the copy holding for its whole window:
+the tail was 0.01 from 65 s before the close, but the leader's ask side was
+empty (recorded as 1.00 with depth 0) from the same moment, and the copy
+only bought a tail with a hedge lifted at once. Cross-checking the
+trader's 40 most recent 0.99 buys against our book snapshots at the same
+second: 39 printed while that side had **no ask at all**. His hedge is a
+bid resting at 0.99, filled in pieces (5, 10, 100, 307 shares) by holders
+of the leader selling out. The 0.99 bid queue on that side grew from 8.7k
+to 90k shares over the last 80 s of the market; price-time priority is
+what decides whether such a bid fills before the close.
+
+By tail timing (1,581 settled markets), hedge rate and net:
+
+| tail bought | markets | hedged | net USD |
+| --- | --- | --- | --- |
+| 0-30 s before close | 289 | 74% | +604 |
+| 30-60 s | 655 | 74% | +1,120 |
+| 60-90 s | 557 | 75% | -1,160 |
+| 90-120 s | 331 | 81% | -179 |
+| 120-180 s | 225 | 85% | -505 |
+
+The net difference between the buckets is a handful of large reversal
+wins; the hedge rate barely moves. Not a rule; a reason to keep the window
+as measured (median 64 s) and let the comparison decide.
+
+What changed: the market channel's `last_trade_price` events are recorded
+(`trades` table) and the paper engine fills a resting bid as a maker,
+behind the bids that were at its price or better when it was placed, from
+taker sells at or through its price. The order builder prices a capped
+leg against an empty ask side as a bid at the cap; a hedge rests until the
+close instead of 20 s (re-placing it would forfeit its queue position);
+the Jev state carries `openOrders`; the measured-edge exemption for a tail
+no longer requires the hedge to be offered at that moment. Whether the
+taker-side assumption behind `side` holds is checked on the first synced
+export: SELL prints at 0.99 on the leader in the last minute, and paper
+hedges filling from them.
+
 ## Benchmark: the mechanical copy runs beside Jev (added 2026-09-21)
 
 `src/jev/policy-animal.ts` plays the measured pattern deterministically and
@@ -160,18 +199,18 @@ The observer, gate, order builder, paper engine and analytics are the same
 code; only the intent source differs, so the comparison is on identical
 markets, identical books, identical fill model.
 
-- `animal`: tail at <= 0.02 inside 110 s of the close when the leader is
-  offered at <= 1 - tail; hedge as soon as it is offered under the cap; merge.
-- `animal-plus`: the copy plus three measured changes. A tail needs at
-  least 20 leader shares on the book (413 of 1,580 markets lost the tail
-  because the leader's ask side had emptied). The hedge waits while spot is
-  on the tail's side of the start price and more than 12 s remain (the 21
-  reversal wins came from tails that were *not* hedged in time). The tail
-  is also taken earlier when `1 - leadHeldRate` exceeds its price by a
-  cent (a 6% reversal rate is worth more than a 0.02 tail).
+- `animal`: tail at <= 0.02 inside 110 s of the close; the hedge bid rests
+  at 1.00 minus the tail at once, until it fills or the market closes;
+  merge.
+- `animal-plus`: the copy plus two measured changes. The hedge bid is
+  pulled while spot is on the tail's side of the start price and more than
+  12 s remain (his 21 large wins were tails that were *not* hedged when the
+  reversal came). The tail is also taken earlier when `1 - leadHeldRate`
+  exceeds its price by a cent (a 6% reversal rate is worth more than a
+  0.02 tail).
 
 What the comparison answers (§45): per market and per day, net PnL, tails
-bought, tails hedged, sets merged, unhedged tails lost, reversal wins, for
+bought, hedges filled, sets merged, unhedged tails lost, reversal wins, for
 `paper` (Jev), `animal` and `animal-plus` on the same markets. If Jev does
 not beat the plain copy after the acceptance stretch, its timing adds
 nothing measurable and the plain copy is the baseline any change must beat.

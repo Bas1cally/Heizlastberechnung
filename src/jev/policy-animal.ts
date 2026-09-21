@@ -4,19 +4,26 @@ import type { JevAnswers, JevInputState } from "./decision-types.js";
 /**
  * A deterministic stand-in for Jev that plays the pattern measured on
  * wallet 0x55aeeb3e (docs/JEV_DECISIONS.md): buy the trailing side while it
- * costs a cent or two, hedge it with the leading side at no more than
- * 1.00 minus the tail's price, merge. It exists as a BENCHMARK for the
- * paper comparison (brief §19, §45): whether Jev's timing adds anything is
- * measurable only against the mechanical version on the same markets.
+ * costs a cent or two, bid for the leading side at 1.00 minus the tail's
+ * price and let holders sell into that bid, merge. It exists as a BENCHMARK
+ * for the paper comparison (brief §19, §45): whether Jev's timing adds
+ * anything is measurable only against the mechanical version on the same
+ * markets.
+ *
+ * Measured, not assumed: late in a market the leader's ask side is empty;
+ * the trader's hedges (39 of 40 checked against our books) were maker fills
+ * of a resting 0.99 bid. So the copy does not wait for a hedge to be
+ * offered: it buys the tail, rests the hedge at the cap at once, and keeps
+ * that bid until the close.
  *
  * Two variants:
- *   plain - the copy: tail as soon as it is cheap inside the window, hedge as
- *           soon as the leader is offered under the cap, merge.
- *   plus  - the copy with three measured improvements: the tail is sized to
- *           the hedge depth actually on the book; the hedge waits while spot
- *           is on the tail's side of the start price (a reversal under way)
- *           and there is still time; and the tail is also taken earlier
- *           when the measured reversal rate exceeds its price.
+ *   plain - the copy: tail as soon as it is cheap inside the window, hedge
+ *           bid at once, merge.
+ *   plus  - the copy with two measured changes: the hedge bid is pulled
+ *           while spot is on the tail's side of the start price (a reversal
+ *           under way, the case that made his 21 large wins) and there is
+ *           still time; and the tail is also taken earlier when the measured
+ *           reversal rate exceeds its price.
  *
  * Nothing here calls the network; the answers have the same shape as Jev's
  * so the observer, gate, engines and analytics treat them identically. The
@@ -32,8 +39,6 @@ export interface AnimalPolicyOptions {
   readonly noNewAfterS?: number;
   /** plus: hedge at the latest with this many seconds left, reversal or not. Default 12. */
   readonly hedgeLatestS?: number;
-  /** plus: fewest leader shares on offer for a tail to be worth holding. Default 20. */
-  readonly minHedgeDepth?: number;
 }
 
 const choice = <T extends string>(c: T, others: readonly T[], confidence = 0.9) => ({
@@ -49,38 +54,41 @@ export interface PolicyDecision { readonly action: (typeof ACTIONS)[number]; rea
 
 /** The policy itself, pure: state in, intent out. */
 export function animalPolicy(s: JevInputState, o: AnimalPolicyOptions): PolicyDecision {
-  const tailWindow = o.tailWindowS ?? 110, tailMax = o.tailMaxPrice ?? 0.02, noNewAfter = o.noNewAfterS ?? 8, hedgeLatest = o.hedgeLatestS ?? 12, minDepth = o.minHedgeDepth ?? 20;
+  const tailWindow = o.tailWindowS ?? 110, tailMax = o.tailMaxPrice ?? 0.02, noNewAfter = o.noNewAfterS ?? 8, hedgeLatest = o.hedgeLatestS ?? 12;
   const { market: m, orderbook: b, inventory: inv } = s;
   const leader = b.leader;
   const unpairedUp = inv.unpairedUpShares, unpairedDown = inv.unpairedDownShares;
 
-  // 1. Something unpaired: hedge it when the leader is offered under the cap.
+  // 1. Something unpaired: the hedge bid rests at the cap (the builder prices it) until it fills or the market closes.
   if (unpairedUp > 0 || unpairedDown > 0) {
-    if (!inv.hedgeAvailable) return { action: "HOLD", inventory: "NONE", urgency: "NORMAL", why: "unpaired, hedge not offered under the cap" };
     if (o.variant === "plus" && m.secondsRemaining > hedgeLatest && m.settlementStartPrice > 0) {
-      // Reversal under way: spot has crossed to the tail's side of the start price. Hold the option a little longer.
+      // Reversal under way: spot has crossed to the tail's side of the start price. Keep the option open: no hedge bid.
       const tailSide = unpairedUp > 0 ? "UP" : "DOWN";
       const spotSide = m.spotPrice >= m.settlementStartPrice ? "UP" : "DOWN";
-      if (spotSide === tailSide) return { action: "HOLD", inventory: "NONE", urgency: "NORMAL", why: "reversal under way: spot on the tail's side of the start" };
+      if (spotSide === tailSide) {
+        return inv.openOrders > 0
+          ? { action: "CANCEL", inventory: "NONE", urgency: "IMMEDIATE", why: "reversal under way: pull the hedge bid, keep the option open" }
+          : { action: "HOLD", inventory: "NONE", urgency: "NORMAL", why: "reversal under way: no hedge bid while spot is on the tail's side" };
+      }
     }
-    return { action: "ADD_COMPLEMENT", inventory: "PAIR", urgency: "IMMEDIATE", why: "hedge the tail at no more than the cap" };
+    if (inv.openOrders > 0) return { action: "HOLD", inventory: "NONE", urgency: "NORMAL", why: "hedge bid resting" };
+    return { action: "ADD_COMPLEMENT", inventory: "PAIR", urgency: "IMMEDIATE", why: inv.hedgeAvailable ? "hedge offered under the cap: take it" : "rest the hedge bid at the cap" };
   }
   // 2. Paired and nothing open: merge, then stay out.
   if (inv.pairedShares > 0) return { action: "HOLD", inventory: "MERGE", urgency: "NORMAL", why: "merge the set" };
   if (inv.upShares > 0 || inv.downShares > 0) return { action: "HOLD", inventory: "NONE", urgency: "NORMAL", why: "position held" };
-  // 3. Flat: buy the tail inside the window while it is cheap and a hedge is on the book.
+  if (inv.openOrders > 0) return { action: "HOLD", inventory: "NONE", urgency: "NORMAL", why: "tail order in flight" };
+  // 3. Flat: buy the tail inside the window while it is cheap.
   if (!leader || m.secondsRemaining < noNewAfter) return { action: "HOLD", inventory: "NONE", urgency: "NORMAL", why: "no leader or too late" };
   const tailSide = leader === "UP" ? "DOWN" : "UP";
-  const hedgeCapNow = 1 - b.tailAsk;
-  const hedgeOnBook = b.leaderAsk > 0 && b.leaderAsk <= hedgeCapNow + 1e-9 && b.leaderAskDepth >= (o.variant === "plus" ? minDepth : 1);
-  const cheap = b.tailAsk > 0 && b.tailAsk <= tailMax;
+  const cheap = b.tailAsk > 0 && b.tailAsk <= tailMax + 1e-9 && b.tailAskDepth > 0;
   const inWindow = m.secondsRemaining <= tailWindow;
   // plus: earlier too, when the measured reversal rate is worth more than the tail costs.
   const reversalWorthIt = o.variant === "plus" && m.leadHeldRate !== null && (1 - m.leadHeldRate) > b.tailAsk + 0.01 && b.tailAsk <= 0.05;
-  if (cheap && hedgeOnBook && (inWindow || reversalWorthIt)) {
-    return { action: tailSide === "UP" ? "BUY_UP" : "BUY_DOWN", inventory: tailSide === "UP" ? "ADD_UP" : "ADD_DOWN", urgency: "NORMAL", why: reversalWorthIt && !inWindow ? "tail early: measured reversal rate exceeds its price" : "tail inside the window with a hedge on the book" };
+  if (cheap && (inWindow || reversalWorthIt)) {
+    return { action: tailSide === "UP" ? "BUY_UP" : "BUY_DOWN", inventory: tailSide === "UP" ? "ADD_UP" : "ADD_DOWN", urgency: "NORMAL", why: reversalWorthIt && !inWindow ? "tail early: measured reversal rate exceeds its price" : "tail inside the window" };
   }
-  return { action: "HOLD", inventory: "NONE", urgency: "NORMAL", why: cheap ? (hedgeOnBook ? "outside the window" : "no hedge on the book") : "tail not cheap" };
+  return { action: "HOLD", inventory: "NONE", urgency: "NORMAL", why: cheap ? "outside the window" : "tail not cheap" };
 }
 
 /** Wraps the policy as a JevCall so the whole pipeline runs unchanged. */
