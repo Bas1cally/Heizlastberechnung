@@ -27,11 +27,12 @@ Phase 1 groundwork. **No order path exists yet, in any mode.**
 | Causal replay with Jev response cache (`--fresh-jev` to bypass) | `src/replay/`, `pnpm replay` |
 | 140+ unit tests, no network needed | `pnpm test` |
 
+| Paper trading: order mechanics, fills with latency and queue draw, merge, settlement | `src/replay/paper-engine.ts`, `pnpm bot:paper` |
+
 | Next | |
 | --- | --- |
-| Paper fill model: spread, depth, partial fills, queue uncertainty, latency | `src/replay/paper-fill-model.ts` |
-| Pair / merge simulation and settlement PnL | `src/inventory/` |
-| Shadow execution | `src/execution/` |
+| Shadow execution against live infrastructure, stopping before submission | `src/execution/` |
+| Real execution and merge/redeem adapters, behind `ENABLE_LIVE_TRADING` + `--mode live` | `src/execution/`, `src/inventory/` |
 
 ## Requirements
 
@@ -48,6 +49,7 @@ pnpm bot:observe        # Phase 1 observer; never submits an order
 pnpm report             # what the observer recorded
 pnpm calibrate          # calibration + naive edge reports from recorded outcomes
 pnpm replay             # causal replay of recorded markets (cached Jev answers)
+pnpm bot:paper          # paper trading over recorded markets -> reports/backtest-summary.json
 pnpm benchmark:jev      # latency + stability over recorded states
 ```
 

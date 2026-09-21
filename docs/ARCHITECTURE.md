@@ -96,3 +96,21 @@ predicted vs observed by confidence bucket and by time bucket, Brier score,
 and a *naive* gross edge: buy Jev's favoured side at the executable ask on
 every decision, no fees, fills or slippage. That number is an upper bound and
 is labelled as such in the output.
+
+## Paper trading
+
+`pnpm bot:paper` runs the replay stream through the full simulated lifecycle
+(brief §38): Jev decision -> risk gate in `simulated` mode -> deterministic
+order sizing (`execution/order-builder.ts`) -> fill against the first book
+recorded at or after decision time plus a fixed latency -> inventory ->
+merge when Jev's inventory intent says so -> settlement at the recorded
+outcome. Fills are never assumed: FOK is all or nothing, FAK reports partials,
+a resting order fills only when traded through or by a seeded queue draw when
+touched. Inventory is fed back into the state, so the next decision sees the
+position the last one created. Output goes to `data/paper.sqlite`; the
+summary to `reports/backtest-summary.json`.
+
+Known limits of the simulation, stated plainly: books are recorded at 500 ms,
+so fills inside that interval are invisible; latency is a constant, not a
+distribution; fees and gas default to zero and must be set from the real fee
+schedule before any number here is believed.
