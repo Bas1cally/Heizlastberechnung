@@ -176,7 +176,12 @@ export class MarketObserver {
     this.lastSubmitMono = clock.mono();
     const materialVersion = this.store.markMaterial();
 
-    this.engine.submit(this.market.marketId, materialVersion, state, { rawStateVersion: snap.stateVersion, materialReason: reason });
+    this.engine.submit(this.market.marketId, materialVersion, state, {
+      rawStateVersion: snap.stateVersion,
+      materialReason: reason,
+      packetReceivedMono: this.lastPacketMono,
+      stateUpdatedMono: this.lastStateMono,
+    });
     if (this.submitted++ === 0) log.info("first state submitted to jev", { materialVersion, rawStateVersion: snap.stateVersion, reason, secondsRemaining: state.market.secondsRemaining });
   }
 
@@ -212,8 +217,8 @@ export class MarketObserver {
     if (this.decisions === 0) log.info("first jev decision received", { jevMs: Number(d.jevLatencyMs.toFixed(1)), action: d.requestedAction });
     this.persist("decision", () => repo.saveDecision(d, verdict));
     const b = breakdown({
-      packetReceived: this.lastPacketMono,
-      stateUpdated: this.lastStateMono,
+      packetReceived: d.packetReceivedMono,
+      stateUpdated: d.stateUpdatedMono,
       jevRequestStarted: d.requestedAtMono,
       jevResponseReceived: d.respondedAtMono,
       decisionValidated: validatedMono,

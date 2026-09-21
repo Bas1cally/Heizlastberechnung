@@ -6,7 +6,7 @@ import type { JevAnswers } from "../../src/jev/decision-types.js";
 
 const answers = { action: { type: "choice", choice: "HOLD", confidence: 0.7, probabilities: { HOLD: 0.7, ABSTAIN: 0.3 } } } as unknown as JevAnswers;
 const decision: Decision = {
-  decisionId: "d-1", marketId: "m-1", stateVersion: 42n, rawStateVersion: 9001n, materialReason: "quote", inputHash: "h", requestedAtMono: 0, respondedAtMono: 91, jevLatencyMs: 91,
+  decisionId: "d-1", marketId: "m-1", stateVersion: 42n, rawStateVersion: 9001n, materialReason: "quote", packetReceivedMono: 0, stateUpdatedMono: 0, inputHash: "h", requestedAtMono: 0, respondedAtMono: 91, jevLatencyMs: 91,
   timestampMs: 1_700_000_000_000, state: { market: { secondsRemaining: 17.4 } } as never, answers, model: "jev-1.13.0",
   usage: { input_tokens: 600, output_tokens: 100 }, requestedAction: "HOLD",
 };

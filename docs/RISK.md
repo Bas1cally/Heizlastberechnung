@@ -8,14 +8,17 @@ one. That asymmetry is the whole point: Jev owns intent, the gate owns safety.
 
 ## Order of checks
 
-1. **`STALE_DECISION`** — checked first, before every other limit. A decision
-   made on an older `stateVersion` never reaches the book.
-2. `HOLD` and `ABSTAIN` pass immediately; they touch nothing.
-3. Error streak, daily loss.
-4. Freshness: Chainlink age, orderbook age, Jev latency.
-5. `CANCEL` passes here — withdrawing an order reduces risk, so exposure
-   limits do not block it. It is still blocked on stale data, because a state
-   that cannot be trusted cannot justify any action.
+1. `HOLD` and `ABSTAIN` pass immediately; they create no order, so nothing
+   below applies to them.
+2. Error streak, daily loss.
+3. Freshness: Chainlink age, orderbook age, Jev latency. Applies to `CANCEL`
+   too — a state that cannot be trusted cannot justify any action.
+4. `CANCEL` passes here — withdrawing an order reduces risk, so neither
+   staleness nor exposure limits block it.
+5. **`STALE_DECISION`** — a decision made on an older *material* version
+   never reaches the book. Mandatory before order creation and before every
+   trading limit. Observed live: ~33% of buy decisions were stale at ~300 ms
+   Jev latency, which is a property of the market, not a bug.
 6. `LIVE_TRADING_DISABLED` — the default. Every buy is rejected unless live
    trading is explicitly on.
 7. Time to close, liquidity, spread, order size, open orders, then the three

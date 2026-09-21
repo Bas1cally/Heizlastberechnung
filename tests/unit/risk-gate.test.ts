@@ -33,15 +33,22 @@ describe("state version", () => {
     });
   });
 
-  it("checks staleness before anything else", () => {
-    // Everything else is also violated; staleness must still be the reason.
+  it("checks staleness before every trading limit", () => {
+    // All trading limits are also violated; staleness must still be the reason.
     const v = verdict({
       decisionStateVersion: 1n,
-      chainlinkAgeMs: 999_999,
-      dailyPnlUsd: -10_000,
       orderSizeShares: 1e9,
+      totalExposureUsd: 1e9,
+      openOrders: 99,
+      liveTradingEnabled: false,
     });
     expect(v).toEqual({ result: "REJECTED", reason: "STALE_DECISION" });
+  });
+
+  it("does not apply staleness to HOLD, ABSTAIN or CANCEL - they create no order", () => {
+    for (const action of ["HOLD", "ABSTAIN", "CANCEL"] as const) {
+      expect(verdict({ action, decisionStateVersion: 1n })).toEqual({ result: "APPROVED" });
+    }
   });
 
   it("approves a matching version", () => {

@@ -63,23 +63,28 @@ const reject = (reason: RiskRejectReason): RiskVerdict => ({
 const NON_TRADING: ReadonlySet<Action> = new Set<Action>(["HOLD", "ABSTAIN"]);
 
 export function evaluateRisk(ctx: RiskContext, limits: RiskLimits): RiskVerdict {
-  // Mandatory, and first: a decision made on an older state must never reach
-  // the book, however good it looked when it was made.
-  if (ctx.decisionStateVersion !== ctx.currentStateVersion) {
-    return reject("STALE_DECISION");
-  }
-
-  // Cancelling is a risk-reducing action; it stays allowed when limits bite.
+  // HOLD and ABSTAIN create no order, so nothing below applies to them.
   if (NON_TRADING.has(ctx.action)) return APPROVED;
 
   if (ctx.consecutiveErrors >= limits.maxConsecutiveErrors) return reject("ERROR_STREAK");
   if (ctx.dailyPnlUsd <= -limits.maxDailyLossUsd) return reject("DAILY_LOSS_REACHED");
 
+  // Data the decision rests on must be fresh - for a cancel as well, because
+  // a state that cannot be trusted cannot justify any action.
   if (ctx.chainlinkAgeMs > limits.maxChainlinkAgeMs) return reject("STALE_CHAINLINK");
   if (ctx.orderbookAgeMs > limits.maxOrderbookAgeMs) return reject("STALE_ORDERBOOK");
   if (ctx.jevLatencyMs > limits.maxJevLatencyMs) return reject("JEV_TOO_SLOW");
 
+  // Cancelling reduces risk; it is not order creation and exposure limits
+  // must not block it.
   if (ctx.action === "CANCEL") return APPROVED;
+
+  // Mandatory before order creation, and before every trading limit: a
+  // decision made on an older material state must never reach the book,
+  // however good it looked when it was made.
+  if (ctx.decisionStateVersion !== ctx.currentStateVersion) {
+    return reject("STALE_DECISION");
+  }
 
   if (!ctx.liveTradingEnabled) return reject("LIVE_TRADING_DISABLED");
 

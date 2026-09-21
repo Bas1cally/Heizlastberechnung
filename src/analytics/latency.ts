@@ -3,16 +3,16 @@
  * clock. A stage that has not happened is left undefined, never zero.
  */
 export interface LatencyStamps {
-  packetReceived?: number;
-  stateUpdated?: number;
-  jevRequestStarted?: number;
-  jevResponseReceived?: number;
-  decisionValidated?: number;
-  signingStarted?: number;
-  signingCompleted?: number;
-  orderSubmitted?: number;
-  ack?: number;
-  fill?: number;
+  packetReceived?: number | undefined;
+  stateUpdated?: number | undefined;
+  jevRequestStarted?: number | undefined;
+  jevResponseReceived?: number | undefined;
+  decisionValidated?: number | undefined;
+  signingStarted?: number | undefined;
+  signingCompleted?: number | undefined;
+  orderSubmitted?: number | undefined;
+  ack?: number | undefined;
+  fill?: number | undefined;
 }
 
 export interface LatencyBreakdown {

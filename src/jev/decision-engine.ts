@@ -18,6 +18,9 @@ export interface Decision {
   readonly stateVersion: bigint;
   readonly rawStateVersion: bigint;
   readonly materialReason: string;
+  /** Monotonic stamps of the packet and state update this decision was made on. */
+  readonly packetReceivedMono: number | undefined;
+  readonly stateUpdatedMono: number | undefined;
   readonly inputHash: string;
   readonly requestedAtMono: number;
   readonly respondedAtMono: number;
@@ -49,6 +52,8 @@ interface Pending {
   stateVersion: bigint;
   rawStateVersion: bigint;
   materialReason: string;
+  packetReceivedMono?: number | undefined;
+  stateUpdatedMono?: number | undefined;
   state: JevInputState;
 }
 
@@ -69,7 +74,7 @@ export class DecisionEngine {
 
   constructor(private readonly opts: DecisionEngineOptions) {}
 
-  submit(marketId: string, stateVersion: bigint, state: JevInputState, meta: { rawStateVersion: bigint; materialReason: string } = { rawStateVersion: stateVersion, materialReason: "unspecified" }): void {
+  submit(marketId: string, stateVersion: bigint, state: JevInputState, meta: { rawStateVersion: bigint; materialReason: string; packetReceivedMono?: number | undefined; stateUpdatedMono?: number | undefined } = { rawStateVersion: stateVersion, materialReason: "unspecified" }): void {
     if (stateVersion <= this.latestSubmitted) return;
     this.latestSubmitted = stateVersion;
     this.pending = { marketId, stateVersion, state, ...meta };
@@ -122,6 +127,8 @@ export class DecisionEngine {
           stateVersion: p.stateVersion,
           rawStateVersion: p.rawStateVersion,
           materialReason: p.materialReason,
+          packetReceivedMono: p.packetReceivedMono,
+          stateUpdatedMono: p.stateUpdatedMono,
           inputHash,
           requestedAtMono,
           respondedAtMono,
