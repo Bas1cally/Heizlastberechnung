@@ -26,7 +26,7 @@ Phase 1 groundwork. **No order path exists yet, in any mode.**
 | Calibration by confidence and time, naive edge by time and price | `src/analytics/calibration.ts`, `pnpm calibrate` |
 | Performance metrics beyond win rate, EV segmentation, Animal00 research, latency report | `src/analytics/metrics.ts`, `pnpm analyze` |
 | Causal replay with Jev response cache (`--fresh-jev` to bypass) | `src/replay/`, `pnpm replay` |
-| 140+ unit tests, no network needed | `pnpm test` |
+| 200+ unit and integration tests, no network needed | `pnpm test` |
 
 | Paper trading against live books: latency, resting orders, merge, settlement at the real outcome | `src/execution/paper-live-engine.ts`, `pnpm bot:paper` |
 | Backtest over recorded books: same fill model, same mechanics | `src/replay/paper-engine.ts`, `pnpm backtest` |
@@ -86,3 +86,5 @@ land in `data/bot.sqlite` (override with `DATABASE_URL`).
 - `docs/JEV_DECISIONS.md` — question design, the renormalisation trap,
   calibration.
 - `docs/RISK.md` — limit order of evaluation, defaults, kill switch.
+- `docs/DATA.md` — sources, tables, sampling, outcome derivation, what can
+  be rebuilt from a recording and what is not recorded.

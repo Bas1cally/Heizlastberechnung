@@ -92,7 +92,7 @@ async function load(){try{const s=await (await fetch('/api/state')).json();rende
 function stTag(ok,warn,txt){return '<span class="st"><span class="dot '+(ok?'ok':warn?'warn':'bad')+'"></span>'+txt+'</span>';}
 function render(s){
  $('clock').textContent=hhmmss(s.now);
- const hb=s.bot.shadow&&s.bot.shadow.ageS<10?s.bot.shadow:s.bot.observer;const alive=hb&&hb.ageS<10;const modeName=s.bot.shadow&&s.bot.shadow.ageS<10?'Shadow':'Beobachten';
+ const fresh=(h)=>h&&h.ageS<10;const hb=fresh(s.bot.shadow)?s.bot.shadow:fresh(s.bot.paper)?s.bot.paper:s.bot.observer||s.bot.paper||s.bot.shadow;const alive=fresh(hb);const modeName=fresh(s.bot.shadow)?'Shadow':fresh(s.bot.paper)?'Paper':'Beobachten';
  $('botdot').className='dot '+(alive?'ok':hb?'warn':'bad');
  const mk=s.market;const live=mk&&mk.live;const win=mk?slugWin(mk.slug,mk.openedAtMs,mk.closesAtMs):null;
  $('sentence').textContent=!hb?'Kein Bot aktiv – starte pnpm bot:observe.':!alive?'Bot meldet sich seit '+hb.ageS+' s nicht mehr – Prozess abgestürzt oder beendet?':hb.phase==='waiting'?'Wartet auf das nächste 5-Minuten-Fenster ('+win+').':modeName==='Shadow'?'Shadow-Modus · Markt '+win+' · signiert, sendet aber nichts.':'Beobachtet Markt '+win+' · entscheidet laufend · sendet nichts.';

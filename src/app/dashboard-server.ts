@@ -85,7 +85,7 @@ export function collectState(db: Db, nowMs: number): Record<string, unknown> {
   const liveMarket = db.get<{ market_id: string; slug: string; opened_at_ms: number; closes_at_ms: number }>(`SELECT market_id, slug, opened_at_ms, closes_at_ms FROM markets ORDER BY opened_at_ms DESC LIMIT 1`);
   return {
     now: nowMs,
-    bot: { observer: hb("observer"), shadow: hb("shadow") },
+    bot: { observer: hb("observer"), paper: hb("paper"), shadow: hb("shadow") },
     market: liveMarket ? { slug: liveMarket.slug, openedAtMs: liveMarket.opened_at_ms, closesAtMs: liveMarket.closes_at_ms, live: liveMarket.closes_at_ms > nowMs, timeline: timelineFor(db, liveMarket.market_id) } : null,
     today: { decisions: today?.n ?? 0, input: today?.i ?? 0, output: today?.o ?? 0, usd: Number.isFinite(usdPerM) && usdPerM > 0 ? Number((((today?.i ?? 0) + (today?.o ?? 0)) / 1e6 * usdPerM).toFixed(4)) : null },
     calibration: calibrationSummary(db, nowMs),
