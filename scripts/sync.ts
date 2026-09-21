@@ -47,6 +47,21 @@ function ensureRepo(remote: string): void {
   }
 }
 
+/**
+ * With GITHUB_SYNC_TOKEN in .env (a fine-grained token with Contents:
+ * read/write on this repository) the push goes straight to GitHub with that
+ * token, bypassing the credential manager and whatever browser account it
+ * picks. The token is passed on the command line of this one push and is
+ * never written into any git config or log.
+ */
+function pushUrl(remote: string): string {
+  const token = process.env["GITHUB_SYNC_TOKEN"]?.trim();
+  if (!token) return "origin";
+  const m = remote.match(/^(?:https:\/\/(?:[^@]+@)?github\.com\/|git@github\.com:)([^/]+\/[^/]+?)(?:\.git)?$/);
+  if (!m) return "origin";
+  return `https://x-access-token:${token}@github.com/${m[1]}.git`;
+}
+
 async function once(): Promise<void> {
   const started = Date.now();
   const remote = git(["remote", "get-url", "origin"], ".");
@@ -85,8 +100,14 @@ async function once(): Promise<void> {
   git(["-c", "user.name=jev-bot", "-c", "user.email=jev-bot@localhost", "commit", "-q", "--allow-empty", "-m", `sync ${new Date().toISOString()}`]);
   git(["branch", "-M", "reports"]);
   if (argv.includes("--no-push")) { log("built, not pushed (--no-push)", { dir: SYNC_DIR, tables }); return; }
-  git(["push", "-q", "--force", "origin", "reports:reports"]);
-  log("synced", { tookMs: Date.now() - started, summaryOk: summary.ok, tables });
+  try {
+    git(["push", "-q", "--force", pushUrl(remote), "reports:reports"]);
+  } catch (err) {
+    // Never let the token reach the log through git's error text.
+    const msg = (err instanceof Error ? err.message : String(err)).replace(/x-access-token:[^@]+@/g, "x-access-token:[redacted]@");
+    throw new Error(msg);
+  }
+  log("synced", { tookMs: Date.now() - started, summaryOk: summary.ok, tables, auth: process.env["GITHUB_SYNC_TOKEN"] ? "token" : "credential manager" });
 }
 
 for (;;) {
