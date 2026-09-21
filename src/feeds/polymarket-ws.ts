@@ -43,6 +43,8 @@ export type SubscribeFn = (assetIds: readonly string[]) => Promise<SubscriptionL
 
 export interface BookFeedHandlers {
   onBook(book: OrderBook): void;
+  /** Server timestamp (ms precision) seen on a market event, for clock drift. */
+  onServerTime?(serverMs: number): void;
   onResolved?(ev: ResolvedEvent["payload"]): void;
   onReconnect?(attempt: number): void;
 }
@@ -118,6 +120,8 @@ export class BookFeed {
   dispatch(ev: MarketWsEvent): void {
     const now = this.opts.now();
     this.lastMessageAtMs = now;
+    const ts = (ev as { payload?: { timestamp?: number | null } }).payload?.timestamp;
+    if (typeof ts === "number" && ts > 1e12) this.opts.handlers.onServerTime?.(ts);
     switch (ev.type) {
       case "book": {
         const p = (ev as BookEvent).payload;

@@ -93,3 +93,17 @@ describe("ChainlinkFeed", () => {
     expect(feed.ageMs()).toBe(700);
   });
 });
+
+describe("BookFeed server time", () => {
+  it("forwards millisecond timestamps from market events for drift tracking", () => {
+    const seen: number[] = [];
+    const feed = new BookFeed({
+      assetIds: ["UP"], subscribe: async () => scripted([]), now: () => 0, log,
+      handlers: { onBook: () => {}, onServerTime: (ms) => seen.push(ms) },
+    });
+    feed.dispatch({ type: "book", payload: { assetId: "UP", bids: [], asks: [], timestamp: 1789994438054 } });
+    feed.dispatch({ type: "price_change", payload: { priceChanges: [], timestamp: 1789994438086 } });
+    feed.dispatch({ type: "book", payload: { assetId: "UP", bids: [], asks: [], timestamp: null } });
+    expect(seen).toEqual([1789994438054, 1789994438086]);
+  });
+});

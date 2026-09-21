@@ -42,7 +42,7 @@ const EnvSchema = z.object({
   // Decision cadence.
   JEV_COALESCE_MS: num(15),
   JEV_MIN_INTERVAL_MS: num(250),
-  MAX_CLOCK_DRIFT_MS: num(1_500),
+  MAX_CLOCK_DRIFT_MS: num(3_000),
 });
 
 export interface AppConfig {

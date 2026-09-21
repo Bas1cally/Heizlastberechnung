@@ -42,6 +42,7 @@ export class MarketObserver {
   private lastStateMono = Number.NaN;
   private decisions = 0;
   private stopped = false;
+  private lastWaitLogMono = Number.NEGATIVE_INFINITY;
 
   constructor(private readonly deps: ObserverDeps, readonly market: MarketIdentity) {
     const { cfg, log, clock } = deps;
@@ -69,6 +70,9 @@ export class MarketObserver {
       log: log.child({ feed: "market" }),
       onStreamError: (reason) => deps.repo.saveError("market-ws", reason, market.marketId, clock.wall()),
       handlers: {
+        // Market events carry millisecond timestamps; Chainlink's are rounded
+        // to whole seconds and would bias the drift estimate by up to 1 s.
+        onServerTime: (serverMs) => clock.observeServerTime(serverMs),
         onBook: (book) => {
           this.lastPacketMono = clock.mono();
           this.store.setBook(book);
@@ -92,7 +96,6 @@ export class MarketObserver {
       onStreamError: (reason) => deps.repo.saveError("chainlink-ws", reason, market.marketId, clock.wall()),
       onTick: (t) => {
         this.lastPacketMono = clock.mono();
-        clock.observeServerTime(t.ts);
         this.prices.push({ ts: t.ts, price: t.price });
         this.store.setSettlementPrice(t.price, t.ts);
         this.lastStateMono = clock.mono();
@@ -104,13 +107,27 @@ export class MarketObserver {
 
   private maybeDecide(): void {
     if (this.stopped) return;
-    const { cfg, clock, log } = this.deps;
-    if (!clock.withinTolerance(cfg.maxClockDriftMs)) {
-      log.error("clock drift beyond tolerance - failing closed", { driftMs: clock.driftMs() });
+    const { cfg, clock, log, repo } = this.deps;
+    const snap = this.store.snapshot(clock.wall());
+    const drifted = !clock.withinTolerance(cfg.maxClockDriftMs);
+    const missing = [
+      snap.upBook ? null : "upBook",
+      snap.downBook ? null : "downBook",
+      snap.settlementCurrentPrice === undefined ? "chainlinkPrice" : null,
+      drifted ? `clockDrift(${Math.round(clock.driftMs())}ms > ${cfg.maxClockDriftMs}ms)` : null,
+    ].filter((x): x is string => x !== null);
+
+    if (missing.length > 0) {
+      // Say why nothing is happening - once every 10 s, persisted so the
+      // report shows it even when the console is gone.
+      if (clock.mono() - this.lastWaitLogMono > 10_000) {
+        this.lastWaitLogMono = clock.mono();
+        const msg = `not deciding: ${missing.join(", ")}`;
+        if (drifted) log.error(msg, { driftMs: clock.driftMs() }); else log.info(msg);
+        repo.saveError(drifted ? "clock" : "observer-wait", msg, this.market.marketId, clock.wall());
+      }
       return;
     }
-    const snap = this.store.snapshot(clock.wall());
-    if (!snap.upBook || !snap.downBook || snap.settlementCurrentPrice === undefined) return;
 
     const state = buildJevState({
       state: snap,
