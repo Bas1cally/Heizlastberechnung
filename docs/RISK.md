@@ -61,7 +61,11 @@ that may be the reason the switch fired.
 
 Operator control goes through the database, so it works from another
 process: the dashboard's KILL / Resume buttons, or `pnpm kill` / `pnpm
-resume`. The bot polls the control table once a second.
+resume`. The bot polls the control table once a second. Only a row whose
+reasons include `MANUAL` is treated as an operator command: the bot writes
+its own trips into the same row, and reading those back as manual would turn
+every self-clearing trip into a hard one (a bug found by the Jev-failure
+integration test, fixed in `observer.ts`).
 
 ## Known residual risks
 

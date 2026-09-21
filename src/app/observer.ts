@@ -209,7 +209,11 @@ export class MarketObserver {
       this.lastControlPollMono = nowMono;
       let ctl: { value: string } | undefined;
       try { ctl = repo.getControl("kill"); } catch { ctl = undefined; }
-      const wantKill = ctl ? (JSON.parse(ctl.value) as { tripped?: boolean }).tripped === true : false;
+      // Only an operator's row counts as a command. The bot writes its own
+      // trips into the same row; reading those back as "manual" would turn
+      // every self-clearing trip into a hard one that never clears.
+      const parsed = ctl ? (JSON.parse(ctl.value) as { tripped?: boolean; reasons?: string[] }) : undefined;
+      const wantKill = parsed?.tripped === true && (parsed.reasons ?? []).includes("MANUAL");
       if (wantKill && !this.manualKill) { this.manualKill = true; this.kill.manualKill(nowMono); }
       if (!wantKill && this.manualKill) { this.manualKill = false; this.kill.resume(); log.info("operator resume acknowledged"); }
     }

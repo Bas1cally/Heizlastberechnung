@@ -65,6 +65,8 @@ pnpm probe              # 20 s of raw feed events, unfiltered
 pnpm bot:observe        # Phase 1 observer; never submits an order
 pnpm report             # what the observer recorded
 pnpm calibrate          # calibration + naive edge reports from recorded outcomes
+pnpm acceptance         # Phase 1 acceptance (§36) PASS/FAIL/INSUFFICIENT per criterion -> reports/acceptance.json
+pnpm summary            # report + acceptance + calibrate + analyze in one file (reports/summary.txt); pipe to Set-Clipboard
 pnpm analyze            # §26 metrics (ROC, PnL per fill / Jev call, unpaired time, maker/taker, cancel ratio, Jev cost), EV by distance/vol/confidence/action/pair cost, Animal00 research, reports/latency.json
 pnpm replay             # causal replay of recorded markets (cached Jev answers)
 pnpm bot:paper          # Phase 3: paper trading against LIVE books; simulated fills, real outcomes; never submits
