@@ -31,6 +31,7 @@ import { nextWindow, windowAt } from "../src/market/window.js";
 import { chainlinkSubscribe, chainlinkTwapSubscribe, marketSubscribe, type RealtimeClientLike } from "../src/feeds/sdk-subscriptions.js";
 import { MarketObserver } from "../src/app/observer.js";
 import { PriceTape } from "../src/feeds/price-tape.js";
+import { createUpdateCheck, EXIT_UPDATE } from "../src/app/self-update.js";
 import { PaperLiveEngine } from "../src/execution/paper-live-engine.js";
 import { DEFAULT_FILL_PARAMS } from "../src/replay/paper-fill-model.js";
 
@@ -63,6 +64,19 @@ const tape = new PriceTape({
   mono: clock.mono, wall: clock.wall, log: log.child({ feed: "tape" }),
 });
 tape.start();
+// Between markets: is there a newer commit? Under `pnpm auto` the bot then
+// exits with code 75 and is restarted on the new version; standalone it only says so.
+const updateCheck = createUpdateCheck();
+const maybeRestartForUpdate = async () => {
+  const u = updateCheck(clock.mono());
+  if (u.error) log.debug("update check failed", { error: u.error });
+  if (!u.available) return;
+  if (process.env["AUTO_RESTART"] !== "1") { log.warn("newer version on the remote; restart the bot (or run it under pnpm auto)", { local: u.local, remote: u.remote }); return; }
+  log.info("newer version on the remote; exiting for restart", { local: u.local, remote: u.remote });
+  syncChild?.kill();
+  await tape.stop().catch(() => undefined);
+  process.exit(EXIT_UPDATE);
+};
 // Not awaited: the observer starts at once and takes the tape's value when it
 // lands (the TWAP stream can lag the open by several seconds).
 const startPriceFor = (openedAtMs: number) => tape.waitForStart(openedAtMs, 12_000)
@@ -89,6 +103,7 @@ process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
 let marketIndex = 0;
 while (!shuttingDown) {
+  await maybeRestartForUpdate();
   const now = clock.wall();
   let found: Awaited<ReturnType<typeof findCurrentMarket>>;
   try {

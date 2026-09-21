@@ -1,3 +1,4 @@
+import { liquidityFor } from "../../src/risk/risk-gate.js";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_LIMITS } from "../../src/risk/limits.js";
 import { evaluateRisk, type RiskContext } from "../../src/risk/risk-gate.js";
@@ -136,5 +137,16 @@ describe("the gate only ever rejects", () => {
     const v = verdict({ action: "BUY_UP", spread: 0.9 });
     expect(Object.keys(v).sort()).toEqual(["reason", "result"]);
     expect(v.result).toBe("REJECTED");
+  });
+});
+
+describe("liquidityFor", () => {
+  it("judges a one-sided buy on the side it buys, a pair on the thinner side, a complement on the missing side", () => {
+    expect(liquidityFor("BUY_DOWN", 0, 5000)).toBe(5000);   // winner's asks empty, loser's deep: buying DOWN is still possible
+    expect(liquidityFor("BUY_UP", 0, 5000)).toBe(0);
+    expect(liquidityFor("BUY_PAIR", 0, 5000)).toBe(0);
+    expect(liquidityFor("ADD_COMPLEMENT", 100, 7, { unpairedUpShares: 10, unpairedDownShares: 0 })).toBe(7);
+    expect(liquidityFor("ADD_COMPLEMENT", 100, 7, { unpairedUpShares: 0, unpairedDownShares: 10 })).toBe(100);
+    expect(liquidityFor("HOLD", 0, 5000)).toBe(5000);
   });
 });

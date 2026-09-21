@@ -12,6 +12,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "auto": "tsx scripts/auto.ts",
     "bot:observe": "tsx scripts/observe.ts",
     "bot:paper": "tsx scripts/paper.ts",
     "backtest": "tsx scripts/backtest.ts",

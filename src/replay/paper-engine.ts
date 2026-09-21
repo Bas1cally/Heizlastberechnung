@@ -13,7 +13,7 @@ import { DEFAULT_MATERIAL, materialChange } from "../jev/material-change.js";
 import type { JevAnswers, JevInputState, Urgency } from "../jev/decision-types.js";
 import type { Decision, JevCall } from "../jev/decision-engine.js";
 import { QUESTIONS } from "../jev/questions.js";
-import { evaluateRisk, type RiskVerdict } from "../risk/risk-gate.js";
+import { evaluateRisk, liquidityFor, type RiskVerdict } from "../risk/risk-gate.js";
 import type { RiskLimits } from "../risk/limits.js";
 import { buildOrders, type OrderIntent } from "../execution/order-builder.js";
 import { DEFAULT_FILL_PARAMS, fillMarketable, fillResting, isMarketable, seededRandom, type FillParams, type FillResult } from "./paper-fill-model.js";
@@ -193,7 +193,7 @@ export async function paperMarket(o: PaperOptions): Promise<PaperMarketResult> {
       decisionStateVersion: materialVersion, currentStateVersion: materialVersion,
       action: d.requestedAction, orderSizeShares: o.limits.maxOrderSizeShares,
       secondsRemaining: snap.secondsRemaining, chainlinkAgeMs: ev.atMs - lastTickAt, orderbookAgeMs: ev.atMs - lastBookAt, jevLatencyMs: Math.min(latency, o.limits.maxJevLatencyMs),
-      marketLiquidityShares: Math.min(snap.upBook.asks.reduce((s, l) => s + l.size, 0), snap.downBook.asks.reduce((s, l) => s + l.size, 0)),
+      marketLiquidityShares: liquidityFor(d.requestedAction, snap.upBook.asks.reduce((s, l) => s + l.size, 0), snap.downBook.asks.reduce((s, l) => s + l.size, 0), inv),
       spread: Math.max(state.orderbook.upSpread, state.orderbook.downSpread),
       marketExposureUsd: exposure, totalExposureUsd: exposure,
       unpairedExposureUsd: inv.unpairedUpShares * inv.avgUpEntry + inv.unpairedDownShares * inv.avgDownEntry,

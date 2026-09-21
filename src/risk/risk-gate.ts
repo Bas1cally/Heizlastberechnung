@@ -42,6 +42,12 @@ export interface RiskContext {
   readonly chainlinkAgeMs: number;
   readonly orderbookAgeMs: number;
   readonly jevLatencyMs: number;
+  /**
+   * Ask depth of the side(s) the action would buy. Late in a market the
+   * winner's ask side empties while the loser's stays deep; judging a
+   * one-sided buy on the thinner of the two sides would refuse every buy of
+   * the still-available side and approve nothing.
+   */
   readonly marketLiquidityShares: number;
   readonly spread: number;
 
@@ -68,6 +74,17 @@ const reject = (reason: RiskRejectReason): RiskVerdict => ({
 
 /** Actions that never reach the book and so bypass the trading limits. */
 const NON_TRADING: ReadonlySet<Action> = new Set<Action>(["HOLD", "ABSTAIN"]);
+
+/** Ask depth relevant to an action: the side it buys, the thinner side for a pair, the complement's side. */
+export function liquidityFor(action: Action, upAskDepth: number, downAskDepth: number, inventory?: { unpairedUpShares: number; unpairedDownShares: number }): number {
+  switch (action) {
+    case "BUY_UP": return upAskDepth;
+    case "BUY_DOWN": return downAskDepth;
+    case "BUY_PAIR": return Math.min(upAskDepth, downAskDepth);
+    case "ADD_COMPLEMENT": return (inventory?.unpairedUpShares ?? 0) > 0 ? downAskDepth : (inventory?.unpairedDownShares ?? 0) > 0 ? upAskDepth : Math.min(upAskDepth, downAskDepth);
+    default: return Math.max(upAskDepth, downAskDepth);
+  }
+}
 
 export function evaluateRisk(ctx: RiskContext, limits: RiskLimits): RiskVerdict {
   // HOLD and ABSTAIN create no order, so nothing below applies to them.

@@ -9,7 +9,7 @@ import { computeInventory, EMPTY_POSITION, type InventoryAccounting } from "../i
 import { PriceWindow } from "../features/returns.js";
 import { buildJevState } from "../jev/state-builder.js";
 import { DecisionEngine, type Decision, type JevCall } from "../jev/decision-engine.js";
-import { evaluateRisk, type RiskVerdict } from "../risk/risk-gate.js";
+import { evaluateRisk, liquidityFor, type RiskVerdict } from "../risk/risk-gate.js";
 import { bestAsk, bestBid, depth } from "../features/orderbook.js";
 import { directionalProbability } from "../analytics/edge-analysis.js";
 import { LatencyTracker, breakdown } from "../analytics/latency.js";
@@ -361,7 +361,7 @@ export class MarketObserver {
         chainlinkAgeMs: this.settlementAgeMs(),
         orderbookAgeMs: this.books.ageMs(),
         jevLatencyMs: d.jevLatencyMs,
-        marketLiquidityShares: Math.min(depth(snap.upBook?.asks ?? []), depth(snap.downBook?.asks ?? [])),
+        marketLiquidityShares: liquidityFor(d.requestedAction, depth(snap.upBook?.asks ?? []), depth(snap.downBook?.asks ?? []), snap.inventory),
         spread: Math.max(spreadOf(snap.upBook), spreadOf(snap.downBook)),
         marketExposureUsd: snap.inventory.totalCost,
         totalExposureUsd: snap.inventory.totalCost,

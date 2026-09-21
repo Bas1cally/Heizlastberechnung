@@ -62,6 +62,7 @@ cp .env.example .env    # fill in TYPESAFE_API_KEY
 pnpm test               # unit tests, no network
 pnpm discover           # the current and next 5-minute market as Gamma returns them
 pnpm probe              # 20 s of raw feed events, unfiltered
+pnpm auto               # run the paper bot unattended: pulls updates, restarts on new commits and after crashes (pnpm auto -- observe|shadow)
 pnpm bot:observe        # Phase 1 observer; never submits an order
 pnpm report             # what the observer recorded
 pnpm calibrate          # calibration + naive edge reports from recorded outcomes
