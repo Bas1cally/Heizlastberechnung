@@ -153,13 +153,24 @@ rubric levels. Two models were listed on the account: `jev-latest` and
   the price at the beginning" — a tie resolves UP. The `settlement_direction`
   question states this.
 
-## Assumptions that only the observer can confirm
+## Confirmed by the first observer run (2026-09-21)
 
-- `book` is a full snapshot and `price_change` carries level deltas with
-  `size: "0"` meaning removal. Standard CLOB semantics, matches the shapes.
-- The settlement start price is the first Chainlink value seen at or after
-  the window's open second. The description's full text names the exact
-  source and timing; confirm on the first observed market.
+- The market stream delivers a `book` snapshot per asset on subscribe, then
+  `price_change` events with a `priceChanges[]` array of level deltas —
+  around 900 per second on a live 5-minute market — plus `best_bid_ask`,
+  `last_trade_price`, and unrelated `new_market` events (ignored).
+- `prices.crypto.chainlink` with `symbols: ["btc/usd"]` delivers one value
+  per second, timestamps rounded to whole seconds. Drift is therefore
+  measured from market events, which carry millisecond timestamps.
+- End to end: state to Jev to decision in 626 ms on the first call;
+  1848 input / 362 output tokens for the eight-question set.
+
+## Still to confirm
+
+- The settlement start price is the first Chainlink value at or after the
+  window's open second. The market description says "the Bitcoin price at
+  the beginning of that range"; which feed and which second Polymarket uses
+  is not stated in the SDK. Check `Δ` at window open: it must be near 0.
 
 ## Not verified here
 

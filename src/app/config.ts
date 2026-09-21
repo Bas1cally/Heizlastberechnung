@@ -41,7 +41,8 @@ const EnvSchema = z.object({
 
   // Decision cadence.
   JEV_COALESCE_MS: num(15),
-  JEV_MIN_INTERVAL_MS: num(250),
+  JEV_MIN_INTERVAL_MS: num(1_000),
+  JEV_HEARTBEAT_MS: num(5_000),
   MAX_CLOCK_DRIFT_MS: num(3_000),
 });
 
@@ -54,7 +55,7 @@ export interface AppConfig {
   readonly limits: RiskLimits;
   readonly marketDurationSeconds: number;
   readonly chainlinkSymbol: string;
-  readonly jev: { readonly coalesceMs: number; readonly minIntervalMs: number };
+  readonly jev: { readonly coalesceMs: number; readonly minIntervalMs: number; readonly heartbeatMs: number };
   readonly maxClockDriftMs: number;
   readonly hasPolymarketKey: boolean;
 }
@@ -105,7 +106,7 @@ export function loadConfig(
     },
     marketDurationSeconds: e.MARKET_DURATION_SECONDS,
     chainlinkSymbol: e.CHAINLINK_SYMBOL,
-    jev: { coalesceMs: e.JEV_COALESCE_MS, minIntervalMs: e.JEV_MIN_INTERVAL_MS },
+    jev: { coalesceMs: e.JEV_COALESCE_MS, minIntervalMs: e.JEV_MIN_INTERVAL_MS, heartbeatMs: e.JEV_HEARTBEAT_MS },
     maxClockDriftMs: e.MAX_CLOCK_DRIFT_MS,
     hasPolymarketKey: Boolean(e.POLYMARKET_PRIVATE_KEY?.trim()),
   };

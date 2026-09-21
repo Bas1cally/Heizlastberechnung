@@ -14,7 +14,10 @@ export type JevCall = (
 export interface Decision {
   readonly decisionId: string;
   readonly marketId: string;
+  /** Material version the decision was made on; the risk gate compares this. */
   readonly stateVersion: bigint;
+  readonly rawStateVersion: bigint;
+  readonly materialReason: string;
   readonly inputHash: string;
   readonly requestedAtMono: number;
   readonly respondedAtMono: number;
@@ -44,6 +47,8 @@ export interface DecisionEngineOptions {
 interface Pending {
   marketId: string;
   stateVersion: bigint;
+  rawStateVersion: bigint;
+  materialReason: string;
   state: JevInputState;
 }
 
@@ -64,10 +69,10 @@ export class DecisionEngine {
 
   constructor(private readonly opts: DecisionEngineOptions) {}
 
-  submit(marketId: string, stateVersion: bigint, state: JevInputState): void {
+  submit(marketId: string, stateVersion: bigint, state: JevInputState, meta: { rawStateVersion: bigint; materialReason: string } = { rawStateVersion: stateVersion, materialReason: "unspecified" }): void {
     if (stateVersion <= this.latestSubmitted) return;
     this.latestSubmitted = stateVersion;
-    this.pending = { marketId, stateVersion, state };
+    this.pending = { marketId, stateVersion, state, ...meta };
 
     if (this.timer !== undefined) return; // a flush is already scheduled; it will take the newest
     const sinceLast = this.opts.mono() - this.lastRequestMono;
@@ -115,6 +120,8 @@ export class DecisionEngine {
           decisionId: randomUUID(),
           marketId: p.marketId,
           stateVersion: p.stateVersion,
+          rawStateVersion: p.rawStateVersion,
+          materialReason: p.materialReason,
           inputHash,
           requestedAtMono,
           respondedAtMono,

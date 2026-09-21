@@ -14,6 +14,8 @@ import { directionalProbability } from "../analytics/edge-analysis.js";
 import { LatencyTracker, breakdown } from "../analytics/latency.js";
 import type { DecisionRepository } from "../persistence/repositories/decisions.js";
 import { formatProbability } from "./format.js";
+import { DEFAULT_MATERIAL, materialChange } from "../jev/material-change.js";
+import type { JevInputState } from "../jev/decision-types.js";
 
 export interface ObserverDeps {
   readonly cfg: AppConfig;
@@ -46,12 +48,31 @@ export class MarketObserver {
   private lastBookSaveMono = new Map<string, number>();
   private submitted = 0;
   private readonly startedMono: number;
+  private lastJevState: JevInputState | undefined;
+  private lastSubmitMono = Number.NEGATIVE_INFINITY;
+  private lastPersistFailMono = Number.NEGATIVE_INFINITY;
+
+  /**
+   * Persistence must never take a feed down. A failed write is logged (rate
+   * limited) and dropped; the state in memory stays correct.
+   */
+  private persist(what: string, fn: () => void): void {
+    try {
+      fn();
+    } catch (err) {
+      const now = this.deps.clock.mono();
+      if (now - this.lastPersistFailMono > 5_000) {
+        this.lastPersistFailMono = now;
+        this.deps.log.error("persistence failed (dropping writes)", { what, err });
+      }
+    }
+  }
 
   constructor(private readonly deps: ObserverDeps, readonly market: MarketIdentity) {
     const { cfg, log, clock } = deps;
     this.startedMono = clock.mono();
     this.store = new MarketStateStore(market, computeInventory(EMPTY_POSITION));
-    deps.repo.upsertMarket(market, clock.wall());
+    this.persist("market", () => deps.repo.upsertMarket(market, clock.wall()));
 
     this.engine = new DecisionEngine({
       call: deps.jevCall,
@@ -63,7 +84,7 @@ export class MarketObserver {
       onDecision: (d) => this.onDecision(d),
       onError: (err, v) => {
         log.error("jev call failed", { err, stateVersion: v });
-        deps.repo.saveError("jev", err instanceof Error ? err.message : String(err), market.marketId, clock.wall());
+        this.persist("error", () => deps.repo.saveError("jev", err instanceof Error ? err.message : String(err), market.marketId, clock.wall()));
       },
     });
 
@@ -72,7 +93,7 @@ export class MarketObserver {
       subscribe: deps.marketSubscribe,
       now: clock.mono,
       log: log.child({ feed: "market" }),
-      onStreamError: (reason) => deps.repo.saveError("market-ws", reason, market.marketId, clock.wall()),
+      onStreamError: (reason) => this.persist("error", () => deps.repo.saveError("market-ws", reason, market.marketId, clock.wall())),
       handlers: {
         // Market events carry millisecond timestamps; Chainlink's are rounded
         // to whole seconds and would bias the drift estimate by up to 1 s.
@@ -86,13 +107,13 @@ export class MarketObserver {
           const lastSave = this.lastBookSaveMono.get(book.assetId) ?? Number.NEGATIVE_INFINITY;
           if (clock.mono() - lastSave >= 500) {
             this.lastBookSaveMono.set(book.assetId, clock.mono());
-            deps.repo.saveBook(market.marketId, book.assetId, clock.wall(), book.bids.slice(0, 10), book.asks.slice(0, 10));
+            this.persist("book", () => deps.repo.saveBook(market.marketId, book.assetId, clock.wall(), book.bids.slice(0, 10), book.asks.slice(0, 10)));
           }
           this.maybeDecide();
         },
         onResolved: (p) => {
           log.info("market resolved", { conditionId: p.conditionId, winningOutcome: p.winningOutcome });
-          if (p.winningOutcome) deps.repo.markResolved(market.marketId, p.winningOutcome);
+          if (p.winningOutcome) this.persist("resolved", () => deps.repo.markResolved(market.marketId, p.winningOutcome!));
         },
         onReconnect: (n) => log.warn("market feed reconnected", { attempt: n }),
       },
@@ -103,13 +124,13 @@ export class MarketObserver {
       subscribe: deps.chainlinkSubscribe,
       now: clock.mono,
       log: log.child({ feed: "chainlink" }),
-      onStreamError: (reason) => deps.repo.saveError("chainlink-ws", reason, market.marketId, clock.wall()),
+      onStreamError: (reason) => this.persist("error", () => deps.repo.saveError("chainlink-ws", reason, market.marketId, clock.wall())),
       onTick: (t) => {
         this.lastPacketMono = clock.mono();
         this.prices.push({ ts: t.ts, price: t.price });
         this.store.setSettlementPrice(t.price, t.ts);
         this.lastStateMono = clock.mono();
-        deps.repo.saveTick(market.marketId, "chainlink", t.ts, clock.wall(), t.price);
+        this.persist("tick", () => deps.repo.saveTick(market.marketId, "chainlink", t.ts, clock.wall(), t.price));
         this.maybeDecide();
       },
     });
@@ -134,7 +155,7 @@ export class MarketObserver {
         this.lastWaitLogMono = clock.mono();
         const msg = `not deciding: ${missing.join(", ")}`;
         if (drifted) log.error(msg, { driftMs: clock.driftMs() }); else log.info(msg);
-        repo.saveError(drifted ? "clock" : "observer-wait", msg, this.market.marketId, clock.wall());
+        this.persist("error", () => repo.saveError(drifted ? "clock" : "observer-wait", msg, this.market.marketId, clock.wall()));
       }
       return;
     }
@@ -146,8 +167,17 @@ export class MarketObserver {
       bookAgeMs: this.books.ageMs(),
       pairQty: cfg.limits.maxOrderSizeShares,
     });
-    this.engine.submit(this.market.marketId, snap.stateVersion, state);
-    if (this.submitted++ === 0) log.info("first state submitted to jev", { stateVersion: snap.stateVersion, secondsRemaining: state.market.secondsRemaining });
+
+    // Only a material change earns a request (brief §10). Everything else
+    // bumps the raw version for the audit trail and stops here.
+    const reason = materialChange(this.lastJevState, state, clock.mono() - this.lastSubmitMono, { ...DEFAULT_MATERIAL, heartbeatMs: cfg.jev.heartbeatMs });
+    if (!reason) return;
+    this.lastJevState = state;
+    this.lastSubmitMono = clock.mono();
+    const materialVersion = this.store.markMaterial();
+
+    this.engine.submit(this.market.marketId, materialVersion, state, { rawStateVersion: snap.stateVersion, materialReason: reason });
+    if (this.submitted++ === 0) log.info("first state submitted to jev", { materialVersion, rawStateVersion: snap.stateVersion, reason, secondsRemaining: state.market.secondsRemaining });
   }
 
   private onDecision(d: Decision): void {
@@ -159,7 +189,7 @@ export class MarketObserver {
     const verdict: RiskVerdict = evaluateRisk(
       {
         decisionStateVersion: d.stateVersion,
-        currentStateVersion: snap.stateVersion,
+        currentStateVersion: snap.materialVersion,
         action: d.requestedAction,
         orderSizeShares: cfg.limits.maxOrderSizeShares,
         secondsRemaining: snap.secondsRemaining,
@@ -180,7 +210,7 @@ export class MarketObserver {
     );
 
     if (this.decisions === 0) log.info("first jev decision received", { jevMs: Number(d.jevLatencyMs.toFixed(1)), action: d.requestedAction });
-    repo.saveDecision(d, verdict);
+    this.persist("decision", () => repo.saveDecision(d, verdict));
     const b = breakdown({
       packetReceived: this.lastPacketMono,
       stateUpdated: this.lastStateMono,
@@ -189,7 +219,7 @@ export class MarketObserver {
       decisionValidated: validatedMono,
     });
     this.latency.record(b);
-    repo.saveLatency(this.market.marketId, d.decisionId, d.timestampMs, b);
+    this.persist("latency", () => repo.saveLatency(this.market.marketId, d.decisionId, d.timestampMs, b));
     this.decisions++;
 
     this.render(d, verdict);
@@ -214,7 +244,7 @@ export class MarketObserver {
         `UP ${s.orderbook.upBid.toFixed(3)}/${s.orderbook.upAsk.toFixed(3)}  DOWN ${s.orderbook.downBid.toFixed(3)}/${s.orderbook.downAsk.toFixed(3)}  PAIR ${s.orderbook.pairAskCost.toFixed(4)} (edge ${s.orderbook.pairEdge.toFixed(4)} @ ${s.orderbook.pairExecutableQty})`,
         `JEV: UP ${pct(dir.pUp)}  DOWN ${pct(dir.pDown)}  unresolved ${formatProbability(dir.unresolvedMass)}`,
         `ACTION: ${probs}   -> ${d.requestedAction}  [${risk}]`,
-        `JEV ${d.jevLatencyMs.toFixed(0)}ms  tokens ${d.usage.input_tokens}/${d.usage.output_tokens}  model ${d.model}  v${d.stateVersion}  #${this.decisions}`,
+        `JEV ${d.jevLatencyMs.toFixed(0)}ms  tokens ${d.usage.input_tokens}/${d.usage.output_tokens}  model ${d.model}  m${d.stateVersion} (raw ${d.rawStateVersion}, ${d.materialReason})  #${this.decisions}`,
         "",
       ].join("\n"),
     );

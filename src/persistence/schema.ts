@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS jev_requests (
   decision_id TEXT PRIMARY KEY,
   market_id TEXT NOT NULL,
   state_version TEXT NOT NULL,
+  raw_state_version TEXT,
+  material_reason TEXT,
   input_hash TEXT NOT NULL,
   timestamp_ms INTEGER NOT NULL,
   state_json TEXT NOT NULL,

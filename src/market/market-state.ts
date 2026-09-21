@@ -17,7 +17,10 @@ export interface MarketIdentity {
 
 /** The canonical, versioned in-memory state for one market. */
 export interface MarketState {
+  /** Bumps on every mutation. Audit only. */
   readonly stateVersion: bigint;
+  /** Bumps only on a material change (src/jev/material-change.ts). Decisions are checked against this. */
+  readonly materialVersion: bigint;
   readonly identity: MarketIdentity;
 
   readonly nowMs: number;
@@ -41,6 +44,7 @@ export interface MarketState {
  */
 export class MarketStateStore {
   private version = 0n;
+  private material = 0n;
   private upBook: OrderBook | undefined;
   private downBook: OrderBook | undefined;
   private startPrice: number | undefined;
@@ -55,6 +59,16 @@ export class MarketStateStore {
 
   get stateVersion(): bigint {
     return this.version;
+  }
+
+  get materialVersion(): bigint {
+    return this.material;
+  }
+
+  /** Called by the feature engine when the Jev-visible state changed materially. */
+  markMaterial(): bigint {
+    this.material += 1n;
+    return this.material;
   }
 
   private bump(): void {
@@ -101,6 +115,7 @@ export class MarketStateStore {
   snapshot(nowMs: number): MarketState {
     return {
       stateVersion: this.version,
+      materialVersion: this.material,
       identity: this.identity,
       nowMs,
       secondsRemaining: Math.max(0, (this.identity.closesAtMs - nowMs) / 1000),

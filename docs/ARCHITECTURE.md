@@ -32,18 +32,23 @@ it never reconstructs basic maths from raw ticks.
 | Pairing, cost basis, pnl under both outcomes | `inventory/accounting.ts` |
 | Probability-vs-price edge | `analytics/edge-analysis.ts` |
 
-## State versioning
+## State versioning: raw and material
 
-Every market state carries a monotonic `stateVersion: bigint`. Every decision
-records the version it was made on. Before an order is created:
+Every mutation bumps `stateVersion` — on a live market that is ~1000 per
+second, so no decision could ever match it. The version decisions are checked
+against is `materialVersion`, which bumps only when the Jev-visible snapshot
+changed materially (`jev/material-change.ts`): a quote moved, the pair cost or
+executable size moved past a threshold, the settlement distance moved ≥0.5 bp,
+the remaining-time bucket changed, inventory changed, data went stale or
+recovered — or a heartbeat elapsed. Both versions are stored with every
+decision.
 
 ```
-decisionStateVersion !== currentStateVersion  ->  REJECT("STALE_DECISION")
+decisionMaterialVersion !== currentMaterialVersion  ->  REJECT("STALE_DECISION")
 ```
 
-This is checked first in `risk/risk-gate.ts`, before any other limit, because
-an out-of-date decision must not reach the book however good it looked. Three
-in-flight requests can return out of order; only the newest state is ever
+Checked first in `risk/risk-gate.ts`, before any other limit. Three in-flight
+requests can return out of order; only the newest material state is ever
 actionable.
 
 ## When Jev is called

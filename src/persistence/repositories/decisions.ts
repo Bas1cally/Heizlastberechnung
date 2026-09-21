@@ -24,9 +24,9 @@ export class DecisionRepository {
   saveDecision(d: Decision, risk: RiskVerdict): void {
     this.db.transaction(() => {
       this.db.run(
-        `INSERT INTO jev_requests (decision_id, market_id, state_version, input_hash, timestamp_ms, state_json, model, input_tokens, output_tokens, jev_latency_ms)
-         VALUES (?,?,?,?,?,?,?,?,?,?)`,
-        [d.decisionId, d.marketId, d.stateVersion.toString(), d.inputHash, d.timestampMs, JSON.stringify(d.state), d.model, d.usage.input_tokens, d.usage.output_tokens, d.jevLatencyMs],
+        `INSERT INTO jev_requests (decision_id, market_id, state_version, raw_state_version, material_reason, input_hash, timestamp_ms, state_json, model, input_tokens, output_tokens, jev_latency_ms)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [d.decisionId, d.marketId, d.stateVersion.toString(), d.rawStateVersion.toString(), d.materialReason, d.inputHash, d.timestampMs, JSON.stringify(d.state), d.model, d.usage.input_tokens, d.usage.output_tokens, d.jevLatencyMs],
       );
       this.db.run(
         `INSERT INTO jev_answers (decision_id, answers_json, requested_action, risk_result, risk_reason) VALUES (?,?,?,?,?)`,
