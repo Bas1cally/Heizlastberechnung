@@ -154,7 +154,7 @@ export async function replayMarket(o: ReplayOptions): Promise<ReplayResult> {
       marketLiquidityShares: Math.min(snap.upBook.asks.reduce((s, l) => s + l.size, 0), snap.downBook.asks.reduce((s, l) => s + l.size, 0)),
       spread: Math.max(state.orderbook.upSpread, state.orderbook.downSpread),
       marketExposureUsd: 0, totalExposureUsd: 0, unpairedExposureUsd: 0, openOrders: 0, dailyPnlUsd: 0, consecutiveErrors: 0,
-      liveTradingEnabled: false,
+      executionMode: "none",
     }, o.limits);
     o.out.saveDecision(d, verdict);
     decisions++;

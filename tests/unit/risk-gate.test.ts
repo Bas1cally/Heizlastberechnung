@@ -19,7 +19,7 @@ const base: RiskContext = {
   openOrders: 0,
   dailyPnlUsd: 0,
   consecutiveErrors: 0,
-  liveTradingEnabled: true,
+  executionMode: "live",
 };
 
 const verdict = (over: Partial<RiskContext>) =>
@@ -40,7 +40,7 @@ describe("state version", () => {
       orderSizeShares: 1e9,
       totalExposureUsd: 1e9,
       openOrders: 99,
-      liveTradingEnabled: false,
+      executionMode: "none",
     });
     expect(v).toEqual({ result: "REJECTED", reason: "STALE_DECISION" });
   });
@@ -89,9 +89,9 @@ describe("trading limits", () => {
   });
 });
 
-describe("live trading gate", () => {
-  it("rejects any order when live trading is disabled", () => {
-    expect(verdict({ liveTradingEnabled: false })).toEqual({
+describe("execution mode gate", () => {
+  it("rejects any order in observe mode", () => {
+    expect(verdict({ executionMode: "none" })).toEqual({
       result: "REJECTED",
       reason: "LIVE_TRADING_DISABLED",
     });
@@ -99,15 +99,20 @@ describe("live trading gate", () => {
 
   it("is the default posture, so observe mode can never place an order", () => {
     for (const action of ["BUY_UP", "BUY_DOWN", "BUY_PAIR", "ADD_COMPLEMENT"] as const) {
-      expect(verdict({ action, liveTradingEnabled: false }).result).toBe("REJECTED");
+      expect(verdict({ action, executionMode: "none" }).result).toBe("REJECTED");
     }
+  });
+
+  it("lets simulated execution through the same limits as live", () => {
+    expect(verdict({ executionMode: "simulated" })).toEqual({ result: "APPROVED" });
+    expect(verdict({ executionMode: "simulated", orderSizeShares: 1e9 }).result).toBe("REJECTED");
   });
 });
 
 describe("risk-reducing actions", () => {
   it("lets HOLD and ABSTAIN through even when limits are breached", () => {
     for (const action of ["HOLD", "ABSTAIN"] as const) {
-      expect(verdict({ action, totalExposureUsd: 1e9, liveTradingEnabled: false }))
+      expect(verdict({ action, totalExposureUsd: 1e9, executionMode: "none" }))
         .toEqual({ result: "APPROVED" });
     }
   });

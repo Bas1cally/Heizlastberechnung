@@ -50,7 +50,12 @@ export interface RiskContext {
   readonly dailyPnlUsd: number;
   readonly consecutiveErrors: number;
 
-  readonly liveTradingEnabled: boolean;
+  /**
+   * none      - observe: nothing may be executed, simulated or otherwise
+   * simulated - paper / shadow: orders are built and simulated, never sent
+   * live      - real submission, only with ENABLE_LIVE_TRADING and --mode live
+   */
+  readonly executionMode: "none" | "simulated" | "live";
 }
 
 const APPROVED: RiskVerdict = { result: "APPROVED" };
@@ -86,7 +91,7 @@ export function evaluateRisk(ctx: RiskContext, limits: RiskLimits): RiskVerdict 
     return reject("STALE_DECISION");
   }
 
-  if (!ctx.liveTradingEnabled) return reject("LIVE_TRADING_DISABLED");
+  if (ctx.executionMode === "none") return reject("LIVE_TRADING_DISABLED");
 
   if (ctx.secondsRemaining < limits.minSecondsRemaining) return reject("TOO_CLOSE_TO_CLOSE");
   if (ctx.marketLiquidityShares < limits.minMarketLiquidityShares) {

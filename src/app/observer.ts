@@ -209,7 +209,7 @@ export class MarketObserver {
         openOrders: snap.openOrderCount,
         dailyPnlUsd: 0,
         consecutiveErrors: 0,
-        liveTradingEnabled: cfg.liveTradingEnabled,
+        executionMode: "none",
       },
       cfg.limits,
     );
