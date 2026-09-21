@@ -15,6 +15,8 @@ export interface RiskLimits {
   readonly maxJevLatencyMs: number;
   /** A directional buy must be priced at least this far under the measured win probability of its side. */
   readonly minMeasuredEdge: number;
+  /** Up to this price a buy with its hedge on the book is a free option and exempt from the edge rule. */
+  readonly maxFreeTailPrice: number;
 }
 
 /** Deliberately tight. Phase 1 never trades, so these only need to be safe. */
@@ -33,4 +35,5 @@ export const DEFAULT_LIMITS: RiskLimits = {
   maxSpread: 0.05,
   maxJevLatencyMs: 750,
   minMeasuredEdge: 0.02,
+  maxFreeTailPrice: 0.05,
 };

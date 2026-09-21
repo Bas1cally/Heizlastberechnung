@@ -91,6 +91,15 @@ async function once(): Promise<void> {
     writeFileSync(join(SYNC_DIR, "reports", "export.sqlite.gz"), gzipSync(readFileSync(tmp)));
     rmSync(tmp, { force: true });
   } catch (err) { log("export failed", { err: err instanceof Error ? err.message : String(err) }); }
+  for (const [file, name] of [["data/animal.sqlite", "animal"], ["data/animal-plus.sqlite", "animal-plus"]] as const) {
+    if (!existsSync(file)) continue;
+    try {
+      const tmp = join(SYNC_DIR, `${name}.sqlite`);
+      exportCompact(file, tmp, Date.now() - 36 * 3_600_000);
+      writeFileSync(join(SYNC_DIR, "reports", `${name}.sqlite.gz`), gzipSync(readFileSync(tmp)));
+      rmSync(tmp, { force: true });
+    } catch (err) { log("benchmark export failed", { file, err: err instanceof Error ? err.message : String(err) }); }
+  }
   if (existsSync("data/backtest.sqlite")) {
     try { writeFileSync(join(SYNC_DIR, "reports", "backtest.sqlite.gz"), gzipSync(readFileSync("data/backtest.sqlite"))); } catch { /* optional */ }
   }

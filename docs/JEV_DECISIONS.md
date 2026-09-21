@@ -148,3 +148,32 @@ at the cap when the leader asks more; the state carries `leader`,
 `leaderAsk`, `leaderAskDepth`, `tailAsk`, `tailAskDepth`, `hedgePriceCap`
 and `hedgeAvailable`; the action question explains the economics. Jev still
 chooses when to buy the tail and when to hedge; nothing here is a rule.
+
+## Benchmark: the mechanical copy runs beside Jev (added 2026-09-21)
+
+`src/jev/policy-animal.ts` plays the measured pattern deterministically and
+plugs in where Jev does (`pnpm auto -- animal`, `pnpm auto -- animalplus`).
+Each runner has its own database (`data/animal.sqlite`,
+`data/animal-plus.sqlite`), reads the hold-rate table from the main one, and
+is exported by the Jev runner's sync as `reports/animal(-plus).sqlite.gz`.
+The observer, gate, order builder, paper engine and analytics are the same
+code; only the intent source differs, so the comparison is on identical
+markets, identical books, identical fill model.
+
+- `animal`: tail at <= 0.02 inside 110 s of the close when the leader is
+  offered at <= 1 - tail; hedge as soon as it is offered under the cap; merge.
+- `animal-plus`: the copy plus three measured changes. A tail needs at
+  least 20 leader shares on the book (413 of 1,580 markets lost the tail
+  because the leader's ask side had emptied). The hedge waits while spot is
+  on the tail's side of the start price and more than 12 s remain (the 21
+  reversal wins came from tails that were *not* hedged in time). The tail
+  is also taken earlier when `1 - leadHeldRate` exceeds its price by a
+  cent (a 6% reversal rate is worth more than a 0.02 tail).
+
+What the comparison answers (§45): per market and per day, net PnL, tails
+bought, tails hedged, sets merged, unhedged tails lost, reversal wins, for
+`paper` (Jev), `animal` and `animal-plus` on the same markets. If Jev does
+not beat the plain copy after the acceptance stretch, its timing adds
+nothing measurable and the plain copy is the baseline any change must beat.
+The policies are not strategy rules for the bot (§19): they are the
+yardstick.

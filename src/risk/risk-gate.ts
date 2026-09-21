@@ -47,6 +47,8 @@ export interface RiskContext {
    */
   readonly buyPrice?: number | undefined;
   readonly measuredWinProbability?: number | undefined;
+  /** True when the opposite side is offered at no more than 1.00 minus buyPrice: the buy could be paired at no cost. */
+  readonly hedgeOnBook?: boolean | undefined;
 
   readonly secondsRemaining: number;
   readonly chainlinkAgeMs: number;
@@ -132,7 +134,10 @@ export function evaluateRisk(ctx: RiskContext, limits: RiskLimits): RiskVerdict 
   // minMeasuredEdge under the measured chance of that side winning. Paying
   // 0.45 for a side the recordings say wins 40% of the time is a losing
   // trade however confident the judgment behind it.
-  if ((ctx.action === "BUY_UP" || ctx.action === "BUY_DOWN") && ctx.buyPrice !== undefined && ctx.measuredWinProbability !== undefined
+  // A tail of a few cents with its hedge on the book is a free option (the set
+  // can be completed at no more than 1.00), so it needs no edge of its own.
+  const freeOption = ctx.buyPrice !== undefined && ctx.buyPrice <= limits.maxFreeTailPrice && ctx.hedgeOnBook === true;
+  if ((ctx.action === "BUY_UP" || ctx.action === "BUY_DOWN") && !freeOption && ctx.buyPrice !== undefined && ctx.measuredWinProbability !== undefined
     && ctx.buyPrice > ctx.measuredWinProbability - limits.minMeasuredEdge + 1e-9) {
     return reject("NO_MEASURED_EDGE");
   }

@@ -373,7 +373,9 @@ export class MarketObserver {
       const book = side === "UP" ? snap.upBook : snap.downBook;
       const ask = book ? bestAsk(book) : undefined;
       if (ask === undefined) return {};
-      return { buyPrice: ask, measuredWinProbability: side === leader ? held.rate : 1 - held.rate };
+      const otherAsk = bestAsk(side === "UP" ? snap.downBook! : snap.upBook!);
+      const hedgeOnBook = otherAsk !== undefined && otherAsk <= 1 - ask + 1e-9;
+      return { buyPrice: ask, measuredWinProbability: side === leader ? held.rate : 1 - held.rate, hedgeOnBook };
     })();
     const verdict: RiskVerdict = killed.tripped && !["HOLD", "ABSTAIN"].includes(d.requestedAction)
       ? { result: "REJECTED", reason: "KILL_SWITCH" }

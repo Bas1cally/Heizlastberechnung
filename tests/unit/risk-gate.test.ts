@@ -160,5 +160,8 @@ describe("measured edge", () => {
     expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.01, measuredWinProbability: 0.05 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // a tail under its measured reversal chance
     expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.45 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // no measurement: no rule
     expect(evaluateRisk({ ...base, action: "ADD_COMPLEMENT", buyPrice: 0.99, measuredWinProbability: 0.5 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // hedges need no edge
+    // A one-cent tail with its hedge on the book is a free option even where the measured reversal rate is below the price.
+    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.01, measuredWinProbability: 0.005, hedgeOnBook: true }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" });
+    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.01, measuredWinProbability: 0.005, hedgeOnBook: false }, DEFAULT_LIMITS)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" });
   });
 });

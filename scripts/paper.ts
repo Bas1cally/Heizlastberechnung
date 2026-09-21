@@ -35,13 +35,21 @@ import { createUpdateCheck, EXIT_UPDATE } from "../src/app/self-update.js";
 import { buildHoldRateTable, type HoldRateTable } from "../src/analytics/hold-rate.js";
 import { PaperLiveEngine } from "../src/execution/paper-live-engine.js";
 import { DEFAULT_FILL_PARAMS } from "../src/replay/paper-fill-model.js";
+import { animalPolicyCall } from "../src/jev/policy-animal.js";
 
 loadEnvFile();
 const cfg = loadConfig();
-const log = createLogger({ level: (process.env["LOG_LEVEL"] as never) ?? "info", write: teeSink("logs/paper.log") });
+// --policy animal | animal-plus: the deterministic benchmark (src/jev/policy-animal.ts)
+// in place of Jev, on the same pipeline, in its own database (pnpm auto -- animal).
+const policyIdx = process.argv.indexOf("--policy");
+const policy = policyIdx >= 0 ? process.argv[policyIdx + 1] : undefined;
+if (policy !== undefined && policy !== "animal" && policy !== "animal-plus") { console.error(`unknown --policy ${policy}`); process.exit(1); }
+const processName = policy ?? "paper";
+const log = createLogger({ level: (process.env["LOG_LEVEL"] as never) ?? "info", write: teeSink(`logs/${processName}.log`) });
 // Every 15 minutes the reports, a compact database export and the log tails
-// are pushed to the git branch `reports` (scripts/sync.ts). --no-sync to skip.
-const syncChild = process.argv.includes("--no-sync") ? undefined
+// are pushed to the git branch `reports` (scripts/sync.ts). --no-sync to skip;
+// a policy runner never syncs (the Jev runner's sync exports its database too).
+const syncChild = process.argv.includes("--no-sync") || policy ? undefined
   : spawn(process.execPath, ["node_modules/tsx/dist/cli.mjs", "scripts/sync.ts", "--every", process.env["SYNC_EVERY_MIN"] ?? "15"], { stdio: "ignore", env: process.env });
 syncChild?.on("exit", (code) => log.warn("sync loop exited", { code }));
 const argv = process.argv.slice(2);
@@ -49,7 +57,7 @@ const opt = (n: string, d: number) => { const i = argv.indexOf(`--${n}`); const 
 const latencyMs = opt("latency", Number(process.env["PAPER_LATENCY_MS"] ?? 350));
 const seed = opt("seed", 1);
 
-if (!cfg.typesafeApiKey) { log.error("TYPESAFE_API_KEY is not set"); process.exit(1); }
+if (!cfg.typesafeApiKey && !policy) { log.error("TYPESAFE_API_KEY is not set"); process.exit(1); }
 if (cfg.mode !== "observe" && cfg.mode !== "paper") {
   log.error(`bot:paper only runs in paper mode (got ${cfg.mode}); live execution does not exist`);
   process.exit(1);
@@ -71,8 +79,10 @@ const updateCheck = createUpdateCheck();
 // Measured base rates for Jev (analytics/hold-rate.ts), rebuilt from the
 // database before each market so every market that is over counts.
 let holdTable: HoldRateTable | undefined;
+// A policy runner in its own database reads the hold rates from the main one (HOLD_RATE_DB).
+const holdDb = process.env["HOLD_RATE_DB"]?.trim() ? openDatabase(process.env["HOLD_RATE_DB"]!.trim()) : undefined;
 const refreshHoldTable = () => {
-  try { holdTable = buildHoldRateTable(db, clock.wall()); log.info("hold-rate table", { markets: holdTable.markets, cells: holdTable.toJSON().cells.length }); }
+  try { holdTable = buildHoldRateTable(holdDb ?? db, clock.wall()); log.info("hold-rate table", { markets: holdTable.markets, cells: holdTable.toJSON().cells.length, source: holdDb ? process.env["HOLD_RATE_DB"] : cfg.databaseUrl }); }
   catch (err) { log.warn("hold-rate table failed; feature stays null", { err }); }
 };
 const maybeRestartForUpdate = async () => {
@@ -91,9 +101,9 @@ const startPriceFor = (openedAtMs: number) => tape.waitForStart(openedAtMs, 12_0
   .then((s) => (s.twap ? { price: s.twap.price, ts: s.twap.ts, source: `chainlink-twap${cfg.chainlinkTwapSeconds}` } : undefined));
 const db = openDatabase(cfg.databaseUrl);
 const repo = new DecisionRepository(db);
-const jevCall = createJevCall({ apiKey: cfg.typesafeApiKey, model: cfg.typesafeModel, timeoutMs: 5_000 });
+const jevCall = policy ? animalPolicyCall({ variant: policy === "animal-plus" ? "plus" : "plain" }) : createJevCall({ apiKey: cfg.typesafeApiKey!, model: cfg.typesafeModel, timeoutMs: 5_000 });
 
-log.info("paper starting", { mode: "paper", latencyMs, seed, fill: DEFAULT_FILL_PARAMS, limits: cfg.limits, db: cfg.databaseUrl, model: cfg.typesafeModel ?? "jev-latest" });
+log.info("paper starting", { mode: "paper", policy: policy ?? "jev", latencyMs, seed, fill: DEFAULT_FILL_PARAMS, limits: cfg.limits, db: cfg.databaseUrl, model: policy ?? cfg.typesafeModel ?? "jev-latest" });
 
 let current: MarketObserver | undefined;
 let shuttingDown = false;
@@ -119,7 +129,7 @@ while (!shuttingDown) {
     found = await findCurrentMarket(client as unknown as DiscoveryClient, now, cfg.marketDurationSeconds);
   } catch (err) {
     log.error("market discovery failed; retrying in 5s", { err });
-    try { repo.saveError("discovery", err instanceof Error ? `${err.name}: ${err.message}` : String(err), null, now); repo.heartbeat("paper", { phase: "waiting", market: "discovery-error", decisions: 0, killed: false }, now); } catch { /* db unavailable; keep going */ }
+    try { repo.saveError("discovery", err instanceof Error ? `${err.name}: ${err.message}` : String(err), null, now); repo.heartbeat(processName, { phase: "waiting", market: "discovery-error", decisions: 0, killed: false }, now); } catch { /* db unavailable; keep going */ }
     await new Promise((r) => setTimeout(r, 5_000));
     continue;
   }
@@ -127,12 +137,12 @@ while (!shuttingDown) {
     const w = windowAt(now, cfg.marketDurationSeconds);
     const untilNext = Math.max(1_000, Math.min(5_000, nextWindow(now, cfg.marketDurationSeconds).openedAtMs - now));
     log.warn("current window not tradable; waiting", { slug: w.slug, retryInS: Math.round(untilNext / 1000) });
-    try { repo.heartbeat("paper", { phase: "waiting", market: w.slug, decisions: 0, killed: false }, now); } catch { /* dashboard only */ }
+    try { repo.heartbeat(processName, { phase: "waiting", market: w.slug, decisions: 0, killed: false }, now); } catch { /* dashboard only */ }
     await new Promise((r) => setTimeout(r, untilNext));
     continue;
   }
   const market = found.identity;
-  const mlog = log.child({ market: market.slug, mode: "paper" });
+  const mlog = log.child({ market: market.slug, mode: "paper", policy: policy ?? "jev" });
   marketIndex++;
 
   // One engine per market; the position never carries over (each market settles).
@@ -153,7 +163,7 @@ while (!shuttingDown) {
       settlementStart: startPriceFor(market.openedAtMs),
       holdRate: (d, t) => holdTable?.estimate(d, t),
       executionMode: "simulated",
-      processName: "paper",
+      processName,
       onKill: (state) => { mlog.error("kill: cancelling resting paper orders, no new ones", { reasons: state.reasons }); engine.kill(); },
       onKillCleared: () => { mlog.warn("kill cleared: paper orders may be built again"); engine.resume(); },
       onBookUpdate: (book, nowMono) => engine.onBook(book, nowMono),
