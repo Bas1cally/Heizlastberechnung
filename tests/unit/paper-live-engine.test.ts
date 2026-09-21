@@ -108,6 +108,18 @@ describe("PaperLiveEngine", () => {
     expect(orders()).toHaveLength(1);
   });
 
+  it("accepts decisions again after resume, without reviving cancelled orders", () => {
+    const { e, orders } = engine({ latencyMs: 0 });
+    e.onApproved(decision("BUY_UP", "PASSIVE"), snapshot(), 1000);
+    e.kill();
+    e.resume();
+    expect(orders()[0]?.status).toBe("CANCELLED");
+    e.onApproved(decision("BUY_UP", "IMMEDIATE", "NONE", "d2"), snapshot(), 2000);
+    e.onBook(book("UP", 0.44, 0.45), 2000);
+    expect(orders()).toHaveLength(2);
+    expect(orders()[1]?.status).toBe("FILLED");
+  });
+
   it("honours a CANCEL decision", () => {
     const { e, orders } = engine();
     e.onApproved(decision("BUY_UP", "PASSIVE"), snapshot(), 1000);

@@ -69,6 +69,8 @@ details summary{cursor:pointer;color:var(--mut)}details p{color:var(--mut);margi
  <div class="lbl muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin:14px 0 6px">Letzte Ausführungen</div><div style="overflow:auto"><table id="tfills"><thead><tr><th>Zeit</th><th>Markt</th><th>Seite</th><th>Typ</th><th class="num">Preis</th><th class="num">Stück</th><th class="num">Gebühr</th></tr></thead><tbody></tbody></table></div>
 </div></section>
 
+<section class="card w6"><h2>Auswertung Paper</h2><p class="sub">Kennzahlen jenseits der Trefferquote (Phase 3). Alles simuliert, kein echtes Geld.</p><div id="analysis"></div></section>
+<section class="card w6"><h2>Abnahme Phase 1</h2><p class="sub">24 h unbeaufsichtigt, Reconnect, Stale-Schutz, alles gespeichert, Latenz gemessen.</p><div id="acceptance"></div></section>
 <section class="card w6"><h2>Meldungen</h2><p class="sub">Die letzten Einträge aus dem Fehlerprotokoll.</p><div id="errors" class="mono muted" style="font-size:12px;white-space:pre-wrap"></div></section>
 <section class="card w6"><h2>Was bedeutet das alles?</h2>
 <details><summary>Modi: Beobachten, Paper, Shadow, Live</summary><p><b>Beobachten</b>: Bot schaut zu, Jev entscheidet, nichts wird gesendet. <b>Paper</b>: dieselben Entscheidungen, Ausführung wird gegen echte Kurse simuliert. <b>Shadow</b>: alles wie live, inklusive Signatur – aber die Order wird nie abgeschickt. <b>Live</b>: echtes Geld. Existiert erst nach ausdrücklicher Freigabe.</p></details>
@@ -124,6 +126,18 @@ function render(s){
  $('markets').innerHTML=s.markets.recent.map(m=>{return row(hhmm(m.opened_at_ms)+'–'+hhmm(m.closes_at_ms),(m.resolved_outcome?OUT[m.resolved_outcome]||m.resolved_outcome:(m.closes_at_ms>s.now?'läuft':'offen'))+' · '+m.n)}).join('')||'<span class="muted">—</span>';
  $('errors').textContent=s.errors.length?s.errors.map(e=>hhmmss(e.ts_ms)+'  '+e.component+': '+e.message).join('\n'):'keine';
  renderTrading(s.trading||{});
+ renderAnalysis(s.analysis);
+}
+function renderAnalysis(a){if(!a)return;const m=a.paper;const ms=v=>v==null?'—':(v/1000).toFixed(0)+' s';
+ $('analysis').innerHTML=!m?'<span class="muted">Noch kein Paper-Lauf. Starte <code>pnpm bot:paper</code>.</span>':
+  row('Abgerechnete Märkte',m.settledMarkets)+row('Netto',money(m.netPnl))+row('Rendite auf Einsatz',m.returnOnDeployedCapital==null?'—':(m.returnOnDeployedCapital*100).toFixed(1).replace('.',',')+' %')+row('Einsatz gesamt',(+m.deployedCapitalUsd).toFixed(2).replace('.',',')+' $')
+  +row('pro Markt / pro Fill',(m.pnlPerMarket==null?'—':money(m.pnlPerMarket))+' / '+(m.pnlPerFill==null?'—':money(m.pnlPerFill)))+row('pro Jev-Aufruf',m.pnlPerJevCall==null?'—':(m.pnlPerJevCall>=0?'+':'')+(+m.pnlPerJevCall).toFixed(4).replace('.',',')+' $')
+  +row('Größter Rückgang','−'+(+m.maxDrawdown).toFixed(2).replace('.',',')+' $')+row('Höchster Einsatz gleichzeitig',(+m.worstCaseExposureUsd).toFixed(2).replace('.',',')+' $')
+  +row('Ungepaart offen',ms(m.unpairedExposure.totalMs)+(m.unpairedExposure.shareOfMarketTime==null?'':' ('+(m.unpairedExposure.shareOfMarketTime*100).toFixed(0)+' % der Zeit)'))
+  +row('Orders ganz / teils / gar nicht / storniert',m.fills+' / '+m.partials+' / '+m.noFills+' / '+m.cancelled)+row('Maker / Taker',m.makerFills+' / '+m.takerFills)+row('Jev-Kosten im Netto',(+m.jevCostUsd).toFixed(2).replace('.',',')+' $ → '+money(m.netPnlAfterJevCost))
+  +(a.paperByTime&&a.paperByTime.length?'<div class="lbl muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px">Ergebnis nach Restzeit bei Entscheidung</div><table><thead><tr><th>Restzeit</th><th class="num">Fills</th><th class="num">Ergebnis</th><th class="num">je Stück</th><th class="num">Treffer</th></tr></thead><tbody>'+a.paperByTime.map(r=>'<tr><td>'+r.bucket+'</td><td class="num">'+r.fills+'</td><td class="num">'+money(r.pnl)+'</td><td class="num">'+f(r.pnlPerShare,3)+'</td><td class="num">'+pct(r.winRate)+'</td></tr>').join('')+'</tbody></table>':'');
+ const ac=a.acceptance;if(ac){const ST={PASS:['ok','erfüllt'],FAIL:['bad','nicht erfüllt'],INSUFFICIENT:['warn','noch zu wenig Daten']};const NAME={'24 h unattended runtime':'24 h Dauerbetrieb','websocket reconnection':'Reconnect überstanden','stale-state protection':'Stale-Schutz','every Jev decision stored':'Jede Entscheidung gespeichert','latency statistics generated':'Latenz gemessen','no order submitted':'Keine Order gesendet'};
+  $('acceptance').innerHTML='<div style="margin-bottom:8px"><span class="dot '+ST[ac.overall][0]+'"></span> <b>'+ST[ac.overall][1]+'</b></div>'+ac.criteria.map(c=>'<div class="row"><span class="k"><span class="dot '+ST[c.status][0]+'"></span> '+(NAME[c.name]||c.name)+'</span><span class="v muted" style="font-size:12px;text-align:right;max-width:60%">'+c.detail+'</span></div>').join('');}
 }
 function ticks(min,max,n){const span=max-min||1;const raw=span/n;const p=Math.pow(10,Math.floor(Math.log10(raw)));const st=[1,2,5,10].map(x=>x*p).find(x=>x>=raw);const out=[];for(let v=Math.ceil(min/st)*st;v<=max+1e-9;v+=st)out.push(+v.toFixed(6));return out;}
 function drawJevMarket(tl){const svg=$('jm');const W=800,H=240,L=40,R=14,T=12,Bt=26;if(!tl||tl.length<2){svg.innerHTML='<text x="'+L+'" y="'+(H/2)+'">Noch zu wenige Entscheidungen in diesem Markt.</text>';return;}

@@ -128,6 +128,9 @@ export class PaperLiveEngine {
 
   kill(): void { this.killed = true; this.cancelAll("kill switch"); }
 
+  /** The switch cleared: accept decisions again. Cancelled orders stay cancelled. */
+  resume(): void { this.killed = false; }
+
   /** An APPROVED decision with the snapshot it was checked against. */
   onApproved(d: Decision, snap: MarketState, decisionMono: number): void {
     if (this.killed || this.settled) return;

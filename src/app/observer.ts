@@ -42,6 +42,8 @@ export interface ObserverDeps {
   readonly processName?: string;
   /** Called when the kill switch trips: cancel resting orders, reconcile. Never liquidate. */
   readonly onKill?: (state: KillState) => void | Promise<void>;
+  /** Called when a transient trip clears or the operator resumes: new orders may be built again. */
+  readonly onKillCleared?: () => void;
   /** Called when the feed reports the market resolved. */
   readonly onResolved?: (outcome: "UP" | "DOWN" | undefined, raw: { conditionId: string; winningAssetId?: string | null; winningOutcome?: string | null }) => void;
 }
@@ -107,6 +109,7 @@ export class MarketObserver {
         onClear: () => {
           log.warn("kill switch cleared - resuming");
           this.persist("control", () => deps.repo.setControl("kill", JSON.stringify({ tripped: false, clearedAt: clock.wall() }), clock.wall()));
+          try { deps.onKillCleared?.(); } catch (err) { log.error("onKillCleared failed", { err }); }
         },
       },
     );

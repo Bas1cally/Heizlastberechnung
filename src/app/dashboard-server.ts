@@ -4,6 +4,8 @@ import { DecisionRepository } from "../persistence/repositories/decisions.js";
 import { percentiles } from "../analytics/latency.js";
 import { directionalProbability } from "../analytics/edge-analysis.js";
 import { collectTrading } from "./trading-view.js";
+import { executionMetrics, realizedPnlByTime } from "../analytics/metrics.js";
+import { acceptanceReport } from "../analytics/acceptance.js";
 import { loadMarketOutcomes, loadObservations } from "../analytics/observations.js";
 import { brierScore, calibrationByConfidence } from "../analytics/calibration.js";
 
@@ -105,6 +107,8 @@ export function collectState(db: Db, nowMs: number): Record<string, unknown> {
 
 import { HTML } from "./dashboard-html.js";
 
+const usdPerM = Number(process.env["TYPESAFE_USD_PER_MTOKEN"] ?? "");
+
 export function startDashboard(db: Db, port: number, log: (msg: string) => void, backtestDb?: Db): () => void {
   const repo = new DecisionRepository(db);
   const json = (res: ServerResponse, code: number, body: unknown) => { res.writeHead(code, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
@@ -122,7 +126,13 @@ export function startDashboard(db: Db, port: number, log: (msg: string) => void,
           backtest: backtestDb ? collectTrading(backtestDb, "backtest") : null,
           live: collectTrading(db, "live"),
         };
-        return json(res, 200, { ...state, trading });
+        const outcomes = new Map(loadMarketOutcomes(db, Date.now()).filter((o) => o.outcome).map((o) => [o.marketId, o.outcome!] as const));
+        const analysis = {
+          paper: executionMetrics(db, "paper", usdPerM > 0 ? usdPerM : 0),
+          paperByTime: realizedPnlByTime(db, "paper", outcomes),
+          acceptance: acceptanceReport(db, Date.now()),
+        };
+        return json(res, 200, { ...state, trading, analysis });
       }
       if (req.method === "POST" && url === "/api/kill") {
         const body = await readBody(req).then((b) => (b ? (JSON.parse(b) as { reason?: string }) : {}));
