@@ -186,7 +186,7 @@ export class MarketObserver {
     }
     if (nowMono - this.lastHeartbeatMono >= 2_000) {
       this.lastHeartbeatMono = nowMono;
-      this.persist("heartbeat", () => repo.heartbeat(this.deps.processName ?? "observer", { market: this.market.slug, decisions: this.decisions, killed: this.kill.state().tripped }, clock.wall()));
+      this.persist("heartbeat", () => repo.heartbeat(this.deps.processName ?? "observer", { phase: "observing", market: this.market.slug, decisions: this.decisions, killed: this.kill.state().tripped, chainlinkAgeS: Number((this.chainlink.ageMs() / 1000).toFixed(1)), bookAgeS: Number((this.books.ageMs() / 1000).toFixed(1)) }, clock.wall()));
     }
   }
 
@@ -335,6 +335,9 @@ export class MarketObserver {
     this.chainlink.start();
     const { clock } = this.deps;
     while (!this.stopped && clock.wall() < this.market.closesAtMs + graceMs) {
+      // Health, kill switch and heartbeat must not depend on feed events:
+      // a silent feed is exactly the case the kill switch exists for.
+      this.housekeeping();
       await new Promise((r) => setTimeout(r, 250));
     }
     await this.stop();

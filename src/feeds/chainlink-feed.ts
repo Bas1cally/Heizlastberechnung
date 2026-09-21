@@ -63,7 +63,8 @@ export class ChainlinkFeed {
   async stop(): Promise<void> {
     this.stopped = true;
     await this.handle?.close().catch(() => undefined);
-    await this.loop;
+    // If the transport does not end its iterator on close, do not hang forever.
+    await Promise.race([this.loop, new Promise((r) => setTimeout(r, 2_000))]);
   }
 
   private async run(): Promise<void> {

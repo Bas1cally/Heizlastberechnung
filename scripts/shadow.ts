@@ -63,7 +63,17 @@ process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
 while (!shuttingDown) {
   const now = clock.wall();
-  const found = await findCurrentMarket(publicClient as unknown as DiscoveryClient, now, cfg.marketDurationSeconds);
+  // A transport error here (a Gamma timeout, a DNS hiccup) is not a reason
+  // to exit: log it, record it, wait, try again.
+  let found: Awaited<ReturnType<typeof findCurrentMarket>>;
+  try {
+    found = await findCurrentMarket(publicClient as unknown as DiscoveryClient, now, cfg.marketDurationSeconds);
+  } catch (err) {
+    log.error("market discovery failed; retrying in 5s", { err });
+    try { repo.saveError("discovery", err instanceof Error ? `${err.name}: ${err.message}` : String(err), null, now); repo.heartbeat("shadow", { phase: "waiting", market: "discovery-error", decisions: 0, killed: false }, now); } catch { /* db unavailable; keep going */ }
+    await new Promise((r) => setTimeout(r, 5_000));
+    continue;
+  }
   if (!found) {
     const untilNext = Math.max(1_000, Math.min(5_000, nextWindow(now, cfg.marketDurationSeconds).openedAtMs - now));
     log.warn("current window not tradable; waiting", { slug: windowAt(now, cfg.marketDurationSeconds).slug, retryInS: Math.round(untilNext / 1000) });
@@ -114,7 +124,13 @@ while (!shuttingDown) {
     },
     market,
   );
-  await current.run();
+  try {
+    await current.run();
+  } catch (err) {
+    log.error("market run failed; moving on", { err });
+    try { repo.saveError("observer", err instanceof Error ? `${err.name}: ${err.message}` : String(err), market.marketId, clock.wall()); } catch { /* keep going */ }
+    await current.stop().catch(() => undefined);
+  }
   engine.flush((assetId) => (assetId === market.upAssetId ? undefined : undefined));
   log.info("market finished", { slug: market.slug, decisions: current.decisionCount(), shadowOrders: shadowRecords, latency: current.latencyReport() });
   current = undefined;

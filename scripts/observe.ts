@@ -61,13 +61,24 @@ process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
 while (!shuttingDown) {
   const now = clock.wall();
-  const found = await findCurrentMarket(client as unknown as DiscoveryClient, now, cfg.marketDurationSeconds);
+  // A transport error here (a Gamma timeout, a DNS hiccup) is not a reason
+  // to exit: log it, record it, wait, try again.
+  let found: Awaited<ReturnType<typeof findCurrentMarket>>;
+  try {
+    found = await findCurrentMarket(client as unknown as DiscoveryClient, now, cfg.marketDurationSeconds);
+  } catch (err) {
+    log.error("market discovery failed; retrying in 5s", { err });
+    try { repo.saveError("discovery", err instanceof Error ? `${err.name}: ${err.message}` : String(err), null, now); repo.heartbeat("observer", { phase: "waiting", market: "discovery-error", decisions: 0, killed: false }, now); } catch { /* db unavailable; keep going */ }
+    await new Promise((r) => setTimeout(r, 5_000));
+    continue;
+  }
   if (!found) {
     // Not listed yet, closed, or not accepting orders: wait for the boundary
     // (or 5s, whichever is sooner) and look again.
     const w = windowAt(now, cfg.marketDurationSeconds);
     const untilNext = Math.max(1_000, Math.min(5_000, nextWindow(now, cfg.marketDurationSeconds).openedAtMs - now));
     log.warn("current window not tradable; waiting", { slug: w.slug, retryInS: Math.round(untilNext / 1000) });
+    try { repo.heartbeat("observer", { phase: "waiting", market: w.slug, decisions: 0, killed: false }, now); } catch { /* dashboard only */ }
     await new Promise((r) => setTimeout(r, untilNext));
     continue;
   }
@@ -80,7 +91,13 @@ while (!shuttingDown) {
       chainlinkSubscribe: chainlinkSubscribe(client as unknown as RealtimeClientLike) },
     market,
   );
-  await current.run();
+  try {
+    await current.run();
+  } catch (err) {
+    log.error("market run failed; moving on", { err });
+    try { repo.saveError("observer", err instanceof Error ? `${err.name}: ${err.message}` : String(err), market.marketId, clock.wall()); } catch { /* keep going */ }
+    await current.stop().catch(() => undefined);
+  }
   log.info("market finished", { slug: market.slug, decisions: current.decisionCount(), latency: current.latencyReport() });
   current = undefined;
 }
