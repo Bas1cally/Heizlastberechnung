@@ -125,7 +125,12 @@ export function evaluateRisk(ctx: RiskContext, limits: RiskLimits): RiskVerdict 
   if (ctx.executionMode === "none") return reject("LIVE_TRADING_DISABLED");
 
   if (ctx.secondsRemaining < limits.minSecondsRemaining) return reject("TOO_CLOSE_TO_CLOSE");
-  if (ctx.marketLiquidityShares < limits.minMarketLiquidityShares) {
+  // Ask-side depth bounds what a taker order can move; a hedge is a bid at
+  // 1.00 minus the tail that rests when nothing is offered (the usual shape
+  // of the leader's book late in a market: no ask at all), so depth says
+  // nothing about it. Observed: every benchmark hedge refused here while
+  // the tails expired unhedged.
+  if (ctx.action !== "ADD_COMPLEMENT" && ctx.marketLiquidityShares < limits.minMarketLiquidityShares) {
     return reject("INSUFFICIENT_LIQUIDITY");
   }
   if (ctx.spread > limits.maxSpread) return reject("SPREAD_TOO_WIDE");

@@ -170,3 +170,11 @@ describe("measured edge", () => {
     expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.06, measuredWinProbability: 0.005 }, DEFAULT_LIMITS)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" });
   });
 });
+
+describe("liquidity and hedges", () => {
+  it("does not refuse a hedge for an empty ask side: the hedge is a bid that rests", () => {
+    expect(verdict({ action: "BUY_UP", marketLiquidityShares: 0 })).toEqual({ result: "REJECTED", reason: "INSUFFICIENT_LIQUIDITY" });
+    expect(verdict({ action: "BUY_PAIR", marketLiquidityShares: 0 })).toEqual({ result: "REJECTED", reason: "INSUFFICIENT_LIQUIDITY" });
+    expect(verdict({ action: "ADD_COMPLEMENT", marketLiquidityShares: 0 })).toEqual({ result: "APPROVED" });
+  });
+});
