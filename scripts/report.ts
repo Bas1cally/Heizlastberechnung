@@ -42,6 +42,16 @@ const marketRows = perMarket.map((m) => {
     jevFinal: { UP: probs.UP ?? null, DOWN: probs.DOWN ?? null, UNRESOLVED: probs.UNRESOLVED ?? null, action: an?.action?.choice ?? null },
   };
 });
+const shadow = db.get<{ n: number; signed: number; fills: number; partial: number; nofill: number; resting: number; signing_p50: number | null }>(`
+  SELECT COUNT(*) AS n, SUM(signed) AS signed,
+         SUM(CASE WHEN hypothetical_status = 'FILLED' THEN 1 ELSE 0 END) AS fills,
+         SUM(CASE WHEN hypothetical_status = 'PARTIAL' THEN 1 ELSE 0 END) AS partial,
+         SUM(CASE WHEN hypothetical_status = 'NO_FILL' THEN 1 ELSE 0 END) AS nofill,
+         SUM(CASE WHEN hypothetical_status = 'RESTING' THEN 1 ELSE 0 END) AS resting,
+         NULL AS signing_p50
+  FROM shadow_orders`);
+const shadowMoved = db.all<{ v: number }>(`SELECT moved_against_bps AS v FROM shadow_orders WHERE moved_against_bps IS NOT NULL`).map((x) => x.v);
+const shadowSigning = db.all<{ v: number }>(`SELECT signing_ms AS v FROM shadow_orders`).map((x) => x.v);
 const span = db.get<{ a: number | null; b: number | null }>(`SELECT MIN(timestamp_ms) AS a, MAX(timestamp_ms) AS b FROM jev_requests`);
 
 console.log(JSON.stringify({
@@ -55,6 +65,12 @@ console.log(JSON.stringify({
   risk: risk.map((r) => ({ result: r.r, reason: r.reason, n: r.n })),
   jevLatencyMs: percentiles(jev),
   pipelineLatencyMs: pipeline,
+  shadow: shadow && shadow.n > 0 ? {
+    orders: shadow.n, signed: shadow.signed, signingMs: percentiles(shadowSigning),
+    wouldHave: { filled: shadow.fills, partial: shadow.partial, noFill: shadow.nofill, resting: shadow.resting },
+    bookMovedAgainstBps: percentiles(shadowMoved),
+    movedAgainstShare: shadowMoved.length ? shadowMoved.filter((v) => v > 0).length / shadowMoved.length : null,
+  } : null,
   feeds: {
     chainlinkTicks: { count: ticks?.n ?? 0, last: iso(ticks?.last ?? null) },
     orderbookSnapshots: books.map((b) => ({ asset: b.asset_id.slice(0, 12) + "...", count: b.n, last: iso(b.last) })),

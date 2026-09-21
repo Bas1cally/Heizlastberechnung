@@ -29,10 +29,12 @@ Phase 1 groundwork. **No order path exists yet, in any mode.**
 
 | Paper trading: order mechanics, fills with latency and queue draw, merge, settlement | `src/replay/paper-engine.ts`, `pnpm bot:paper` |
 
+| Shadow execution: real signing, no submission, book movement to hypothetical ACK | `src/execution/shadow-engine.ts`, `pnpm bot:shadow` |
+
 | Next | |
 | --- | --- |
-| Shadow execution against live infrastructure, stopping before submission | `src/execution/` |
-| Real execution and merge/redeem adapters, behind `ENABLE_LIVE_TRADING` + `--mode live` | `src/execution/`, `src/inventory/` |
+| Real execution, cancel management and merge/redeem adapters, behind `ENABLE_LIVE_TRADING` + `--mode live` | `src/execution/`, `src/inventory/` |
+| Kill switch wiring (feed staleness, reconciliation, daily loss) | `src/risk/kill-switch.ts` |
 
 ## Requirements
 
@@ -50,6 +52,7 @@ pnpm report             # what the observer recorded
 pnpm calibrate          # calibration + naive edge reports from recorded outcomes
 pnpm replay             # causal replay of recorded markets (cached Jev answers)
 pnpm bot:paper          # paper trading over recorded markets -> reports/backtest-summary.json
+pnpm bot:shadow         # live path incl. signing, stops before submission (needs POLYMARKET_PRIVATE_KEY)
 pnpm benchmark:jev      # latency + stability over recorded states
 ```
 

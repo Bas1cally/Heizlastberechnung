@@ -114,3 +114,21 @@ Known limits of the simulation, stated plainly: books are recorded at 500 ms,
 so fills inside that interval are invisible; latency is a constant, not a
 distribution; fees and gas default to zero and must be set from the real fee
 schedule before any number here is believed.
+
+## Shadow execution
+
+`pnpm bot:shadow` runs the live observer with the risk gate in `simulated`
+mode. For every APPROVED decision it builds the orders, **signs them with the
+real key** through `createLimitOrder` / `createMarketOrder`, and stops. The
+signer is constructed from those two methods only; it holds no reference to
+`postOrder`, so submission is impossible by construction, not by a flag.
+
+Per signed order it records signing time, the best ask at decision, the best
+ask once a hypothetical ACK would have arrived (signing done plus an assumed
+submit-to-ACK, default 150 ms), how far the book moved against the order in
+bps, and the fill the paper model would give against that later book. This
+is the measurement the brief asks for in §39: does the apparent edge survive
+the real latency path. `pnpm report` summarises it under `shadow`.
+
+Resting orders are GTC with a TTL the bot enforces itself, because the SDK
+requires GTD expirations at least three minutes out.

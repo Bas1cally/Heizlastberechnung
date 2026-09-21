@@ -59,3 +59,10 @@ switch fired.
   exists to answer.
 - **Calibration is unknown** until the replay and calibration reports exist.
 - **The live SDK behaviour is unverified** — see `docs/DEPENDENCIES.md`.
+
+## Shadow mode and the private key
+
+Shadow mode needs `POLYMARKET_PRIVATE_KEY` because it signs real orders. It
+cannot submit them: the signer is built from `createLimitOrder` and
+`createMarketOrder` alone and never sees `postOrder`. `pnpm bot:shadow`
+refuses `--mode live`. Live mode does not exist yet.
