@@ -40,6 +40,20 @@ export class DecisionRepository {
     });
   }
 
+  /**
+   * The answer Jev actually gave on this market closest to `atMs` (within
+   * `toleranceMs`, never later than `atMs`). Replays of a live recording
+   * rarely rebuild the exact state (books are sampled at 500 ms, timing
+   * differs, inventory changes it), so the hash cache misses; the recorded
+   * decision nearest in time is what Jev said at that moment.
+   */
+  recordedAnswersAt(marketId: string, atMs: number, toleranceMs = 2_000): { answers: string; model: string; latencyMs: number; decisionId: string; timestampMs: number } | undefined {
+    const row = this.db.get<{ decision_id: string; answers_json: string; model: string; jev_latency_ms: number; timestamp_ms: number }>(
+      `SELECT r.decision_id, a.answers_json, r.model, r.jev_latency_ms, r.timestamp_ms FROM jev_requests r JOIN jev_answers a USING (decision_id)
+       WHERE r.market_id = ? AND r.timestamp_ms <= ? AND r.timestamp_ms >= ? ORDER BY r.timestamp_ms DESC LIMIT 1`, [marketId, atMs, atMs - toleranceMs]);
+    return row ? { answers: row.answers_json, model: row.model, latencyMs: row.jev_latency_ms, decisionId: row.decision_id, timestampMs: row.timestamp_ms } : undefined;
+  }
+
   cachedAnswers(inputHash: string): { answers: string; model: string; latencyMs: number } | undefined {
     const row = this.db.get<{ response_json: string; model: string; latency_ms: number }>(
       `SELECT response_json, model, latency_ms FROM jev_cache WHERE input_hash = ?`, [inputHash]);

@@ -2,8 +2,11 @@
  * Performance metrics, EV segmentation, Animal00 research and the latency
  * report (brief §12, §19, §26, §30, §37) from what the bot has recorded.
  *
- *   pnpm analyze                    # mode "paper" from the main database
- *   pnpm analyze -- --mode backtest # data/backtest.sqlite
+ *   pnpm analyze                       # mode "paper" from the main database
+ *   pnpm analyze -- --records backtest # data/backtest.sqlite
+ *
+ * (`--mode` is the bot mode flag parsed by loadConfig, so the record set is
+ * chosen with `--records`.)
  *
  * Writes reports/metrics-<mode>.json, reports/ev-segments.json (+ CSVs),
  * reports/animal00.json, reports/latency.json. Jev API cost is priced at
@@ -22,7 +25,7 @@ loadEnvFile();
 const cfg = loadConfig();
 const argv = process.argv.slice(2);
 const opt = (n: string) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? argv[i + 1] : undefined; };
-const mode = opt("mode") ?? "paper";
+const mode = opt("records") ?? "paper";
 const usdPerMToken = Number(process.env["TYPESAFE_USD_PER_MTOKEN"] ?? 0) || 0;
 
 const db = openDatabase(cfg.databaseUrl);

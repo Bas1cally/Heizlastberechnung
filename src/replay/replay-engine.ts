@@ -80,6 +80,8 @@ export interface ReplayOptions {
   readonly minIntervalMs: number;
   /** Cache lookup in the source database. */
   readonly cached: (inputHash: string) => { answers: string; model: string; latencyMs: number } | undefined;
+  /** Fallback when the hash misses: the decision recorded on this market nearest in time (see DecisionRepository.recordedAnswersAt). */
+  readonly recorded?: (atMs: number) => { answers: string; model: string; latencyMs: number; decisionId: string } | undefined;
   readonly call: JevCall | undefined;
   readonly freshJev: boolean;
   readonly out: DecisionRepository;
@@ -90,6 +92,8 @@ export interface ReplayResult {
   readonly events: number;
   readonly decisions: number;
   readonly cacheHits: number;
+  /** Decisions taken from the recording by time rather than by hash. */
+  readonly recordedHits: number;
   readonly jevCalls: number;
   readonly skippedNoJev: number;
 }
@@ -101,7 +105,8 @@ export async function replayMarket(o: ReplayOptions): Promise<ReplayResult> {
   let lastSubmitAt = Number.NEGATIVE_INFINITY;
   let lastBookAt = Number.NEGATIVE_INFINITY;
   let lastTickAt = Number.NEGATIVE_INFINITY;
-  let decisions = 0, cacheHits = 0, jevCalls = 0, skippedNoJev = 0;
+  let decisions = 0, cacheHits = 0, recordedHits = 0, jevCalls = 0, skippedNoJev = 0;
+  let lastRecordedId: string | undefined;
 
   o.out.upsertMarket(o.identity, o.events[0]?.atMs ?? 0);
   const hasTwap = o.events.some((e) => e.kind === "tick" && e.source?.startsWith("chainlink-twap"));
@@ -132,8 +137,13 @@ export async function replayMarket(o: ReplayOptions): Promise<ReplayResult> {
     let latencyMs = 0;
     let hit = false;
     const c = o.freshJev ? undefined : o.cached(inputHash);
+    const rec = c || o.freshJev ? undefined : o.recorded?.(ev.atMs);
     if (c) {
       answers = JSON.parse(c.answers); model = c.model; latencyMs = c.latencyMs; hit = true; cacheHits++;
+    } else if (rec && rec.decisionId !== lastRecordedId) {
+      // Each recorded decision is used at most once, at the first replay state at or after it.
+      lastRecordedId = rec.decisionId;
+      answers = JSON.parse(rec.answers); model = rec.model; latencyMs = rec.latencyMs; hit = true; recordedHits++;
     } else if (o.call) {
       const t0 = performance.now();
       const res = await o.call(state, QUESTIONS, new AbortController().signal);
@@ -174,5 +184,5 @@ export async function replayMarket(o: ReplayOptions): Promise<ReplayResult> {
     decisions++;
     o.onDecision?.(d, hit);
   }
-  return { events: o.events.length, decisions, cacheHits, jevCalls, skippedNoJev };
+  return { events: o.events.length, decisions, cacheHits, recordedHits, jevCalls, skippedNoJev };
 }

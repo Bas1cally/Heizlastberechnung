@@ -11,7 +11,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { loadEnvFile } from "../src/app/env.js";
 import { loadConfig } from "../src/app/config.js";
 import { openDatabase } from "../src/persistence/database.js";
-import { loadMarketOutcomes, loadObservations } from "../src/analytics/observations.js";
+import { loadMarketOutcomes, loadObservations, marketConsistency } from "../src/analytics/observations.js";
 import { brierScore, calibrationByConfidence, calibrationByTime, edgeByPrice, edgeByTime, naiveEdge, toCsv } from "../src/analytics/calibration.js";
 
 loadEnvFile();
@@ -27,6 +27,7 @@ const time = calibrationByTime(obs);
 const byTime = edgeByTime(obs);
 const byPrice = edgeByPrice(obs);
 const edges = obs.map(naiveEdge);
+const consistency = marketConsistency(db, Date.now());
 
 const summary = {
   generatedAt: new Date().toISOString(),
@@ -45,6 +46,7 @@ const summary = {
   calibrationByTime: time,
   edgeByTime: byTime,
   edgeByPrice: byPrice,
+  consistency,
   perMarket: outcomes.map((o) => ({ slug: o.slug, outcome: o.outcome ?? null, source: o.source, decisions: o.decisions, derivedStart: o.derivedStart ?? null, derivedEnd: o.derivedEnd ?? null })),
 };
 
@@ -64,4 +66,11 @@ if (summary.overall) {
   console.log("\nnaive edge by time          n     ask      jevEdge  pnl/share  win");
   for (const r of byTime) console.log(`  ${r.bucket.padEnd(12)} ${String(r.n).padStart(6)}   ${fmt(r.meanAsk)}   ${fmt(r.meanJevEdge)}   ${fmt(r.meanPnl)}     ${fmt(r.winRate)}`);
 }
+console.log("\noutcome cross-check per market   feed  TWAP  spot  market(UPmid)  Jev(last)      start: derived / Jev    first tick +s  last tick -s");
+for (const c of consistency) {
+  const o = (x: string | undefined) => (x ?? "-").padEnd(5);
+  const jf = c.jevFinal ? `${c.jevFinal.side}@${c.jevFinal.secondsRemaining}s`.padEnd(13) : "-".padEnd(13);
+  console.log(`  ${c.slug.slice(-10)}  ${o(c.feed)} ${o(c.twap?.outcome)} ${o(c.spot?.outcome)} ${o(c.marketImplied)}(${c.marketUpMid === undefined ? "  -  " : c.marketUpMid.toFixed(3)})  ${jf}  ${c.twap ? c.twap.startPrice.toFixed(1) : "-"} / ${c.jevFinal ? c.jevFinal.start.toFixed(1) : "-"}   ${c.twapFirstAfterOpenS ?? "-"}  ${c.twapLastBeforeCloseS ?? "-"}${c.agree ? "" : "   <-- " + c.notes.join("; ")}`);
+}
+console.log(`  ${consistency.filter((c) => c.agree).length} of ${consistency.length} market(s) consistent across all sources`);
 console.log("\nwritten: reports/calibration.{json,csv}, reports/edge-by-time.csv, reports/edge-by-price.csv");

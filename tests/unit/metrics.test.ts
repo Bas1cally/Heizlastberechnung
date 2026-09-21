@@ -84,15 +84,15 @@ const ob = (over: Partial<Observation>): Observation => ({ pUp: 0.9, unresolvedM
 describe("evSegments", () => {
   it("buckets by absolute distance, vol, confidence, action and pair cost, keeping unknowns visible", () => {
     const s = evSegments([
-      ob({ distanceBps: -3, realizedVol30s: 0.0003, actionConfidence: 0.95, pairAskCost: 1.01 }),
-      ob({ distanceBps: 30, realizedVol30s: 0.005, actionConfidence: 0.6, pairAskCost: 0.985, action: "HOLD" }),
+      ob({ distanceBps: -3, realizedVol30s: 3, actionConfidence: 0.95, pairAskCost: 1.01 }),
+      ob({ distanceBps: 30, realizedVol30s: 60, actionConfidence: 0.6, pairAskCost: 0.985, action: "HOLD" }),
       ob({}),
     ]);
     expect(s.byDistanceBps.find((r) => r.bucket === "2.5-5bps")!.n).toBe(1);
     expect(s.byDistanceBps.find((r) => r.bucket === "20-50bps")!.n).toBe(1);
     expect(s.byDistanceBps.find((r) => r.bucket === "unknown")!.n).toBe(1);
     expect(s.byVolatility.find((r) => r.bucket === "2-5bps")!.n).toBe(1);
-    expect(s.byVolatility.find((r) => r.bucket === "20bps+")!.n).toBe(1);
+    expect(s.byVolatility.find((r) => r.bucket === "50bps+")!.n).toBe(1);
     expect(s.byJevConfidence.find((r) => r.bucket === "0.9-0.99")!.n).toBe(1);
     expect(s.byAction.map((r) => r.bucket)).toEqual(["BUY_UP", "HOLD"]);
     expect(s.byAction.find((r) => r.bucket === "BUY_UP")!.n).toBe(2);

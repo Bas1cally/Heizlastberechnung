@@ -74,6 +74,7 @@ export class MarketObserver {
   private lastControlPollMono = Number.NEGATIVE_INFINITY;
   private lastHeartbeatMono = Number.NEGATIVE_INFINITY;
   private manualKill = false;
+  private manualNote: string | undefined;
   private lastSubmitMono = Number.NEGATIVE_INFINITY;
   private lastPersistFailMono = Number.NEGATIVE_INFINITY;
 
@@ -102,7 +103,8 @@ export class MarketObserver {
       {
         onTrip: (reasons) => {
           log.error("KILL SWITCH TRIPPED - no new orders", { reasons });
-          this.persist("control", () => deps.repo.setControl("kill", JSON.stringify({ tripped: true, reasons, hard: this.kill.state().hard, since: clock.wall() }), clock.wall()));
+          // The operator's note marks the row as a command; keep it while their kill is active.
+          this.persist("control", () => deps.repo.setControl("kill", JSON.stringify({ tripped: true, reasons, hard: this.kill.state().hard, since: clock.wall(), ...(this.manualKill ? { note: this.manualNote ?? "manual" } : {}) }), clock.wall()));
           this.persist("error", () => deps.repo.saveError("kill-switch", `tripped: ${reasons.join(", ")}`, market.marketId, clock.wall()));
           void Promise.resolve(deps.onKill?.(this.kill.state())).catch((err: unknown) => log.error("onKill failed", { err }));
         },
@@ -215,9 +217,11 @@ export class MarketObserver {
       // Only an operator's row counts as a command. The bot writes its own
       // trips into the same row; reading those back as "manual" would turn
       // every self-clearing trip into a hard one that never clears.
-      const parsed = ctl ? (JSON.parse(ctl.value) as { tripped?: boolean; reasons?: string[] }) : undefined;
-      const wantKill = parsed?.tripped === true && (parsed.reasons ?? []).includes("MANUAL");
-      if (wantKill && !this.manualKill) { this.manualKill = true; this.kill.manualKill(nowMono); }
+      // An operator row (dashboard, pnpm kill) carries MANUAL and a note; rows
+      // the bot wrote for its own trips carry neither.
+      const parsed = ctl ? (JSON.parse(ctl.value) as { tripped?: boolean; reasons?: string[]; note?: string }) : undefined;
+      const wantKill = parsed?.tripped === true && (parsed.reasons ?? []).includes("MANUAL") && typeof parsed.note === "string";
+      if (wantKill && !this.manualKill) { this.manualKill = true; this.manualNote = parsed?.note; this.kill.manualKill(nowMono); }
       if (!wantKill && this.manualKill) { this.manualKill = false; this.kill.resume(); log.info("operator resume acknowledged"); }
     }
     if (nowMono - this.lastHeartbeatMono >= 2_000) {

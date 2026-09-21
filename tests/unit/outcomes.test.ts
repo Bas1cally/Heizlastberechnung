@@ -36,3 +36,34 @@ describe("outcomeFromLabel", () => {
     expect(outcomeFromLabel("Over")).toBeUndefined();
   });
 });
+
+import { openDatabase } from "../../src/persistence/database.js";
+import { DecisionRepository } from "../../src/persistence/repositories/decisions.js";
+import { marketConsistency } from "../../src/analytics/observations.js";
+
+describe("marketConsistency", () => {
+  it("flags a market whose derived outcome contradicts the market's own final price and Jev's last read", () => {
+    const db = openDatabase(":memory:");
+    const repo = new DecisionRepository(db);
+    repo.upsertMarket({ marketId: "m", conditionId: "c", slug: "btc-updown-5m-1000", question: "q", upAssetId: "U", downAssetId: "D", openedAtMs: 1_000_000, closesAtMs: 1_300_000, tickSize: 0.01, minOrderSize: 5 }, 0);
+    // TWAP rises 100 -> 101: derived UP.
+    repo.saveTick("m", "chainlink-twap60", 1_010_000, 1_010_000, 100);
+    repo.saveTick("m", "chainlink-twap60", 1_290_000, 1_290_000, 101);
+    // But the market priced UP at 0.05 just before the close, and Jev's last state says DOWN with a different start price.
+    repo.saveBook("m", "U", 1_299_000, [{ price: 0.04, size: 10 }], [{ price: 0.06, size: 10 }]);
+    db.run(`INSERT INTO jev_requests (decision_id, market_id, state_version, input_hash, timestamp_ms, state_json, model, input_tokens, output_tokens, jev_latency_ms) VALUES ('d','m','1','h',1_299_500,?, 'j',1,1,1)`,
+      [JSON.stringify({ market: { settlementStartPrice: 102, settlementCurrentPrice: 101, distanceBps: -98, secondsRemaining: 0.5 } })]);
+    db.run(`INSERT INTO jev_answers (decision_id, answers_json, requested_action, risk_result) VALUES ('d', ?, 'HOLD', 'APPROVED')`,
+      [JSON.stringify({ settlement_direction: { type: "choice", choice: "DOWN", confidence: 0.99, probabilities: { UP: 0.01, DOWN: 0.98, UNRESOLVED: 0.01 } } })]);
+    const [row] = marketConsistency(db, 2_000_000);
+    expect(row!.twap?.outcome).toBe("UP");
+    expect(row!.marketImplied).toBe("DOWN");
+    expect(row!.jevFinal?.side).toBe("DOWN");
+    expect(row!.agree).toBe(false);
+    expect(row!.notes.join(" | ")).toMatch(/vs market DOWN/);
+    expect(row!.notes.join(" | ")).toMatch(/vs Jev DOWN/);
+    expect(row!.notes.join(" | ")).toMatch(/start price: derived 100 vs Jev's state 102/);
+    expect(row!.twapFirstAfterOpenS).toBe(10);
+    expect(row!.twapLastBeforeCloseS).toBe(10);
+  });
+});

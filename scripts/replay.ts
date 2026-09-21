@@ -33,17 +33,17 @@ if (useJev && !call) { console.error("--jev needs TYPESAFE_API_KEY"); process.ex
 const ids = opt("market") ? [opt("market")!] : src.all<{ market_id: string }>(`SELECT market_id FROM markets WHERE closes_at_ms < ? ORDER BY opened_at_ms`, [Date.now()]).map((r) => r.market_id);
 console.log(`replaying ${ids.length} market(s) from ${cfg.databaseUrl} into ${outPath}  (jev: ${call ? (flag("fresh-jev") ? "fresh" : "cache-then-call") : "cache only"})\n`);
 
-let totals = { events: 0, decisions: 0, cacheHits: 0, jevCalls: 0, skippedNoJev: 0 };
+let totals = { events: 0, decisions: 0, cacheHits: 0, recordedHits: 0, jevCalls: 0, skippedNoJev: 0 };
 for (const id of ids) {
   const identity = loadMarketIdentity(src, id);
   if (!identity) continue;
   const events = loadReplayEvents(src, id);
   const r = await replayMarket({
     identity, events, limits: cfg.limits, heartbeatMs: cfg.jev.heartbeatMs, minIntervalMs: cfg.jev.minIntervalMs,
-    cached: (h) => srcRepo.cachedAnswers(h), call, freshJev: flag("fresh-jev"), out,
+    cached: (h) => srcRepo.cachedAnswers(h), recorded: (at) => srcRepo.recordedAnswersAt(id, at), call, freshJev: flag("fresh-jev"), out,
   });
-  totals = { events: totals.events + r.events, decisions: totals.decisions + r.decisions, cacheHits: totals.cacheHits + r.cacheHits, jevCalls: totals.jevCalls + r.jevCalls, skippedNoJev: totals.skippedNoJev + r.skippedNoJev };
-  console.log(`${identity.slug}: ${r.events} events -> ${r.decisions} decisions (${r.cacheHits} cached, ${r.jevCalls} jev calls, ${r.skippedNoJev} skipped)`);
+  totals = { events: totals.events + r.events, decisions: totals.decisions + r.decisions, cacheHits: totals.cacheHits + r.cacheHits, recordedHits: totals.recordedHits + r.recordedHits, jevCalls: totals.jevCalls + r.jevCalls, skippedNoJev: totals.skippedNoJev + r.skippedNoJev };
+  console.log(`${identity.slug}: ${r.events} events -> ${r.decisions} decisions (${r.cacheHits} cached, ${r.recordedHits} recorded, ${r.jevCalls} jev calls, ${r.skippedNoJev} skipped)`);
 }
 console.log(`\ntotal: ${JSON.stringify(totals)}`);
 if (totals.skippedNoJev > 0 && !call) console.log("states without a cached answer were skipped; run with --jev to evaluate them");

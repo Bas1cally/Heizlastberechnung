@@ -53,7 +53,7 @@ export function acceptanceReport(db: Db, nowMs: number, requiredHours = 24): Acc
   // 3. Stale-state protection: stale decisions exist and none of them was approved.
   const stale = db.get<{ n: number; approved: number }>(`SELECT COUNT(*) AS n, SUM(risk_result = 'APPROVED') AS approved FROM jev_answers WHERE risk_reason IN ('STALE_DECISION','STALE_CHAINLINK','STALE_ORDERBOOK','JEV_TOO_SLOW')`);
   const buys = db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM jev_answers WHERE requested_action LIKE 'BUY%' OR requested_action = 'ADD_COMPLEMENT'`)?.n ?? 0;
-  const staleBuys = db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM jev_answers WHERE risk_reason = 'STALE_DECISION'`)?.n ?? 0;
+  const staleBuys = db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM jev_answers WHERE risk_reason = 'STALE_DECISION' AND (requested_action LIKE 'BUY%' OR requested_action = 'ADD_COMPLEMENT')`)?.n ?? 0;
   criteria.push({
     name: "stale-state protection",
     status: (stale?.n ?? 0) === 0 ? "INSUFFICIENT" : (stale?.approved ?? 0) === 0 ? "PASS" : "FAIL",

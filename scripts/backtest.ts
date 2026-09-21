@@ -44,10 +44,10 @@ for (const m of outcomes) {
   const r = await paperMarket({
     identity, events: loadReplayEvents(src, m.marketId), outcome: m.outcome!, limits: cfg.limits,
     heartbeatMs: cfg.jev.heartbeatMs, minIntervalMs: cfg.jev.minIntervalMs, latencyMs, fill: DEFAULT_FILL_PARAMS, seed, mergeGas: 0,
-    cached: (h) => srcRepo.cachedAnswers(h), call, out, outDb, mode: "backtest",
+    cached: (h) => srcRepo.cachedAnswers(h), recorded: (at) => srcRepo.recordedAnswersAt(m.marketId, at), call, out, outDb, mode: "backtest",
   });
   results.push(r);
-  console.log(`${r.slug}  ${r.outcome.padEnd(4)}  dec ${String(r.decisions).padStart(3)} appr ${String(r.approved).padStart(3)}  orders ${String(r.orders).padStart(3)} fills ${String(r.fills).padStart(3)} part ${String(r.partials).padStart(2)} miss ${String(r.noFills).padStart(3)}  merges ${r.merges}  pos UP ${r.finalPosition.upShares}/DOWN ${r.finalPosition.downShares}  net ${r.netPnl.toFixed(3)}`);
+  console.log(`${r.slug}  ${r.outcome.padEnd(4)}  dec ${String(r.decisions).padStart(3)} (rec ${r.recordedHits}, cache ${r.cacheHits}, jev ${r.jevCalls}) appr ${String(r.approved).padStart(3)}  orders ${String(r.orders).padStart(3)} fills ${String(r.fills).padStart(3)} part ${String(r.partials).padStart(2)} miss ${String(r.noFills).padStart(3)}  merges ${r.merges}  pos UP ${r.finalPosition.upShares}/DOWN ${r.finalPosition.downShares}  net ${r.netPnl.toFixed(3)}`);
 }
 
 const sum = (f: (r: PaperMarketResult) => number) => results.reduce((s, r) => s + f(r), 0);
@@ -62,8 +62,8 @@ const summary = {
   pnlPerMarket: results.length ? sum((r) => r.netPnl) / results.length : null,
   worstMarket: results.length ? Math.min(...results.map((r) => r.netPnl)) : null,
   bestMarket: results.length ? Math.max(...results.map((r) => r.netPnl)) : null,
-  skippedNoJev: sum((r) => r.skippedNoJev),
-  note: "Simulated fills against recorded books at 500 ms resolution with a fixed latency; no live order was ever built.",
+  skippedNoJev: sum((r) => r.skippedNoJev), recordedDecisions: sum((r) => r.recordedHits), cacheHits: sum((r) => r.cacheHits), jevCalls: sum((r) => r.jevCalls),
+  note: "Simulated fills against recorded books at 500 ms resolution with a fixed latency; Jev answers are the recorded ones nearest in time (or cache/--jev); no live order was ever built.",
   perMarket: results,
 };
 mkdirSync("reports", { recursive: true });

@@ -41,6 +41,8 @@ export interface PaperOptions {
   readonly seed: number;
   readonly mergeGas: number;
   readonly cached: (inputHash: string) => { answers: string; model: string; latencyMs: number } | undefined;
+  /** Fallback when the hash misses: the decision recorded on this market nearest in time (see DecisionRepository.recordedAnswersAt). */
+  readonly recorded?: (atMs: number) => { answers: string; model: string; latencyMs: number; decisionId: string } | undefined;
   readonly call: JevCall | undefined;
   readonly out: DecisionRepository;
   readonly outDb: Db;
@@ -64,6 +66,8 @@ export interface PaperMarketResult {
   readonly fees: number;
   readonly jevCalls: number;
   readonly cacheHits: number;
+  /** Decisions taken from the recording by time rather than by hash. */
+  readonly recordedHits: number;
   readonly skippedNoJev: number;
 }
 
@@ -84,7 +88,8 @@ export async function paperMarket(o: PaperOptions): Promise<PaperMarketResult> {
   let lastSubmitAt = Number.NEGATIVE_INFINITY;
   let lastBookAt = Number.NEGATIVE_INFINITY;
   let lastTickAt = Number.NEGATIVE_INFINITY;
-  let decisions = 0, approved = 0, orders = 0, fills = 0, partials = 0, noFills = 0, jevCalls = 0, cacheHits = 0, skippedNoJev = 0;
+  let decisions = 0, approved = 0, orders = 0, fills = 0, partials = 0, noFills = 0, jevCalls = 0, cacheHits = 0, recordedHits = 0, skippedNoJev = 0;
+  let lastRecordedId: string | undefined;
   let fillFees = 0;
   const merges: MergeResult[] = [];
   const pendingMarketable: Array<{ order: OrderIntent; decisionId: string; arriveAtMs: number }> = [];
@@ -166,7 +171,9 @@ export async function paperMarket(o: PaperOptions): Promise<PaperMarketResult> {
     let model = "cache";
     let latency = 0;
     const c = o.cached(inputHash);
+    const rec = c ? undefined : o.recorded?.(ev.atMs);
     if (c) { answers = JSON.parse(c.answers); model = c.model; latency = c.latencyMs; cacheHits++; }
+    else if (rec && rec.decisionId !== lastRecordedId) { lastRecordedId = rec.decisionId; answers = JSON.parse(rec.answers); model = rec.model; latency = rec.latencyMs; recordedHits++; }
     else if (o.call) { const t0 = performance.now(); const res = await o.call(state, QUESTIONS, new AbortController().signal); latency = performance.now() - t0; answers = res.answers; model = res.model; jevCalls++; }
     else { skippedNoJev++; continue; }
 
@@ -234,6 +241,6 @@ export async function paperMarket(o: PaperOptions): Promise<PaperMarketResult> {
 
   return {
     slug: o.identity.slug, outcome: o.outcome, decisions, approved, orders, fills, partials, noFills, merges: merges.length,
-    finalPosition: position, grossPnl: pnl.grossPnl, netPnl: pnl.netPnl, mergePnl: pnl.mergePnl, fees: pnl.fees, jevCalls, cacheHits, skippedNoJev,
+    finalPosition: position, grossPnl: pnl.grossPnl, netPnl: pnl.netPnl, mergePnl: pnl.mergePnl, fees: pnl.fees, jevCalls, cacheHits, recordedHits, skippedNoJev,
   };
 }

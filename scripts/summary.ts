@@ -14,9 +14,9 @@ const steps: [string, string[]][] = [
   ["report", ["scripts/report.ts"]],
   ["acceptance", ["scripts/acceptance.ts"]],
   ["calibrate", ["scripts/calibrate.ts"]],
-  ["analyze (paper)", ["scripts/analyze.ts", "--mode", "paper"]],
+  ["analyze (paper)", ["scripts/analyze.ts", "--records", "paper"]],
 ];
-if (existsSync("data/backtest.sqlite")) steps.push(["analyze (backtest)", ["scripts/analyze.ts", "--mode", "backtest"]]);
+if (existsSync("data/backtest.sqlite")) steps.push(["analyze (backtest)", ["scripts/analyze.ts", "--records", "backtest"]]);
 
 const out: string[] = [`# jev-btc-5m summary ${new Date().toISOString()}`, ""];
 for (const [name, args] of steps) {

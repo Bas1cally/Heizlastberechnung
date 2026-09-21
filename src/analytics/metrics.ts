@@ -143,10 +143,10 @@ export const DISTANCE_BPS_BUCKETS: readonly Bucket[] = [
   { label: "0-1bps", lo: 0, hi: 1 }, { label: "1-2.5bps", lo: 1, hi: 2.5 }, { label: "2.5-5bps", lo: 2.5, hi: 5 }, { label: "5-10bps", lo: 5, hi: 10 },
   { label: "10-20bps", lo: 10, hi: 20 }, { label: "20-50bps", lo: 20, hi: 50 }, { label: "50bps+", lo: 50, hi: Infinity },
 ];
-/** Realised 30 s volatility as a fraction (e.g. 0.0005 = 5 bps). */
+/** Realised 30 s volatility in bps, as `realizedVolBps` reports it. */
 export const VOL_BUCKETS: readonly Bucket[] = [
-  { label: "<2bps", lo: -Infinity, hi: 0.0002 }, { label: "2-5bps", lo: 0.0002, hi: 0.0005 }, { label: "5-10bps", lo: 0.0005, hi: 0.001 },
-  { label: "10-20bps", lo: 0.001, hi: 0.002 }, { label: "20bps+", lo: 0.002, hi: Infinity },
+  { label: "<2bps", lo: -Infinity, hi: 2 }, { label: "2-5bps", lo: 2, hi: 5 }, { label: "5-10bps", lo: 5, hi: 10 },
+  { label: "10-20bps", lo: 10, hi: 20 }, { label: "20-50bps", lo: 20, hi: 50 }, { label: "50bps+", lo: 50, hi: Infinity },
 ];
 export const PAIR_COST_BUCKETS: readonly Bucket[] = [
   { label: "<0.98", lo: -Infinity, hi: 0.98 }, { label: "0.98-0.99", lo: 0.98, hi: 0.99 }, { label: "0.99-1.00", lo: 0.99, hi: 1.0 },
