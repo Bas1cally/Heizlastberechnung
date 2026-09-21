@@ -26,6 +26,8 @@ export type RiskRejectReason =
   | "DAILY_LOSS_REACHED"
   | "ERROR_STREAK"
   | "LIVE_TRADING_DISABLED"
+  /** A directional buy priced above the measured probability of that side winning (limits.minMeasuredEdge). */
+  | "NO_MEASURED_EDGE"
   /** Set by the observer, not the gate: the kill switch is tripped. */
   | "KILL_SWITCH";
 
@@ -37,6 +39,14 @@ export interface RiskContext {
 
   readonly action: Action;
   readonly orderSizeShares: number;
+  /**
+   * For a directional buy: the price the order would pay and the measured
+   * probability (hold-rate table) that the bought side wins. Undefined when
+   * the buy completes a set against unpaired inventory (a hedge at no more
+   * than 1.00 needs no edge) or when no measurement exists for the bucket.
+   */
+  readonly buyPrice?: number | undefined;
+  readonly measuredWinProbability?: number | undefined;
 
   readonly secondsRemaining: number;
   readonly chainlinkAgeMs: number;
@@ -117,6 +127,15 @@ export function evaluateRisk(ctx: RiskContext, limits: RiskLimits): RiskVerdict 
     return reject("INSUFFICIENT_LIQUIDITY");
   }
   if (ctx.spread > limits.maxSpread) return reject("SPREAD_TOO_WIDE");
+
+  // Data over conviction: a directional buy must be priced at least
+  // minMeasuredEdge under the measured chance of that side winning. Paying
+  // 0.45 for a side the recordings say wins 40% of the time is a losing
+  // trade however confident the judgment behind it.
+  if ((ctx.action === "BUY_UP" || ctx.action === "BUY_DOWN") && ctx.buyPrice !== undefined && ctx.measuredWinProbability !== undefined
+    && ctx.buyPrice > ctx.measuredWinProbability - limits.minMeasuredEdge + 1e-9) {
+    return reject("NO_MEASURED_EDGE");
+  }
 
   if (ctx.orderSizeShares > limits.maxOrderSizeShares) return reject("ORDER_TOO_LARGE");
   if (ctx.openOrders >= limits.maxOpenOrders) return reject("TOO_MANY_OPEN_ORDERS");

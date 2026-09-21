@@ -59,17 +59,19 @@ describe("buildOrders", () => {
   });
 
   it("buys a pair at one common size or not at all", () => {
-    const legs = buildOrders("BUY_PAIR", "IMMEDIATE", state(), limits);
+    // Asks .44 / .55: the set costs .99, a cent under what it merges back to.
+    const legs = buildOrders("BUY_PAIR", "IMMEDIATE", { ...state(), upBook: book("UP", [[0.44, 40], [0.46, 100], [0.47, 500]]) }, limits);
     expect(legs).toHaveLength(2);
     expect(legs[0]!.size).toBe(legs[1]!.size);
     expect(legs.map((l) => l.side).sort()).toEqual(["DOWN", "UP"]);
   });
 
   it("never pays more than 1.00 for a set, and caps a hedge so the pair merges back at no cost", () => {
-    // Asks .45 / .55 sum to exactly 1.00: bought at the touch, no aggression room.
-    const pair = buildOrders("BUY_PAIR", "IMMEDIATE", state(), limits);
-    expect(pair.map((l) => l.price)).toEqual([0.45, 0.55]);
-    // Asks summing above 1.00: no set at all.
+    // Asks .44 / .55 sum to .99: bought at the touch, the cent of slack is not spent on aggression beyond the cap.
+    const pair = buildOrders("BUY_PAIR", "IMMEDIATE", { ...state(), upBook: book("UP", [[0.44, 100]]) }, limits);
+    expect(pair.map((l) => l.price)).toEqual([0.44, 0.55]);
+    // Asks summing to 1.00 or more: opening a set outright earns nothing, so no set at all.
+    expect(buildOrders("BUY_PAIR", "IMMEDIATE", state(), limits)).toEqual([]);
     expect(buildOrders("BUY_PAIR", "IMMEDIATE", { ...state(), upBook: book("UP", [[0.46, 100]]) }, limits)).toEqual([]);
     // A tail bought at .01 may be hedged at .99 at most; with the leader asking .995 the hedge rests at .99 as GTC.
     const tail = state({ upShares: 100, downShares: 0, avgUpEntry: 0.01, avgDownEntry: 0 });

@@ -82,9 +82,11 @@ describe("paper engine", () => {
   });
 
   it("merges matched inventory when Jev's inventory intent says MERGE", async () => {
+    // UP first at .45, then the DOWN leg as a hedge capped at .55 (= 1.00 - .45), then merge.
     const { r } = await run(source(0.45), (n) => {
-      if (n === 0) return answers("BUY_PAIR");
-      if (n === 1) return answers("HOLD", "NORMAL", "MERGE");
+      if (n === 0) return answers("BUY_UP");
+      if (n === 1) return answers("BUY_DOWN");
+      if (n === 2) return answers("HOLD", "NORMAL", "MERGE");
       return answers("HOLD");
     });
     expect(r.orders).toBe(2);

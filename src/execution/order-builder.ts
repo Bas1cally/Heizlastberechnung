@@ -91,8 +91,10 @@ export function buildOrders(
       // between the legs as aggression room, none at all is bought at the touch.
       const upTouch = bestAsk(state.upBook), downTouch = bestAsk(state.downBook);
       if (upTouch === undefined || downTouch === undefined) return [];
-      if (upTouch + downTouch > maxPair + 1e-9) return []; // the set would cost more than it merges back to
-      const slack = (maxPair - upTouch - downTouch) / 2;
+      // Opening a set outright needs it to cost less than it merges back to; at 1.00 it is churn.
+      const openingCap = maxPair - 0.01;
+      if (upTouch + downTouch > openingCap + 1e-9) return [];
+      const slack = (openingCap - upTouch - downTouch) / 2;
       const up = leg("UP", limits.maxOrderSizeShares, "pair", upTouch + slack);
       const down = leg("DOWN", limits.maxOrderSizeShares, "pair", downTouch + slack);
       if (!up || !down) return [];

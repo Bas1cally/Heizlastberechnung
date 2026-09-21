@@ -24,6 +24,18 @@ one. That asymmetry is the whole point: Jev owns intent, the gate owns safety.
 7. Time to close, liquidity, spread, order size, open orders, then the three
    exposure limits.
 
+## Measured edge (added 2026-09-21)
+
+`NO_MEASURED_EDGE`: a directional buy (`BUY_UP` / `BUY_DOWN` that does not
+complete a set against unpaired inventory) is refused when its ask is not at
+least `minMeasuredEdge` (default 0.02) under the measured probability of
+that side winning, taken from the hold-rate table for the current lead and
+time left. The first paper hours showed Jev paying 0.45 for sides the
+recordings put at 40%: the gate now says no to that, whatever the
+judgment's confidence. Hedges need no edge (a set at or under 1.00 costs
+nothing); opening a set outright needs it to cost at most 0.99. Without a
+measurement for the bucket the rule does not apply.
+
 ## Defaults
 
 In `src/risk/limits.ts`, deliberately small: 100 USD per market, 250 total,

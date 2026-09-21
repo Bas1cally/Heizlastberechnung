@@ -13,6 +13,8 @@ export interface RiskLimits {
   readonly minMarketLiquidityShares: number;
   readonly maxSpread: number;
   readonly maxJevLatencyMs: number;
+  /** A directional buy must be priced at least this far under the measured win probability of its side. */
+  readonly minMeasuredEdge: number;
 }
 
 /** Deliberately tight. Phase 1 never trades, so these only need to be safe. */
@@ -30,4 +32,5 @@ export const DEFAULT_LIMITS: RiskLimits = {
   minMarketLiquidityShares: 50,
   maxSpread: 0.05,
   maxJevLatencyMs: 750,
+  minMeasuredEdge: 0.02,
 };

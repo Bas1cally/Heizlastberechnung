@@ -150,3 +150,15 @@ describe("liquidityFor", () => {
     expect(liquidityFor("HOLD", 0, 5000)).toBe(5000);
   });
 });
+
+describe("measured edge", () => {
+  const base = { decisionStateVersion: 1n, currentStateVersion: 1n, orderSizeShares: 10, secondsRemaining: 100, chainlinkAgeMs: 100, orderbookAgeMs: 100, jevLatencyMs: 100, marketLiquidityShares: 1000, spread: 0.01, marketExposureUsd: 0, totalExposureUsd: 0, unpairedExposureUsd: 0, openOrders: 0, dailyPnlUsd: 0, consecutiveErrors: 0, executionMode: "simulated" as const };
+  it("rejects a directional buy priced above the measured win probability minus the edge, and nothing else", () => {
+    expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.45, measuredWinProbability: 0.4 }, DEFAULT_LIMITS)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" });
+    expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.59, measuredWinProbability: 0.6 }, DEFAULT_LIMITS)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" }); // 0.01 under: less than the 0.02 edge
+    expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.57, measuredWinProbability: 0.6 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" });
+    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.01, measuredWinProbability: 0.05 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // a tail under its measured reversal chance
+    expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.45 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // no measurement: no rule
+    expect(evaluateRisk({ ...base, action: "ADD_COMPLEMENT", buyPrice: 0.99, measuredWinProbability: 0.5 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // hedges need no edge
+  });
+});

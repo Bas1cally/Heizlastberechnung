@@ -358,10 +358,28 @@ export class MarketObserver {
 
     this.kill.jevSucceeded();
     const killed = this.kill.state();
+    // Measured edge of a directional buy: the side's win probability from the
+    // hold-rate table against the ask it would pay. A buy that completes a set
+    // against unpaired inventory is a hedge and needs none.
+    const edge = (() => {
+      if (d.requestedAction !== "BUY_UP" && d.requestedAction !== "BUY_DOWN") return {};
+      const side = d.requestedAction === "BUY_UP" ? "UP" : "DOWN";
+      const completesSet = side === "UP" ? snap.inventory.unpairedDownShares > 0 : snap.inventory.unpairedUpShares > 0;
+      if (completesSet || snap.settlementStartPrice === undefined || snap.settlementCurrentPrice === undefined) return {};
+      const dist = ((snap.settlementCurrentPrice - snap.settlementStartPrice) / snap.settlementStartPrice) * 10_000;
+      const held = this.deps.holdRate?.(dist, snap.secondsRemaining);
+      if (!held) return {};
+      const leader = dist >= 0 ? "UP" : "DOWN";
+      const book = side === "UP" ? snap.upBook : snap.downBook;
+      const ask = book ? bestAsk(book) : undefined;
+      if (ask === undefined) return {};
+      return { buyPrice: ask, measuredWinProbability: side === leader ? held.rate : 1 - held.rate };
+    })();
     const verdict: RiskVerdict = killed.tripped && !["HOLD", "ABSTAIN"].includes(d.requestedAction)
       ? { result: "REJECTED", reason: "KILL_SWITCH" }
       : evaluateRisk(
       {
+        ...edge,
         decisionStateVersion: d.stateVersion,
         currentStateVersion: snap.materialVersion,
         action: d.requestedAction,
