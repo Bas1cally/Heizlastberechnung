@@ -157,6 +157,10 @@ describe("measured edge", () => {
     expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.45, measuredWinProbability: 0.4 }, DEFAULT_LIMITS)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" });
     expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.59, measuredWinProbability: 0.6 }, DEFAULT_LIMITS)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" }); // 0.01 under: less than the 0.02 edge
     expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.57, measuredWinProbability: 0.6 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" });
+    // With few samples the measurement is noisy: 0.55 from 70 markets has a standard error of 0.059, so 0.44 (an "edge" of 0.11) is inside two of them.
+    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.44, measuredWinProbability: 0.55, measuredSamples: 70 }, DEFAULT_LIMITS)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" });
+    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.42, measuredWinProbability: 0.55, measuredSamples: 70 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" });
+    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.50, measuredWinProbability: 0.55, measuredSamples: 2000 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // 2 se = 0.022
     expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.01, measuredWinProbability: 0.05 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // a tail under its measured reversal chance
     expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.45 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // no measurement: no rule
     expect(evaluateRisk({ ...base, action: "ADD_COMPLEMENT", buyPrice: 0.99, measuredWinProbability: 0.5 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // hedges need no edge

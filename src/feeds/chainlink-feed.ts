@@ -44,6 +44,14 @@ export interface ChainlinkFeedOptions {
   readonly onStreamError?: (reason: string) => void;
   readonly reconnectBaseMs?: number;
   readonly reconnectMaxMs?: number;
+  /**
+   * A stream that stays open but goes silent for this long is closed and
+   * resubscribed. Observed 2026-09-21: one runner's TWAP stream delivered
+   * nothing for a whole market without ever erroring, and the kill switch
+   * tripped on CHAINLINK_STALE while the other runners were fine. Default
+   * 15 s (the price streams tick every second); 0 disables.
+   */
+  readonly staleReconnectMs?: number;
 }
 
 export class ChainlinkFeed {
@@ -51,8 +59,28 @@ export class ChainlinkFeed {
   private stopped = false;
   private handle: SubscriptionLike<ChainlinkEvent> | undefined;
   private loop: Promise<void> | undefined;
+  /** When the current stream last delivered any event, or was opened. */
+  private lastEventMono = Number.NaN;
+  private watchdog: ReturnType<typeof setInterval> | undefined;
 
   constructor(private readonly opts: ChainlinkFeedOptions) {}
+
+  /**
+   * Exposed for tests: true (and the stream is being closed for a reconnect)
+   * when the open stream has been silent longer than `staleReconnectMs`.
+   */
+  checkStale(nowMono: number): boolean {
+    const limit = this.opts.staleReconnectMs ?? 15_000;
+    if (limit <= 0 || this.stopped || !this.handle || Number.isNaN(this.lastEventMono)) return false;
+    if (nowMono - this.lastEventMono <= limit) return false;
+    this.opts.log.warn("chainlink stream silent, reconnecting", { silentMs: Math.round(nowMono - this.lastEventMono) });
+    this.opts.onStreamError?.(`silent for ${Math.round((nowMono - this.lastEventMono) / 1000)} s`);
+    const h = this.handle;
+    this.handle = undefined;
+    this.lastEventMono = Number.NaN;
+    void h.close().catch(() => undefined);
+    return true;
+  }
 
   latest(): ChainlinkTick | undefined {
     return this.last;
@@ -69,6 +97,7 @@ export class ChainlinkFeed {
 
   async stop(): Promise<void> {
     this.stopped = true;
+    if (this.watchdog) clearInterval(this.watchdog);
     await this.handle?.close().catch(() => undefined);
     // If the transport does not end its iterator on close, do not hang forever.
     await Promise.race([this.loop, new Promise((r) => setTimeout(r, 2_000))]);
@@ -78,15 +107,24 @@ export class ChainlinkFeed {
     const base = this.opts.reconnectBaseMs ?? 250;
     const max = this.opts.reconnectMaxMs ?? 10_000;
     let attempt = 0;
+    if ((this.opts.staleReconnectMs ?? 15_000) > 0) {
+      this.watchdog = setInterval(() => this.checkStale(this.opts.now()), 1_000);
+      this.watchdog.unref?.();
+    }
     while (!this.stopped) {
       try {
-        this.handle = await this.opts.subscribe([this.opts.symbol]);
+        const handle = await this.opts.subscribe([this.opts.symbol]);
+        this.handle = handle;
+        this.lastEventMono = this.opts.now();
         attempt = 0;
-        for await (const ev of this.handle) {
+        for await (const ev of handle) {
           if (this.stopped) break;
+          this.lastEventMono = this.opts.now();
           this.dispatch(ev);
         }
-        if (!this.stopped) { this.opts.log.warn("chainlink ws ended, reconnecting"); this.opts.onStreamError?.("stream ended"); }
+        if (this.stopped) break;
+        if (this.handle === handle) { this.opts.log.warn("chainlink ws ended, reconnecting"); this.opts.onStreamError?.("stream ended"); }
+        // else: the watchdog closed it; already reported.
       } catch (err) {
         if (this.stopped) break;
         this.opts.log.warn("chainlink ws error, reconnecting", { err });

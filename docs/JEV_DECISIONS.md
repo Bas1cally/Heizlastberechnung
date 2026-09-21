@@ -176,6 +176,21 @@ The net difference between the buckets is a handful of large reversal
 wins; the hedge rate barely moves. Not a rule; a reason to keep the window
 as measured (median 64 s) and let the comparison decide.
 
+First paper hour under the measured-edge gate (19:10-20:07Z): 15 settled
+markets, -171 USD net; every loss an early (220-290 s left) directional buy
+at 0.40-0.45 against a measured rate of 0.55-0.60 built from 60-80
+markets, which is within the noise of that measurement. The gate now
+requires the edge to clear two standard errors of the estimate
+(docs/RISK.md). Jev's early calls stay recorded and calibrated either way;
+paper-trading them was adding noise, not evidence.
+
+Also found: two of the three runners never restarted onto the new commit,
+because the update check compared the remote with the checkout's HEAD,
+which the third runner's `pnpm auto` had already pulled. The check now
+remembers the commit each process started on. And one runner's TWAP stream
+went silent for a whole market without an error; the Chainlink feed now
+closes and resubscribes a stream that is silent for 15 s.
+
 What changed: the market channel's `last_trade_price` events are recorded
 (`trades` table) and the paper engine fills a resting bid as a maker,
 behind the bids that were at its price or better when it was placed, from

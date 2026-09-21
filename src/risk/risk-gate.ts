@@ -47,6 +47,8 @@ export interface RiskContext {
    */
   readonly buyPrice?: number | undefined;
   readonly measuredWinProbability?: number | undefined;
+  /** Samples behind measuredWinProbability; the required edge grows with its standard error. */
+  readonly measuredSamples?: number | undefined;
 
   readonly secondsRemaining: number;
   readonly chainlinkAgeMs: number;
@@ -138,9 +140,15 @@ export function evaluateRisk(ctx: RiskContext, limits: RiskLimits): RiskVerdict 
   // price (held by the unpaired-exposure limit), the hedge that makes it free
   // is a bid resting at 1.00 minus the tail, filled by holders selling out.
   const freeOption = ctx.buyPrice !== undefined && ctx.buyPrice <= limits.maxFreeTailPrice + 1e-9;
-  if ((ctx.action === "BUY_UP" || ctx.action === "BUY_DOWN") && !freeOption && ctx.buyPrice !== undefined && ctx.measuredWinProbability !== undefined
-    && ctx.buyPrice > ctx.measuredWinProbability - limits.minMeasuredEdge + 1e-9) {
-    return reject("NO_MEASURED_EDGE");
+  if ((ctx.action === "BUY_UP" || ctx.action === "BUY_DOWN") && !freeOption && ctx.buyPrice !== undefined && ctx.measuredWinProbability !== undefined) {
+    // The measurement is a sample rate: with n markets behind it, its standard
+    // error is sqrt(p(1-p)/n). An "edge" inside two of those is the noise of
+    // the table, not a mispricing (0.55 from 70 markets is 0.55 +- 0.12; the
+    // first paper hours bought at 0.44 on exactly that and lost).
+    const p = ctx.measuredWinProbability;
+    const se = ctx.measuredSamples !== undefined && ctx.measuredSamples > 0 ? Math.sqrt((p * (1 - p)) / ctx.measuredSamples) : 0;
+    const required = Math.max(limits.minMeasuredEdge, 2 * se);
+    if (ctx.buyPrice > p - required + 1e-9) return reject("NO_MEASURED_EDGE");
   }
 
   if (ctx.orderSizeShares > limits.maxOrderSizeShares) return reject("ORDER_TOO_LARGE");

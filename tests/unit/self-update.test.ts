@@ -23,4 +23,19 @@ describe("createUpdateCheck", () => {
     const broken = createUpdateCheck(0, () => { throw new Error("fatal: unable to access"); });
     expect(broken(0)).toMatchObject({ available: false, error: "fatal: unable to access" });
   });
+
+  it("compares the remote with the commit the process started on, not with a HEAD another runner already pulled", () => {
+    let head = "aaaaaaa1", remote = "aaaaaaa1";
+    const git = (args: string[]) => {
+      if (args[0] === "rev-parse" && args[1] === "--abbrev-ref") return "feature";
+      if (args[0] === "fetch") return "";
+      if (args[0] === "rev-parse" && args[1] === "HEAD") return head;
+      if (args[0] === "rev-parse") return remote;
+      throw new Error("unexpected");
+    };
+    const check = createUpdateCheck(0, git);
+    // Another process pulled: the checkout is at the new commit, this process is not.
+    head = remote = "bbbbbbb2";
+    expect(check(0)).toMatchObject({ available: true, local: "aaaaaaa", remote: "bbbbbbb" });
+  });
 });

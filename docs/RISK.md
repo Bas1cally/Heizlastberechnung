@@ -36,6 +36,13 @@ judgment's confidence. Hedges need no edge (a set at or under 1.00 costs
 nothing); opening a set outright needs it to cost at most 0.99. Without a
 measurement for the bucket the rule does not apply.
 
+The required edge is `max(minMeasuredEdge, 2 * sqrt(p(1-p)/n))`, n being
+the markets behind the measurement: a hold rate of 0.55 from 70 markets
+is 0.55 +- 0.12, and an "edge" inside that is the table's noise, not a
+mispricing. Added after the first paper hour under the rule: nine markets,
+-171 USD, all of it early directional buys at 0.40-0.45 against measured
+rates of 0.55-0.60 from a few dozen samples.
+
 A tail at or under `maxFreeTailPrice` (0.05) is exempt: its downside is
 its price, held by the unpaired-exposure limit, and the hedge that makes it
 free is a bid resting at 1.00 minus the tail, not something that has to be

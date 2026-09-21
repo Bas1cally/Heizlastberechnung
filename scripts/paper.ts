@@ -55,6 +55,10 @@ syncChild?.on("exit", (code) => log.warn("sync loop exited", { code }));
 const argv = process.argv.slice(2);
 const opt = (n: string, d: number) => { const i = argv.indexOf(`--${n}`); const v = i >= 0 ? Number(argv[i + 1]) : d; return Number.isFinite(v) ? v : d; };
 const latencyMs = opt("latency", Number(process.env["PAPER_LATENCY_MS"] ?? 350));
+// The book after the latency is the adverse-move model. Sub-tick slippage on
+// top put fills off the tick grid: a tail taken at 0.011 instead of 0.01 made
+// its hedge cap 0.989, floored to 0.98, a whole tick behind the 0.99 queue.
+const FILL = { ...DEFAULT_FILL_PARAMS, slippage: 0 };
 const seed = opt("seed", 1);
 
 if (!cfg.typesafeApiKey && !policy) { log.error("TYPESAFE_API_KEY is not set"); process.exit(1); }
@@ -107,7 +111,7 @@ const db = openDatabase(cfg.databaseUrl);
 const repo = new DecisionRepository(db);
 const jevCall = policy ? animalPolicyCall({ variant: policy === "animal-plus" ? "plus" : "plain" }) : createJevCall({ apiKey: cfg.typesafeApiKey!, model: cfg.typesafeModel, timeoutMs: 5_000 });
 
-log.info("paper starting", { mode: "paper", policy: policy ?? "jev", latencyMs, seed, fill: DEFAULT_FILL_PARAMS, limits: cfg.limits, db: cfg.databaseUrl, model: policy ?? cfg.typesafeModel ?? "jev-latest" });
+log.info("paper starting", { mode: "paper", policy: policy ?? "jev", latencyMs, seed, fill: FILL, limits: cfg.limits, db: cfg.databaseUrl, model: policy ?? cfg.typesafeModel ?? "jev-latest" });
 
 let current: MarketObserver | undefined;
 let shuttingDown = false;
@@ -151,7 +155,7 @@ while (!shuttingDown) {
 
   // One engine per market; the position never carries over (each market settles).
   const engine = new PaperLiveEngine({
-    market, limits: cfg.limits, latencyMs, fill: DEFAULT_FILL_PARAMS, seed: seed * 1_000_003 + marketIndex,
+    market, limits: cfg.limits, latencyMs, fill: FILL, seed: seed * 1_000_003 + marketIndex,
     mono: clock.mono, wall: clock.wall, db,
     onInventory: (inv, open) => { current?.setInventory(inv); current?.setOpenOrderCount(open); },
     log: (msg, fields) => mlog.info(msg, fields),

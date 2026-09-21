@@ -84,6 +84,22 @@ describe("ChainlinkFeed", () => {
     expect(feed.latest()?.ts).toBe(12);
   });
 
+  it("closes a stream that stays open but silent, so the loop resubscribes", async () => {
+    let now = 0, closed = 0, subscribes = 0;
+    const silent = { close: async () => { closed++; }, async *[Symbol.asyncIterator]() { await new Promise(() => {}); yield undefined as never; } };
+    const feed = new ChainlinkFeed({ symbol: "btc/usd", subscribe: async () => { subscribes++; return silent; }, onTick: () => {}, now: () => now, log, staleReconnectMs: 5_000, reconnectBaseMs: 0 });
+    feed.start();
+    await new Promise((r) => setTimeout(r, 5));
+    expect(subscribes).toBe(1);
+    now = 4_000;
+    expect(feed.checkStale(now)).toBe(false);
+    now = 6_000;
+    expect(feed.checkStale(now)).toBe(true);
+    expect(closed).toBe(1);
+    expect(feed.checkStale(7_000)).toBe(false); // nothing open to close until the loop resubscribes
+    await feed.stop();
+  });
+
   it("measures age from local receive time", () => {
     let now = 0;
     const feed = new ChainlinkFeed({ symbol: "btc/usd", subscribe: async () => scripted([]), onTick: () => {}, now: () => now, log });
