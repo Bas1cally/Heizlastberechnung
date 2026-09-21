@@ -44,7 +44,9 @@ export interface ObserverDeps {
   readonly repo: DecisionRepository;
   readonly display?: (line: string) => void;
   /** Execution mode handed to the risk gate. "none" in observe. */
-  readonly executionMode?: "none" | "simulated";
+  readonly executionMode?: "none" | "simulated" | "live";
+  /** Realised PnL today in the mode being run, for the daily-loss limit and the kill switch. Default 0. */
+  readonly dailyPnlUsd?: () => number;
   /** Called for every APPROVED decision with the snapshot it was checked against. Shadow/paper-live plug in here. */
   readonly onApproved?: (decision: Decision, snapshot: MarketState, decisionMono: number) => void | Promise<void>;
   /** Called with every normalised book update (for engines that track post-decision book movement). */
@@ -240,7 +242,7 @@ export class MarketObserver {
   private housekeeping(): void {
     const { clock, repo, log } = this.deps;
     const nowMono = clock.mono();
-    this.kill.evaluate({ nowMono, chainlinkAgeMs: this.settlementAgeMs(), marketWsAgeMs: this.books.ageMs(), clockDriftMs: clock.driftMs(), dailyPnlUsd: 0 });
+    this.kill.evaluate({ nowMono, chainlinkAgeMs: this.settlementAgeMs(), marketWsAgeMs: this.books.ageMs(), clockDriftMs: clock.driftMs(), dailyPnlUsd: this.deps.dailyPnlUsd?.() ?? 0 });
 
     if (nowMono - this.lastControlPollMono >= 1_000) {
       this.lastControlPollMono = nowMono;
@@ -288,6 +290,10 @@ export class MarketObserver {
   killState(): KillState {
     return this.kill.state();
   }
+
+  /** Execution engines report exchange failures and hard faults here. */
+  apiError(): void { this.kill.apiError(this.deps.clock.mono()); }
+  hardFault(reason: Parameters<KillSwitch["hardFault"]>[0]): void { this.kill.hardFault(reason, this.deps.clock.mono()); }
 
   private maybeDecide(): void {
     if (this.stopped) return;
@@ -370,7 +376,7 @@ export class MarketObserver {
         totalExposureUsd: snap.inventory.totalCost,
         unpairedExposureUsd: snap.inventory.unpairedUpShares * snap.inventory.avgUpEntry + snap.inventory.unpairedDownShares * snap.inventory.avgDownEntry,
         openOrders: snap.openOrderCount,
-        dailyPnlUsd: 0,
+        dailyPnlUsd: this.deps.dailyPnlUsd?.() ?? 0,
         consecutiveErrors: 0,
         executionMode: this.deps.executionMode ?? "none",
       },

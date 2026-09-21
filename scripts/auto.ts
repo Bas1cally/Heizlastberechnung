@@ -13,8 +13,10 @@ import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { EXIT_UPDATE } from "../src/app/self-update.js";
 
 const mode = process.argv[2] && !process.argv[2].startsWith("-") ? process.argv[2] : "paper";
-const script = { observe: "scripts/observe.ts", paper: "scripts/paper.ts", shadow: "scripts/shadow.ts" }[mode];
-if (!script) { console.error(`unknown bot '${mode}'; use observe, paper or shadow`); process.exit(1); }
+const script = { observe: "scripts/observe.ts", paper: "scripts/paper.ts", shadow: "scripts/shadow.ts", live: "scripts/live.ts" }[mode];
+if (!script) { console.error(`unknown bot '${mode}'; use observe, paper, shadow or live`); process.exit(1); }
+// Live needs the explicit flag on the command line as well as ENABLE_LIVE_TRADING in .env.
+const extraArgs = mode === "live" ? ["--mode", "live"] : [];
 
 const say = (msg: string) => process.stdout.write(JSON.stringify({ ts: new Date().toISOString(), level: "info", msg, auto: mode }) + "\n");
 const git = (args: string[]) => execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 60_000 }).trim();
@@ -47,7 +49,7 @@ while (!stopping) {
   update();
   say(`starting ${script}`);
   const code = await new Promise<number>((resolve) => {
-    child = spawn(process.execPath, ["node_modules/tsx/dist/cli.mjs", script, ...process.argv.slice(3)], { stdio: "inherit", env: { ...process.env, AUTO_RESTART: "1" } });
+    child = spawn(process.execPath, ["node_modules/tsx/dist/cli.mjs", script, ...extraArgs, ...process.argv.slice(3)], { stdio: "inherit", env: { ...process.env, AUTO_RESTART: "1" } });
     child.on("exit", (c) => resolve(c ?? 1));
     child.on("error", () => resolve(1));
   });

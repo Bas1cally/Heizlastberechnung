@@ -38,6 +38,32 @@ Phase 1 never trades, so these only have to be safe, not optimal.
 `ENABLE_LIVE_TRADING=true` **and** `--mode live`. Either missing and submission
 is impossible. Completing a phase never auto-enables anything.
 
+## Limited live (Phase 5, approved 2026-09-21)
+
+`scripts/live.ts` (`pnpm auto -- live`) runs the same pipeline as paper with
+`src/execution/live-engine.ts` in place of the simulation. What it does and
+does not do:
+
+- Runs under `liveLimits`: the simulation limits capped by `LIVE_*` (default
+  5 shares per order, 10 USD per market, 20 USD in total, 10 USD unpaired,
+  10 USD daily loss). The daily-loss limit reads today's realised live PnL.
+- Signs and posts through the SDK; a rejected post is a recorded
+  `REJECTED:<code>` order, never retried. "Not filled" codes are the
+  market's answer; every other rejection or transport error counts toward
+  the `POLYMARKET_API_ERRORS` kill reason.
+- Resting orders are polled every second and cancelled at their TTL, at
+  the close, on kill, on shutdown, and on a Jev `CANCEL`.
+- Merges `min(up, down)` through the gasless relayer when Jev's inventory
+  intent says MERGE; redeems the winner after the official resolution (the
+  bot polls the resolution API between markets); both write the
+  transaction hash.
+- Every 30 s the position is compared with the exchange's positions API; a
+  mismatch is `INVENTORY_MISMATCH`, a hard kill.
+- Never sells. Nothing here can "get flat" at market; a wrong position is
+  held to settlement and reported.
+- Trading approvals (collateral / conditional-token allowances) are checked
+  at start and set up once if missing.
+
 ## Kill switch
 
 `src/risk/kill-switch.ts`, evaluated by the observer on every event.

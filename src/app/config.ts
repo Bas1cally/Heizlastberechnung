@@ -35,6 +35,13 @@ const EnvSchema = z.object({
   MAX_ORDERBOOK_AGE_MS: num(DEFAULT_LIMITS.maxOrderbookAgeMs),
   MAX_JEV_LATENCY_MS: num(DEFAULT_LIMITS.maxJevLatencyMs),
 
+  // Limited live (brief §40): deliberately small, separate from the simulation limits.
+  LIVE_MAX_ORDER_SIZE_SHARES: num(5),
+  LIVE_MAX_MARKET_EXPOSURE_USD: num(10),
+  LIVE_MAX_TOTAL_EXPOSURE_USD: num(20),
+  LIVE_MAX_UNPAIRED_EXPOSURE_USD: num(10),
+  LIVE_MAX_DAILY_LOSS_USD: num(10),
+
   // Market window length; the slug is derived from the clock (src/market/window.ts).
   MARKET_DURATION_SECONDS: num(300),
   CHAINLINK_SYMBOL: z.string().default("btc/usd"),
@@ -55,6 +62,8 @@ export interface AppConfig {
   readonly typesafeModel: string | undefined;
   readonly databaseUrl: string;
   readonly limits: RiskLimits;
+  /** The limits a live bot runs under: the simulation limits capped by the LIVE_* values. */
+  readonly liveLimits: RiskLimits;
   readonly marketDurationSeconds: number;
   readonly chainlinkSymbol: string;
   readonly chainlinkTwapSeconds: 30 | 60;
@@ -91,21 +100,31 @@ export function loadConfig(
   const liveTradingEnabled = mode === "live" && e.ENABLE_LIVE_TRADING;
   if (mode === "live" && !e.ENABLE_LIVE_TRADING) mode = "shadow";
 
+  const limits: RiskLimits = {
+    ...DEFAULT_LIMITS,
+    maxMarketExposureUsd: e.MAX_MARKET_EXPOSURE_USD,
+    maxTotalExposureUsd: e.MAX_TOTAL_EXPOSURE_USD,
+    maxUnpairedExposureUsd: e.MAX_UNPAIRED_EXPOSURE_USD,
+    maxDailyLossUsd: e.MAX_DAILY_LOSS_USD,
+    maxChainlinkAgeMs: e.MAX_CHAINLINK_AGE_MS,
+    maxOrderbookAgeMs: e.MAX_ORDERBOOK_AGE_MS,
+    maxJevLatencyMs: e.MAX_JEV_LATENCY_MS,
+  };
   return {
     mode,
     liveTradingEnabled,
     typesafeApiKey: e.TYPESAFE_API_KEY?.trim() || undefined,
     typesafeModel: e.TYPESAFE_DEFAULT_MODEL?.trim() || undefined,
     databaseUrl: e.DATABASE_URL?.trim() || "data/bot.sqlite",
-    limits: {
-      ...DEFAULT_LIMITS,
-      maxMarketExposureUsd: e.MAX_MARKET_EXPOSURE_USD,
-      maxTotalExposureUsd: e.MAX_TOTAL_EXPOSURE_USD,
-      maxUnpairedExposureUsd: e.MAX_UNPAIRED_EXPOSURE_USD,
-      maxDailyLossUsd: e.MAX_DAILY_LOSS_USD,
-      maxChainlinkAgeMs: e.MAX_CHAINLINK_AGE_MS,
-      maxOrderbookAgeMs: e.MAX_ORDERBOOK_AGE_MS,
-      maxJevLatencyMs: e.MAX_JEV_LATENCY_MS,
+    limits,
+    // A live bot never runs above the LIVE_* caps, whatever the simulation limits say.
+    liveLimits: {
+      ...limits,
+      maxOrderSizeShares: Math.min(limits.maxOrderSizeShares, e.LIVE_MAX_ORDER_SIZE_SHARES),
+      maxMarketExposureUsd: Math.min(limits.maxMarketExposureUsd, e.LIVE_MAX_MARKET_EXPOSURE_USD),
+      maxTotalExposureUsd: Math.min(limits.maxTotalExposureUsd, e.LIVE_MAX_TOTAL_EXPOSURE_USD),
+      maxUnpairedExposureUsd: Math.min(limits.maxUnpairedExposureUsd, e.LIVE_MAX_UNPAIRED_EXPOSURE_USD),
+      maxDailyLossUsd: Math.min(limits.maxDailyLossUsd, e.LIVE_MAX_DAILY_LOSS_USD),
     },
     marketDurationSeconds: e.MARKET_DURATION_SECONDS,
     chainlinkSymbol: e.CHAINLINK_SYMBOL,

@@ -17,6 +17,7 @@
     "bot:paper": "tsx scripts/paper.ts",
     "backtest": "tsx scripts/backtest.ts",
     "bot:shadow": "tsx scripts/shadow.ts",
+    "bot:live": "tsx scripts/live.ts --mode live",
     "replay": "tsx scripts/replay.ts",
     "report": "tsx scripts/report.ts",
     "benchmark:jev": "tsx scripts/benchmark-jev.ts",
