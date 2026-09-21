@@ -205,8 +205,8 @@ describe("PaperLiveEngine maker fills", () => {
     expect(hedge(orders)).toMatchObject({ status: "RESTING", order_type: "GTC", size: 10 });
     expect(hedge(orders)?.price).toBeCloseTo(0.99, 9);
 
-    // Placed after the latency behind 500 shares at 0.99.
-    e.onBook(leaderBook(500), 1400);
+    // Behind the 500 shares at 0.99 that were in the decision's book; the 900 that arrive during the latency are behind us.
+    e.onBook(leaderBook(1400), 1400);
     e.onTrade({ assetId: "DOWN", price: 0.99, size: 300, side: "SELL", tsMs: undefined }, 1500);
     expect(fills().filter((f) => f.side === "DOWN")).toHaveLength(0); // 200 still ahead
     e.onTrade({ assetId: "DOWN", price: 0.995, size: 100, side: "SELL", tsMs: undefined }, 1600); // a sell above our price only eats the queue
@@ -223,8 +223,8 @@ describe("PaperLiveEngine maker fills", () => {
   it("ignores taker buys and trades on the other asset, and a partly filled hedge ends PARTIAL at the close", () => {
     const { e, orders, fills } = engine({ latencyMs: 0 });
     takeTail(e, 0);
-    e.onApproved(decision("ADD_COMPLEMENT", "IMMEDIATE", "PAIR"), late(), 1000);
-    e.onBook(leaderBook(0), 1000); // nobody ahead
+    e.onApproved(decision("ADD_COMPLEMENT", "IMMEDIATE", "PAIR"), snapshot(tailBook(), leaderBook(0)), 1000); // nobody ahead in the decision's book
+    e.onBook(leaderBook(0), 1000);
     e.onTrade({ assetId: "DOWN", price: 0.99, size: 50, side: "BUY", tsMs: undefined }, 1100); // a taker buy lifts asks, never our bid
     e.onTrade({ assetId: "UP", price: 0.99, size: 50, side: "SELL", tsMs: undefined }, 1100);
     expect(fills().filter((f) => f.side === "DOWN")).toHaveLength(0);

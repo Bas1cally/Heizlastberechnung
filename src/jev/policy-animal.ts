@@ -17,8 +17,8 @@ import type { JevAnswers, JevInputState } from "./decision-types.js";
  * that bid until the close.
  *
  * Two variants:
- *   plain - the copy: tail as soon as it is cheap inside the window, hedge
- *           bid at once, merge.
+ *   plain - the copy: tail at 0.01 as soon as it is offered inside the
+ *           window, hedge bid at 0.99 at once, merge.
  *   plus  - the copy with two measured changes: the hedge bid is pulled
  *           while spot is on the tail's side of the start price (a reversal
  *           under way, the case that made his 21 large wins) and there is
@@ -33,7 +33,12 @@ export interface AnimalPolicyOptions {
   readonly variant: "plain" | "plus";
   /** Seconds before the close inside which the tail is bought. Default 110 (the measured median was 64, p90 125). */
   readonly tailWindowS?: number;
-  /** Most the tail may cost. Default 0.02. */
+  /**
+   * Most the tail may cost. Default 0.01: a tail at 0.02 puts the hedge cap
+   * at 0.98, one tick BELOW the 0.99 level where the leader's bids and all
+   * the taker sells are, and such a bid never fills (measured 22 markets,
+   * 2 fills). The reference trader pays 0.01 and bids 0.99, always.
+   */
   readonly tailMaxPrice?: number;
   /** Stop initiating anything this close to the close. Default 8 s. */
   readonly noNewAfterS?: number;
@@ -54,7 +59,7 @@ export interface PolicyDecision { readonly action: (typeof ACTIONS)[number]; rea
 
 /** The policy itself, pure: state in, intent out. */
 export function animalPolicy(s: JevInputState, o: AnimalPolicyOptions): PolicyDecision {
-  const tailWindow = o.tailWindowS ?? 110, tailMax = o.tailMaxPrice ?? 0.02, noNewAfter = o.noNewAfterS ?? 8, hedgeLatest = o.hedgeLatestS ?? 12;
+  const tailWindow = o.tailWindowS ?? 110, tailMax = o.tailMaxPrice ?? 0.01, noNewAfter = o.noNewAfterS ?? 8, hedgeLatest = o.hedgeLatestS ?? 12;
   const { market: m, orderbook: b, inventory: inv } = s;
   const leader = b.leader;
   const unpairedUp = inv.unpairedUpShares, unpairedDown = inv.unpairedDownShares;

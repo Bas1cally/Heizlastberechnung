@@ -37,7 +37,7 @@ describe("animalPolicy: flat", () => {
 
   it("holds outside the window, when the tail is not cheap or has no depth, and while a tail order is in flight", () => {
     expect(animalPolicy(st({ market: { secondsRemaining: 200 } }), plain).why).toBe("outside the window");
-    expect(animalPolicy(st({ orderbook: { tailAsk: 0.03 } }), plain).why).toBe("tail not cheap");
+    expect(animalPolicy(st({ orderbook: { tailAsk: 0.02 } }), plain).why).toBe("tail not cheap"); // 0.02 would put the hedge a tick below the 0.99 queue
     expect(animalPolicy(st({ orderbook: { tailAskDepth: 0 } }), plain).action).toBe("HOLD");
     expect(animalPolicy(st({ inventory: { openOrders: 1 } }), plain).why).toBe("tail order in flight");
   });
@@ -48,13 +48,13 @@ describe("animalPolicy: flat", () => {
   });
 
   it("plus: takes the tail early when the measured reversal rate exceeds its price, plain does not", () => {
-    // 6% of such leads reverse; the tail costs 0.02: worth more than it costs.
-    const early = st({ market: { secondsRemaining: 200, leadHeldRate: 0.94 }, orderbook: { tailAsk: 0.02 } });
+    // 3% of such leads reverse; the tail costs 0.01: worth more than it costs.
+    const early = st({ market: { secondsRemaining: 200, leadHeldRate: 0.97 }, orderbook: { tailAsk: 0.01 } });
     expect(animalPolicy(early, plus).action).toBe("BUY_UP");
     expect(animalPolicy(early, plus).why).toMatch(/early/);
     expect(animalPolicy(early, plain).action).toBe("HOLD");
-    // 1% reverse: not worth 0.02.
-    expect(animalPolicy(st({ market: { secondsRemaining: 200, leadHeldRate: 0.99 }, orderbook: { tailAsk: 0.02 } }), plus).action).toBe("HOLD");
+    // 1% reverse: not worth 0.01 plus a cent of margin.
+    expect(animalPolicy(st({ market: { secondsRemaining: 200, leadHeldRate: 0.99 }, orderbook: { tailAsk: 0.01 } }), plus).action).toBe("HOLD");
     // No measurement: window only.
     expect(animalPolicy(st({ market: { secondsRemaining: 200, leadHeldRate: null } }), plus).action).toBe("HOLD");
   });

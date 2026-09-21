@@ -19,9 +19,14 @@ import type { RiskLimits } from "../risk/limits.js";
  * state; at resolution the position settles at the real outcome.
  *
  * Resting bids also fill as a MAKER, from the trades printed on the market
- * channel: at placement the order joins the queue behind every bid at its
- * price or better (price-time priority); each taker sell at or through its
- * price consumes that queue first, whatever is left fills the order. This is
+ * channel: the order joins the queue behind every bid at its price or
+ * better in the book the decision was made on (price-time priority; bids
+ * that appear during our latency are behind us, and the 0.99 level fills
+ * with thousands of shares within a second of opening, so counting the
+ * first post-latency book put us behind bids that came after ours: 22
+ * markets, 2 fills, while the reference trader filled 1,000 shares from
+ * the same sells); each taker sell at or through its price consumes that
+ * queue first, whatever is left fills the order. This is
  * how the reference trader gets his hedges (39 of 40 checked printed while
  * the side had no ask at all), and it is the only way a paper hedge at
  * 1.00 minus the tail can fill once the leader's ask side has emptied.
@@ -48,7 +53,7 @@ interface Resting {
   order: OrderIntent; decisionId: string; placedAtMono: number; expiresAtMono: number; version: bigint; id: string;
   /** Books (after the latency) whose ask reached the order's price; enough for the taker-side fill rules. */
   booksSeen: OrderBook[];
-  /** Shares queued ahead at placement (bids at the order's price or better); undefined until the order is in the book. */
+  /** Shares queued ahead: bids at the order's price or better in the book the decision was made on; undefined only when that book was missing. */
   queueAhead: number | undefined;
   filled: number;
 }
@@ -231,7 +236,8 @@ export class PaperLiveEngine {
         const id = this.record(order, d.decisionId, d.stateVersion, "RESTING");
         // A hedge keeps its place in the queue until the close; anything else lives for its TTL.
         const ttl = order.completesSet ? Math.max(order.style.ttlMs ?? 20_000, this.o.market.closesAtMs - this.o.wall()) : (order.style.ttlMs ?? 20_000);
-        this.resting.push({ order, decisionId: d.decisionId, placedAtMono: decisionMono, expiresAtMono: decisionMono + ttl, booksSeen: [], version: d.stateVersion, id, queueAhead: undefined, filled: 0 });
+        const bookAtDecision = order.side === "UP" ? snap.upBook : snap.downBook;
+        this.resting.push({ order, decisionId: d.decisionId, placedAtMono: decisionMono, expiresAtMono: decisionMono + ttl, booksSeen: [], version: d.stateVersion, id, queueAhead: bookAtDecision ? queueAheadOf(order, bookAtDecision) : undefined, filled: 0 });
       }
     }
     this.publish();

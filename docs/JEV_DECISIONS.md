@@ -203,6 +203,20 @@ taker-side assumption behind `side` holds is checked on the first synced
 export: SELL prints at 0.99 on the leader in the last minute, and paper
 hedges filling from them.
 
+Night of 21/22 Sep, 22 markets of the copy with hedges placed: 2 hedge
+fills. Two reasons, both measured against the trader's fills on the same
+markets: (1) tails at 0.02 put the hedge at 0.98, a tick below the 0.99
+level where every bid and every taker sell is; he pays 0.01 and bids 0.99
+without exception, so the copy now takes tails at 0.01 only. (2) The paper
+queue counted the bids in the first book after the latency as ahead of us;
+the 0.99 level fills with thousands of shares within a second of the ask
+emptying, so bids that came after ours were counted ahead. In one market
+we bid at 0.99 six seconds before his tail with nobody at the level and
+still "never filled" while he took 1,000 shares from 1,440 of sells. The
+queue is now the book at decision time. Where the level already held 10k
+when we decided, we are behind, and that is the honest measurement of a
+copy with a one-second decision loop against his bot.
+
 ## Benchmark: the mechanical copy runs beside Jev (added 2026-09-21)
 
 `src/jev/policy-animal.ts` plays the measured pattern deterministically and
