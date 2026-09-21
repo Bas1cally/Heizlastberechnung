@@ -121,10 +121,32 @@ describe("settlement start from the tape", () => {
     expect(jev.seen.length).toBeGreaterThan(0);
     expect(jev.seen.every((s) => s.market.settlementStartPrice === 84_990)).toBe(true);
     expect(db.get<{ price: number; source: string }>(`SELECT price, source FROM ticks WHERE market_id = ? ORDER BY ts_ms LIMIT 1`, [market.marketId])).toMatchObject({ price: 84_990, source: "chainlink-twap60" });
-    expect(db.get<{ start_lag_ms: number; start_source: string }>(`SELECT start_lag_ms, start_source FROM markets`)).toEqual({ start_lag_ms: 400, start_source: "chainlink-twap60" });
+    expect(db.get<{ start_lag_ms: number; start_source: string }>(`SELECT start_lag_ms, start_source FROM markets`)).toEqual({ start_lag_ms: 400, start_source: "chainlink-twap60@tape" });
     // No decision after the close, although the feeds kept ticking through the grace period.
     const lastDecision = db.get<{ t: number }>(`SELECT MAX(timestamp_ms) AS t FROM jev_requests`)!.t;
     expect(lastDecision).toBeLessThan(market.closesAtMs);
     expect(db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM ticks WHERE received_at_ms >= ?`, [market.closesAtMs])!.n).toBeGreaterThan(0);
+  }, 15_000);
+});
+
+describe("late tape start", () => {
+  it("overrides the provisional start once the tape's open-second tick lands", async () => {
+    const cfg = testConfig();
+    const db = openDatabase(":memory:");
+    const repo = new DecisionRepository(db);
+    const clock = createClock();
+    const market = identityFor(clock.wall(), 2_500);
+    repo.upsertMarket(market, clock.wall());
+    const jev = scriptedJev(() => answersFor("HOLD", "NORMAL"));
+    const observer = new MarketObserver({
+      cfg, log: quietLog(), clock, repo, jevCall: jev.call,
+      marketSubscribe: bookStream({ everyMs: 50 }), chainlinkSubscribe: priceStream((t) => 85_000 + t / 10), chainlinkTwapSubscribe: priceStream((t) => 85_100 + t / 20),
+      settlementStart: new Promise((r) => setTimeout(() => r({ price: 84_990, ts: market.openedAtMs + 300, source: "chainlink-twap60" }), 800)),
+    }, market);
+    await observer.run(0);
+    const starts = jev.seen.map((s) => s.market.settlementStartPrice);
+    expect(starts[0]).toBeGreaterThanOrEqual(85_100);            // provisional: the observer's own first TWAP tick
+    expect(starts.at(-1)).toBe(84_990);                          // final: the tape's value
+    expect(db.get<{ start_source: string; start_lag_ms: number }>(`SELECT start_source, start_lag_ms FROM markets`)).toEqual({ start_source: "chainlink-twap60@tape", start_lag_ms: 300 });
   }, 15_000);
 });

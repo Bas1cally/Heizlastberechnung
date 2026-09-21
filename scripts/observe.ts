@@ -44,10 +44,10 @@ const tape = new PriceTape({
   mono: clock.mono, wall: clock.wall, log: log.child({ feed: "tape" }),
 });
 tape.start();
-const startPriceFor = async (openedAtMs: number) => {
-  const s = await tape.waitForStart(openedAtMs);
-  return s.twap ? { price: s.twap.price, ts: s.twap.ts, source: `chainlink-twap${cfg.chainlinkTwapSeconds}` } : undefined;
-};
+// Not awaited: the observer starts at once and takes the tape's value when it
+// lands (the TWAP stream can lag the open by several seconds).
+const startPriceFor = (openedAtMs: number) => tape.waitForStart(openedAtMs, 12_000)
+  .then((s) => (s.twap ? { price: s.twap.price, ts: s.twap.ts, source: `chainlink-twap${cfg.chainlinkTwapSeconds}` } : undefined));
 const repo = new DecisionRepository(openDatabase(cfg.databaseUrl));
 const jevCall = createJevCall({ apiKey: cfg.typesafeApiKey, model: cfg.typesafeModel, timeoutMs: 5_000 });
 
@@ -103,7 +103,7 @@ while (!shuttingDown) {
       marketSubscribe: marketSubscribe(client as unknown as RealtimeClientLike),
       chainlinkSubscribe: chainlinkSubscribe(client as unknown as RealtimeClientLike),
       chainlinkTwapSubscribe: chainlinkTwapSubscribe(client as unknown as RealtimeClientLike, cfg.chainlinkTwapSeconds),
-      settlementStart: await startPriceFor(market.openedAtMs) },
+      settlementStart: startPriceFor(market.openedAtMs) },
     market,
   );
   try {

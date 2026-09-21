@@ -91,34 +91,46 @@ export function calibrationByTime(obs: readonly Observation[]): CalibrationRow[]
  * profit is 1 - ask when right, -ask when wrong. No fees, no fills, no
  * slippage - an upper bound, never a forecast of realised PnL.
  */
-export function naiveEdge(o: Observation): { side: "UP" | "DOWN"; ask: number; pnl: number; jevEdge: number } {
+export function naiveEdge(o: Observation): { side: "UP" | "DOWN"; ask: number; won: boolean; executable: boolean; pnl: number; jevEdge: number } {
   const side = o.pUp >= 0.5 ? "UP" : "DOWN";
   const ask = side === "UP" ? o.upAsk : o.downAsk;
   const won = side === "UP" ? o.outcomeUp : !o.outcomeUp;
   const p = side === "UP" ? o.pUp : 1 - o.pUp;
-  return { side, ask, pnl: won ? 1 - ask : -ask, jevEdge: p - ask };
+  // An empty ask side is recorded as 1.0 (nothing to buy); a zero is a
+  // broken book. Neither is a price anyone could have paid.
+  const executable = ask > 0 && ask < 1;
+  return { side, ask, won, executable, pnl: executable ? (won ? 1 - ask : -ask) : NaN, jevEdge: p - ask };
 }
 
 export interface EdgeRow {
   readonly bucket: string;
   readonly n: number;
+  /** How often Jev's favoured side actually won, over all n. */
+  readonly accuracy: number;
+  /** Observations with a payable ask (0 < ask < 1); the price columns below are over these only. */
+  readonly executable: number;
   readonly meanAsk: number;
   readonly meanJevEdge: number;
-  /** Mean naive gross pnl per share. */
+  /** Mean naive gross pnl per share over executable observations. */
   readonly meanPnl: number;
+  /** Share of executable observations with positive pnl. */
   readonly winRate: number;
 }
 
-function edgeSummary(bucket: string, obs: readonly Observation[]): EdgeRow {
+export function edgeSummary(bucket: string, obs: readonly Observation[]): EdgeRow {
   const n = obs.length;
-  if (n === 0) return { bucket, n: 0, meanAsk: NaN, meanJevEdge: NaN, meanPnl: NaN, winRate: NaN };
+  if (n === 0) return { bucket, n: 0, accuracy: NaN, executable: 0, meanAsk: NaN, meanJevEdge: NaN, meanPnl: NaN, winRate: NaN };
   const e = obs.map(naiveEdge);
+  const ex = e.filter((x) => x.executable);
+  const m = ex.length;
   return {
     bucket, n,
-    meanAsk: e.reduce((s, x) => s + x.ask, 0) / n,
-    meanJevEdge: e.reduce((s, x) => s + x.jevEdge, 0) / n,
-    meanPnl: e.reduce((s, x) => s + x.pnl, 0) / n,
-    winRate: e.filter((x) => x.pnl > 0).length / n,
+    accuracy: e.filter((x) => x.won).length / n,
+    executable: m,
+    meanAsk: m ? ex.reduce((s, x) => s + x.ask, 0) / m : NaN,
+    meanJevEdge: m ? ex.reduce((s, x) => s + x.jevEdge, 0) / m : NaN,
+    meanPnl: m ? ex.reduce((s, x) => s + x.pnl, 0) / m : NaN,
+    winRate: m ? ex.filter((x) => x.pnl > 0).length / m : NaN,
   };
 }
 

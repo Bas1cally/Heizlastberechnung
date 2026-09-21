@@ -13,12 +13,16 @@ export interface MarketOutcomeRow {
   readonly derivedStart: number | undefined;
   readonly derivedEnd: number | undefined;
   readonly decisions: number;
+  /** How late the observer's start price was; undefined for recordings before it was tracked. */
+  readonly startLagMs: number | undefined;
+  /** True when the start price came from the process-level tape (the open-second tick). */
+  readonly cleanStart: boolean;
 }
 
 /** Outcome per market: the feed's resolution when present, else derived from ticks. */
 export function loadMarketOutcomes(db: Db, nowMs: number): MarketOutcomeRow[] {
-  const markets = db.all<{ market_id: string; slug: string; opened_at_ms: number; closes_at_ms: number; resolved_outcome: string | null }>(
-    `SELECT market_id, slug, opened_at_ms, closes_at_ms, resolved_outcome FROM markets ORDER BY opened_at_ms`);
+  const markets = db.all<{ market_id: string; slug: string; opened_at_ms: number; closes_at_ms: number; resolved_outcome: string | null; start_lag_ms: number | null; start_source: string | null }>(
+    `SELECT market_id, slug, opened_at_ms, closes_at_ms, resolved_outcome, start_lag_ms, start_source FROM markets ORDER BY opened_at_ms`);
   return markets.map((m) => {
     // The markets settle on the 60 s TWAP; use that stream when it was recorded, else spot.
     // Ticks are selected by timestamp, not by market id: the ticks at the open
@@ -33,6 +37,8 @@ export function loadMarketOutcomes(db: Db, nowMs: number): MarketOutcomeRow[] {
       outcome: fromFeed ?? derived?.outcome,
       source: fromFeed ? "feed" : derived ? "derived" : "none",
       derivedStart: derived?.startPrice, derivedEnd: derived?.endPrice, decisions,
+      startLagMs: m.start_lag_ms ?? undefined,
+      cleanStart: (m.start_source ?? "").endsWith("@tape") && (m.start_lag_ms ?? Infinity) <= 2_000,
     };
   });
 }

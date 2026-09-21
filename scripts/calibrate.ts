@@ -22,6 +22,9 @@ const outcomes = loadMarketOutcomes(db, Date.now());
 const resolved = outcomes.filter((o) => o.outcome);
 const obs = loadObservations(db, outcomes);
 
+// Markets whose start price came from the tape: Jev saw the true distance there.
+const cleanIds = new Set(outcomes.filter((o) => o.cleanStart).map((o) => o.marketId));
+const cleanObs = obs.filter((o) => cleanIds.has(o.marketId));
 const conf = calibrationByConfidence(obs);
 const time = calibrationByTime(obs);
 const byTime = edgeByTime(obs);
@@ -42,6 +45,7 @@ const summary = {
     naiveWinRate: edges.filter((e) => e.pnl > 0).length / edges.length,
     note: "naive = buy Jev's favoured side at the executable ask on every decision; no fees, fills or slippage. An upper bound, not a forecast.",
   } : null,
+  cleanStart: { markets: cleanIds.size, observations: cleanObs.length, calibrationByConfidence: calibrationByConfidence(cleanObs), edgeByTime: edgeByTime(cleanObs), brier: cleanObs.length ? brierScore(cleanObs) : null },
   calibrationByConfidence: conf,
   calibrationByTime: time,
   edgeByTime: byTime,
@@ -63,9 +67,17 @@ if (summary.overall) {
   console.log(`overall: brier ${fmt(summary.overall.brier)}  accuracy ${fmt(summary.overall.directionalAccuracy)}  naive pnl/share ${fmt(summary.overall.naiveGrossPnlPerShare)}  win ${fmt(summary.overall.naiveWinRate)}\n`);
   console.log("calibration by confidence   n     predicted  observed   error    brier");
   for (const r of conf) console.log(`  ${r.bucket.padEnd(12)} ${String(r.n).padStart(6)}   ${fmt(r.predicted)}     ${fmt(r.observed)}   ${fmt(r.calibrationError)}   ${fmt(r.brier)}`);
-  console.log("\nnaive edge by time          n     ask      jevEdge  pnl/share  win");
-  for (const r of byTime) console.log(`  ${r.bucket.padEnd(12)} ${String(r.n).padStart(6)}   ${fmt(r.meanAsk)}   ${fmt(r.meanJevEdge)}   ${fmt(r.meanPnl)}     ${fmt(r.winRate)}`);
+  console.log("\nnaive edge by time          n   accuracy  executable  ask      jevEdge  pnl/share  win");
+  for (const r of byTime) console.log(`  ${r.bucket.padEnd(12)} ${String(r.n).padStart(6)}   ${fmt(r.accuracy)}   ${String(r.executable).padStart(6)}      ${fmt(r.meanAsk)}   ${fmt(r.meanJevEdge)}   ${fmt(r.meanPnl)}     ${fmt(r.winRate)}`);
+  console.log("  (accuracy over all n; price columns over states with a payable ask, 0 < ask < 1 - an empty ask side is not a price)");
 }
+if (cleanObs.length) {
+  console.log(`\n=== markets with the start price from the tape only: ${cleanIds.size} market(s), ${cleanObs.length} observation(s), brier ${fmt(brierScore(cleanObs))} ===`);
+  console.log("calibration by confidence   n     predicted  observed   error    brier");
+  for (const r of calibrationByConfidence(cleanObs)) console.log(`  ${r.bucket.padEnd(12)} ${String(r.n).padStart(6)}   ${fmt(r.predicted)}     ${fmt(r.observed)}   ${fmt(r.calibrationError)}   ${fmt(r.brier)}`);
+  console.log("\nnaive edge by time          n   accuracy  executable  ask      jevEdge  pnl/share  win");
+  for (const r of edgeByTime(cleanObs)) console.log(`  ${r.bucket.padEnd(12)} ${String(r.n).padStart(6)}   ${fmt(r.accuracy)}   ${String(r.executable).padStart(6)}      ${fmt(r.meanAsk)}   ${fmt(r.meanJevEdge)}   ${fmt(r.meanPnl)}     ${fmt(r.winRate)}`);
+} else console.log("\n(no market with a tape start price yet; the tables above include the recordings with late start prices)");
 console.log("\noutcome cross-check per market   feed  TWAP  spot  market(UPmid)  Jev(last)      start: derived / Jev    first tick +s  last tick -s");
 for (const c of consistency) {
   const o = (x: string | undefined) => (x ?? "-").padEnd(5);

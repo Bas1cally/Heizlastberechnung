@@ -20,6 +20,8 @@ import { DEFAULT_KILL_THRESHOLDS, KillSwitch, type KillState } from "../risk/kil
 import { APIConnectionError, APITimeoutError } from "@typesafe-ai/sdk";
 import type { JevInputState } from "../jev/decision-types.js";
 
+export interface SettlementStart { readonly price: number; readonly ts: number; readonly source: string }
+
 export interface ObserverDeps {
   readonly cfg: AppConfig;
   readonly log: Logger;
@@ -36,7 +38,7 @@ export interface ObserverDeps {
    * tick this observer sees becomes the start, which is late by however long
    * discovery took - and wrong by however far BTC moved meanwhile.
    */
-  readonly settlementStart?: { readonly price: number; readonly ts: number; readonly source: string } | undefined;
+  readonly settlementStart?: SettlementStart | Promise<SettlementStart | undefined> | undefined;
   readonly repo: DecisionRepository;
   readonly display?: (line: string) => void;
   /** Execution mode handed to the risk gate. "none" in observe. */
@@ -82,6 +84,7 @@ export class MarketObserver {
   private lastHeartbeatMono = Number.NEGATIVE_INFINITY;
   private manualKill = false;
   private manualNote: string | undefined;
+  private tapeStart: SettlementStart | undefined;
   private lastSubmitMono = Number.NEGATIVE_INFINITY;
   private lastPersistFailMono = Number.NEGATIVE_INFINITY;
 
@@ -123,16 +126,23 @@ export class MarketObserver {
       },
     );
     this.persist("market", () => deps.repo.upsertMarket(market, clock.wall()));
-    if (deps.settlementStart) {
-      const st = deps.settlementStart;
+    // The tape's open-second tick may arrive a few seconds after the open
+    // (the TWAP stream lags). It overrides whatever the first live tick set.
+    void Promise.resolve(deps.settlementStart).then((st) => {
+      if (this.stopped) return;
+      if (!st) {
+        log.warn("no start price on the tape for this market; the first settlement tick stands in and is late", { openedAt: new Date(market.openedAtMs).toISOString() });
+        return;
+      }
+      const before = this.store.snapshot(clock.wall()).settlementStartPrice;
       this.store.setSettlementStartPrice(st.price);
+      this.tapeStart = st;
       // Record the start tick under this market so a replay derives the same outcome.
       this.persist("tick", () => deps.repo.saveTick(market.marketId, st.source, st.ts, clock.wall(), st.price));
-      this.persist("market", () => deps.repo.setStartLag(market.marketId, st.ts - market.openedAtMs, st.source));
-      log.info("settlement start price from tape", { price: st.price, source: st.source, lagMs: st.ts - market.openedAtMs });
-    } else {
-      log.warn("no start price on the tape for this market; the first settlement tick will stand in and is late", { openedAt: new Date(market.openedAtMs).toISOString() });
-    }
+      this.persist("market", () => deps.repo.setStartLag(market.marketId, st.ts - market.openedAtMs, st.source, true));
+      log.info("settlement start price from tape", { price: st.price, source: st.source, lagMs: st.ts - market.openedAtMs, replaced: before !== undefined && before !== st.price ? before : undefined });
+      this.maybeDecide();
+    }).catch((err: unknown) => log.error("settlement start lookup failed", { err }));
 
     this.engine = new DecisionEngine({
       call: deps.jevCall,
@@ -212,8 +222,8 @@ export class MarketObserver {
           onStreamError: (reason) => this.persist("error", () => deps.repo.saveError("chainlink-twap-ws", reason, market.marketId, clock.wall())),
           onTick: (t) => {
             this.lastPacketMono = clock.mono();
-            if (this.store.snapshot(clock.wall()).settlementStartPrice === undefined && t.ts >= market.openedAtMs) {
-              this.persist("market", () => deps.repo.setStartLag(market.marketId, t.ts - market.openedAtMs, `chainlink-twap${cfg.chainlinkTwapSeconds}`));
+            if (!this.tapeStart && this.store.snapshot(clock.wall()).settlementStartPrice === undefined && t.ts >= market.openedAtMs) {
+              this.persist("market", () => deps.repo.setStartLag(market.marketId, t.ts - market.openedAtMs, `chainlink-twap${cfg.chainlinkTwapSeconds}`, false));
             }
             this.store.setSettlementPrice(t.price, t.ts);
             this.lastStateMono = clock.mono();

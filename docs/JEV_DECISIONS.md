@@ -64,3 +64,33 @@ Output tokens track the number of questions; input tokens track the state and
 descriptions are therefore a recurring cost, not a one-off. Measured on this
 account: 1 short question ≈ 281 in / 23 out; 4 questions with full criteria ≈
 609 in / 103 out.
+
+## Benchmark (brief §13), measured 2026-09-21
+
+`pnpm benchmark:jev -- --n 300 --repeat 10` on 300 recorded market states,
+concurrency 4, model `jev-latest`:
+
+| requests | success | p50 | p75 | p90 | p95 | p99 | max | throughput |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 300 | 300 (100%) | 279 ms | 296 ms | 315 ms | 338 ms | 686 ms | 752 ms | 13.8 req/s |
+
+Stability on one state repeated 10 times: action HOLD 10/10, P(UP) variance
+0, confidence variance 0.0013. Jev is deterministic enough that the input
+hash cache is a faithful stand-in for a repeated call.
+
+In the live observer the same model measured p50 330 ms, p95 633 ms and 26%
+of calls above 500 ms over 4831 calls: the benchmark's parallel, back-to-back
+requests are faster than the observer's one-at-a-time calls under real
+network conditions. Both numbers matter; the observer's is the one that
+decides staleness.
+
+## First calibration read (2.2 h, 25 markets), and why it is not yet a read on Jev
+
+With official outcomes, Jev's favoured side at the last decision was right in
+18 of 25 markets. Every one of the 7 misses is a market whose start price
+the observer took 15 s or more after the open (previous market's grace
+period plus discovery), so the distance Jev saw was measured from the wrong
+anchor. Calibration on those recordings measures our start price, not Jev.
+`pnpm calibrate` therefore reports a separate table over markets whose
+start came from the process-level tape; only that table is a statement
+about Jev.

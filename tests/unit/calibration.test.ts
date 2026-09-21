@@ -40,9 +40,13 @@ describe("calibration by time", () => {
 
 describe("naive edge", () => {
   it("is an upper bound: buy the favoured side at its ask, pay it when wrong", () => {
-    expect(naiveEdge(ob(0.8, true))).toEqual({ side: "UP", ask: 0.6, pnl: expect.closeTo(0.4, 9), jevEdge: expect.closeTo(0.2, 9) });
+    expect(naiveEdge(ob(0.8, true))).toEqual({ side: "UP", ask: 0.6, won: true, executable: true, pnl: expect.closeTo(0.4, 9), jevEdge: expect.closeTo(0.2, 9) });
     expect(naiveEdge(ob(0.8, false)).pnl).toBe(-0.6);
-    expect(naiveEdge(ob(0.2, false))).toEqual({ side: "DOWN", ask: 0.41, pnl: expect.closeTo(0.59, 9), jevEdge: expect.closeTo(0.39, 9) });
+    expect(naiveEdge(ob(0.2, false))).toEqual({ side: "DOWN", ask: 0.41, won: true, executable: true, pnl: expect.closeTo(0.59, 9), jevEdge: expect.closeTo(0.39, 9) });
+    // An empty ask side (recorded as 1.0) is not a price: the call still counts for accuracy, not for pnl.
+    const empty = naiveEdge(ob(0.99, true, { upAsk: 1 }));
+    expect(empty).toMatchObject({ won: true, executable: false });
+    expect(Number.isNaN(empty.pnl)).toBe(true);
   });
 
   it("segments by the ask actually payable", () => {

@@ -65,9 +65,9 @@ if (metrics) {
   }
 } else console.log(`no ${mode} execution records yet\n`);
 
-const table = (title: string, rows: { bucket: string; n: number; meanAsk: number; meanJevEdge: number; meanPnl: number; winRate: number }[]) => {
-  console.log(`${title.padEnd(28)} n     ask     jevEdge  pnl/share  win`);
-  for (const r of rows) console.log(`  ${r.bucket.padEnd(12)} ${String(r.n).padStart(6)}   ${f(r.meanAsk)}   ${f(r.meanJevEdge)}   ${f(r.meanPnl)}     ${pct(r.winRate)}`);
+const table = (title: string, rows: { bucket: string; n: number; accuracy: number; executable: number; meanAsk: number; meanJevEdge: number; meanPnl: number; winRate: number }[]) => {
+  console.log(`${title.padEnd(28)} n   accuracy  exec.   ask     jevEdge  pnl/share  win`);
+  for (const r of rows) console.log(`  ${r.bucket.padEnd(12)} ${String(r.n).padStart(6)}   ${pct(r.accuracy).padStart(4)}  ${String(r.executable).padStart(6)}  ${f(r.meanAsk)}   ${f(r.meanJevEdge)}   ${f(r.meanPnl)}     ${pct(r.winRate)}`);
   console.log();
 };
 if (obs.length) {

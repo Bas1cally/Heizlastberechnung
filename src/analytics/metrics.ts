@@ -1,5 +1,5 @@
 import type { Db } from "../persistence/database.js";
-import { naiveEdge, TIME_BUCKETS, type EdgeRow, type Observation } from "./calibration.js";
+import { edgeSummary, naiveEdge, TIME_BUCKETS, type EdgeRow, type Observation } from "./calibration.js";
 import { percentiles, type Percentiles } from "./latency.js";
 
 /**
@@ -156,12 +156,6 @@ export const ACTION_CONFIDENCE_BUCKETS: readonly Bucket[] = [
   { label: "<0.5", lo: -Infinity, hi: 0.5 }, { label: "0.5-0.7", lo: 0.5, hi: 0.7 }, { label: "0.7-0.9", lo: 0.7, hi: 0.9 }, { label: "0.9-0.99", lo: 0.9, hi: 0.99 }, { label: "0.99+", lo: 0.99, hi: Infinity },
 ];
 
-function edgeSummary(bucket: string, obs: readonly Observation[]): EdgeRow {
-  const n = obs.length;
-  if (n === 0) return { bucket, n: 0, meanAsk: NaN, meanJevEdge: NaN, meanPnl: NaN, winRate: NaN };
-  const e = obs.map(naiveEdge);
-  return { bucket, n, meanAsk: e.reduce((s, x) => s + x.ask, 0) / n, meanJevEdge: e.reduce((s, x) => s + x.jevEdge, 0) / n, meanPnl: e.reduce((s, x) => s + x.pnl, 0) / n, winRate: e.filter((x) => x.pnl > 0).length / n };
-}
 
 /** Naive EV in numeric buckets of `value`; observations without the value are counted under "unknown". */
 export function edgeByNumeric(obs: readonly Observation[], buckets: readonly Bucket[], value: (o: Observation) => number | undefined): EdgeRow[] {
@@ -266,13 +260,13 @@ export function animal00(obs: readonly Observation[]): Animal00Report {
   for (const o of cand) mix[o.action] = (mix[o.action] ?? 0) + 1;
   return {
     observations: obs.length, candidateStates: n, candidateShare: obs.length ? n / obs.length : null,
-    winnerAccuracy: n ? edges.filter((e) => e.pnl > 0).length / n : null,
+    winnerAccuracy: n ? edges.filter((e) => e.won).length / n : null,
     meanWinnerAsk: mean(edges.map((e) => e.ask)),
     meanComplementAsk: mean(cand.map((o, i) => (edges[i]!.side === "UP" ? o.downAsk : o.upAsk))),
     meanPairCost: mean(pairCosts),
     pairBelowParStates: belowPar.length, pairBelowParShare: n ? belowPar.length / n : null,
     meanLockedPairPnlPerShare: belowPar.length ? mean(belowPar.map((c) => 1 - c)) : null,
-    naiveWinnerPnlPerShare: mean(edges.map((e) => e.pnl)),
+    naiveWinnerPnlPerShare: mean(edges.filter((e) => e.executable).map((e) => e.pnl)),
     byTime: TIME_BUCKETS.map((b) => edgeSummary(b.label, cand.filter((o) => o.secondsRemaining >= b.lo && o.secondsRemaining < b.hi))),
     actionMixInCandidates: mix,
   };

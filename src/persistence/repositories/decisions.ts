@@ -16,8 +16,10 @@ export class DecisionRepository {
     );
   }
 
-  setStartLag(marketId: string, lagMs: number, source: string): void {
-    this.db.run(`UPDATE markets SET start_lag_ms = ?, start_source = ? WHERE market_id = ? AND start_lag_ms IS NULL`, [Math.round(lagMs), source, marketId]);
+  /** The tape's value overrides a provisional one set by the observer's own first tick. */
+  setStartLag(marketId: string, lagMs: number, source: string, fromTape: boolean): void {
+    if (fromTape) this.db.run(`UPDATE markets SET start_lag_ms = ?, start_source = ? WHERE market_id = ?`, [Math.round(lagMs), `${source}@tape`, marketId]);
+    else this.db.run(`UPDATE markets SET start_lag_ms = ?, start_source = ? WHERE market_id = ? AND start_lag_ms IS NULL`, [Math.round(lagMs), source, marketId]);
   }
 
   markResolved(marketId: string, outcome: string): void {

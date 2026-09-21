@@ -45,10 +45,10 @@ const tape = new PriceTape({
   mono: clock.mono, wall: clock.wall, log: log.child({ feed: "tape" }),
 });
 tape.start();
-const startPriceFor = async (openedAtMs: number) => {
-  const s = await tape.waitForStart(openedAtMs);
-  return s.twap ? { price: s.twap.price, ts: s.twap.ts, source: `chainlink-twap${cfg.chainlinkTwapSeconds}` } : undefined;
-};
+// Not awaited: the observer starts at once and takes the tape's value when it
+// lands (the TWAP stream can lag the open by several seconds).
+const startPriceFor = (openedAtMs: number) => tape.waitForStart(openedAtMs, 12_000)
+  .then((s) => (s.twap ? { price: s.twap.price, ts: s.twap.ts, source: `chainlink-twap${cfg.chainlinkTwapSeconds}` } : undefined));
 const wallet = process.env["POLYMARKET_DEPOSIT_WALLET"]?.trim();
 const secure = await createSecureClient({ signer: privateKey(pk), ...(wallet ? { wallet } : {}) });
 // The signer is built from the two signing methods only; postOrder is never referenced.
@@ -119,7 +119,7 @@ while (!shuttingDown) {
       marketSubscribe: marketSubscribe(publicClient as unknown as RealtimeClientLike),
       chainlinkSubscribe: chainlinkSubscribe(publicClient as unknown as RealtimeClientLike),
       chainlinkTwapSubscribe: chainlinkTwapSubscribe(publicClient as unknown as RealtimeClientLike, cfg.chainlinkTwapSeconds),
-      settlementStart: await startPriceFor(market.openedAtMs),
+      settlementStart: startPriceFor(market.openedAtMs),
       executionMode: "simulated",
       processName: "shadow",
       onKill: (state) => { mlog.error("kill: no further orders will be signed", { reasons: state.reasons }); engine.flush(() => undefined); },
