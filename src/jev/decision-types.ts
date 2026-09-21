@@ -64,6 +64,13 @@ export interface JevInputState {
     readonly downSpread: number;
     readonly imbalanceUp: number;
     readonly imbalanceDown: number;
+    /** The side the market prices as the likely winner (higher ask), and the other one. null before both books exist. */
+    readonly leader: "UP" | "DOWN" | null;
+    readonly leaderAsk: number;
+    /** Shares offered on the leader's ask side; when this empties, no hedge is possible any more. */
+    readonly leaderAskDepth: number;
+    readonly tailAsk: number;
+    readonly tailAskDepth: number;
   };
   readonly inventory: {
     readonly upShares: number;
@@ -76,6 +83,14 @@ export interface JevInputState {
     readonly pnlIfUp: number;
     readonly pnlIfDown: number;
     readonly guaranteedPairPnl: number;
+    /**
+     * Most the opposite side may cost per share so that pairing the unpaired
+     * shares and merging costs nothing (1.00 minus the unpaired side's entry).
+     * null when nothing is unpaired.
+     */
+    readonly hedgePriceCap: number | null;
+    /** Whether the opposite side is currently offered at or below hedgePriceCap. */
+    readonly hedgeAvailable: boolean;
   };
   readonly dataQuality: {
     readonly chainlinkAgeMs: number;

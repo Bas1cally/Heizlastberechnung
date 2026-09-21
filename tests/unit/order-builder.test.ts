@@ -65,6 +65,24 @@ describe("buildOrders", () => {
     expect(legs.map((l) => l.side).sort()).toEqual(["DOWN", "UP"]);
   });
 
+  it("never pays more than 1.00 for a set, and caps a hedge so the pair merges back at no cost", () => {
+    // Asks .45 / .55 sum to exactly 1.00: bought at the touch, no aggression room.
+    const pair = buildOrders("BUY_PAIR", "IMMEDIATE", state(), limits);
+    expect(pair.map((l) => l.price)).toEqual([0.45, 0.55]);
+    // Asks summing above 1.00: no set at all.
+    expect(buildOrders("BUY_PAIR", "IMMEDIATE", { ...state(), upBook: book("UP", [[0.46, 100]]) }, limits)).toEqual([]);
+    // A tail bought at .01 may be hedged at .99 at most; with the leader asking .995 the hedge rests at .99 as GTC.
+    const tail = state({ upShares: 100, downShares: 0, avgUpEntry: 0.01, avgDownEntry: 0 });
+    const hedge = buildOrders("ADD_COMPLEMENT", "IMMEDIATE", { ...tail, downBook: book("DOWN", [[0.995, 5000]]) }, { ...limits, tickSize: 0.005 });
+    expect(hedge).toHaveLength(1);
+    expect(hedge[0]).toMatchObject({ side: "DOWN", price: 0.99, size: 100 });
+    expect(hedge[0]!.style.type).toBe("GTC");
+    // Leader asking .99: the hedge crosses at .99 as the immediate order it was asked to be.
+    const hedgeNow = buildOrders("ADD_COMPLEMENT", "IMMEDIATE", { ...tail, downBook: book("DOWN", [[0.99, 5000]]) }, { ...limits, tickSize: 0.005 });
+    expect(hedgeNow[0]).toMatchObject({ price: 0.99 });
+    expect(hedgeNow[0]!.style.type).toBe("FOK");
+  });
+
   it("drops an order below the minimum size", () => {
     expect(buildOrders("BUY_UP", "NORMAL", state(), { ...limits, riskAllowanceUsd: 1 })).toEqual([]);
   });

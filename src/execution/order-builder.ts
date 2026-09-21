@@ -22,6 +22,12 @@ export interface SizingLimits {
   readonly riskAllowanceUsd: number;
   readonly tickSize: number;
   readonly minOrderSize: number;
+  /**
+   * Most a complete set may cost. A pair bought for at most 1.00 merges back
+   * to 1.00, so the unpaired leg was free; above it, the hedge locks in a
+   * loss. Default 1.00.
+   */
+  readonly maxPairCost?: number;
 }
 
 /** Depth-weighted quantity obtainable at or below `limit`. */
@@ -46,12 +52,19 @@ export function buildOrders(
   const style = styleFor(urgency, map);
   if (!style || !state.upBook || !state.downBook) return [];
 
-  const leg = (side: "UP" | "DOWN", target: number, sizedBy: OrderIntent["sizedBy"]): OrderIntent | undefined => {
+  const maxPair = limits.maxPairCost ?? 1.0;
+  const leg = (side: "UP" | "DOWN", target: number, sizedBy: OrderIntent["sizedBy"], priceCap?: number): OrderIntent | undefined => {
     const book = side === "UP" ? state.upBook! : state.downBook!;
     const touch = bestAsk(book);
     if (touch === undefined) return undefined;
-    const price = Math.min(0.999, Math.max(0.001, roundTick(touch + style.aggressionTicks * limits.tickSize, limits.tickSize)));
-    const byDepth = style.aggressionTicks < 0 ? depth(book.asks) : obtainable(book, price);
+    let price = Math.min(0.999, Math.max(0.001, roundTick(touch + style.aggressionTicks * limits.tickSize, limits.tickSize)));
+    // A hedge above its cap would pay more than 1.00 for the pair: rest at the cap instead of crossing.
+    if (priceCap !== undefined) {
+      const cap = Math.floor(priceCap / limits.tickSize + 1e-9) * limits.tickSize;
+      if (cap < limits.tickSize) return undefined;
+      price = Math.min(price, Number(cap.toFixed(6)));
+    }
+    const byDepth = price < touch - 1e-12 ? depth(book.asks) : obtainable(book, price);
     const byRisk = price > 0 ? limits.riskAllowanceUsd / price : 0;
     const candidates: [number, OrderIntent["sizedBy"]][] = [
       [limits.maxOrderSizeShares, "max_order"], [target, sizedBy], [byDepth, "depth"], [byRisk, "risk"],
@@ -59,7 +72,9 @@ export function buildOrders(
     const [size, by] = candidates.reduce((a, b) => (b[0] < a[0] ? b : a));
     const rounded = Math.floor(size);
     if (rounded < limits.minOrderSize) return undefined;
-    return { side, assetId: side === "UP" ? state.identity.upAssetId : state.identity.downAssetId, price: Number(price.toFixed(4)), size: rounded, style, sizedBy: by };
+    // Resting below the touch is a GTC bid whatever the urgency said: FOK/FAK at a price nobody offers fills nothing.
+    const effectiveStyle = price < touch - 1e-12 && (style.type === "FOK" || style.type === "FAK") ? { ...style, type: "GTC" as const, ttlMs: style.ttlMs ?? 20_000 } : style;
+    return { side, assetId: side === "UP" ? state.identity.upAssetId : state.identity.downAssetId, price: Number(price.toFixed(4)), size: rounded, style: effectiveStyle, sizedBy: by };
   };
 
   const inv = state.inventory;
@@ -68,16 +83,24 @@ export function buildOrders(
     case "BUY_DOWN": return [leg("DOWN", limits.maxOrderSizeShares, "max_order")].filter((x): x is OrderIntent => !!x);
     case "BUY_PAIR": {
       // Both legs at the same size, or neither: a half-filled pair is a directional bet.
-      const up = leg("UP", limits.maxOrderSizeShares, "pair");
-      const down = leg("DOWN", limits.maxOrderSizeShares, "pair");
+      // The set may cost at most maxPair in total: any slack under it is split
+      // between the legs as aggression room, none at all is bought at the touch.
+      const upTouch = bestAsk(state.upBook), downTouch = bestAsk(state.downBook);
+      if (upTouch === undefined || downTouch === undefined) return [];
+      if (upTouch + downTouch > maxPair + 1e-9) return []; // the set would cost more than it merges back to
+      const slack = (maxPair - upTouch - downTouch) / 2;
+      const up = leg("UP", limits.maxOrderSizeShares, "pair", upTouch + slack);
+      const down = leg("DOWN", limits.maxOrderSizeShares, "pair", downTouch + slack);
       if (!up || !down) return [];
       const size = Math.min(up.size, down.size);
       return [{ ...up, size, sizedBy: "pair" }, { ...down, size, sizedBy: "pair" }];
     }
     case "ADD_COMPLEMENT": {
-      // Buy the opposite of whatever is unpaired, to match it into pairs.
-      if (inv.unpairedUpShares > 0) return [leg("DOWN", inv.unpairedUpShares, "complement")].filter((x): x is OrderIntent => !!x);
-      if (inv.unpairedDownShares > 0) return [leg("UP", inv.unpairedDownShares, "complement")].filter((x): x is OrderIntent => !!x);
+      // Buy the opposite of whatever is unpaired, to match it into pairs, at a
+      // price that keeps the pair at or under maxPairCost (the tail was bought
+      // at avgEntry; the hedge may cost at most maxPair - avgEntry).
+      if (inv.unpairedUpShares > 0) return [leg("DOWN", inv.unpairedUpShares, "complement", maxPair - inv.avgUpEntry)].filter((x): x is OrderIntent => !!x);
+      if (inv.unpairedDownShares > 0) return [leg("UP", inv.unpairedDownShares, "complement", maxPair - inv.avgDownEntry)].filter((x): x is OrderIntent => !!x);
       return [];
     }
     default:

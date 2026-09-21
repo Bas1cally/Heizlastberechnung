@@ -19,13 +19,13 @@ import { choice, score } from "@typesafe-ai/sdk";
  */
 export const QUESTIONS = {
   action: choice(
-    "Given the settlement state, market prices, time remaining, market dynamics and the existing inventory, what is the best immediate action?",
+    "Given the settlement state, market prices, time remaining, market dynamics and the existing inventory, what is the best immediate action? The economics that matter: a complete set (one UP plus one DOWN share) always merges back to exactly 1.00, so a pair bought for 1.00 or less costs nothing. Buying the trailing side (`tailAsk`, usually 0.01-0.02 late in the market) and later pairing it with the leading side at no more than `hedgePriceCap` is therefore a free option on a late reversal: if the lead reverses before the hedge, the tail pays 1.00; if not, the pair is merged at no cost. The hedge is only possible while the leader is offered at or under the cap (`hedgeAvailable`, `leaderAskDepth`); once the leader's ask side empties, an unpaired tail can no longer be hedged and expires worthless if the lead holds. `leadHeldRate` is the measured chance the lead holds.",
     {
-      BUY_UP: "Open or extend a directional position in the UP outcome.",
-      BUY_DOWN: "Open or extend a directional position in the DOWN outcome.",
-      BUY_PAIR: "Buy both outcomes together as a complete set for the pair edge.",
+      BUY_UP: "Buy UP: as the likely winner, or as the cheap trailing side to hold as a reversal option and pair later.",
+      BUY_DOWN: "Buy DOWN: as the likely winner, or as the cheap trailing side to hold as a reversal option and pair later.",
+      BUY_PAIR: "Buy both outcomes together as a complete set, only when the set costs at most 1.00.",
       ADD_COMPLEMENT:
-        "Hold significant inventory in one outcome and buy the cheap opposite outcome to match it into pairs.",
+        "Hold unpaired shares and buy the opposite outcome now, at no more than hedgePriceCap, to lock the pair in while the leader is still offered.",
       HOLD: "Keep the current position and open orders unchanged.",
       CANCEL: "Withdraw resting orders without opening anything new.",
       ABSTAIN:
@@ -61,8 +61,8 @@ export const QUESTIONS = {
       NONE: "Leave the inventory as it is.",
       ADD_UP: "Increase the UP holding.",
       ADD_DOWN: "Increase the DOWN holding.",
-      PAIR: "Match unpaired shares by buying the opposite outcome.",
-      MERGE: "Convert matched shares back into collateral.",
+      PAIR: "Match unpaired shares by buying the opposite outcome at no more than hedgePriceCap, so the set cost nothing.",
+      MERGE: "Convert matched shares back into collateral now: every merged pair returns exactly 1.00.",
       REDUCE_RISK: "Cut exposure: the downside under one outcome is too large.",
     },
   ),

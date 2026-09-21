@@ -119,3 +119,32 @@ The settlement question now tells Jev to anchor on `leadHeldRate` and move
 only as far as the momentum and spot-vs-TWAP evidence justifies. Whether
 that is enough is measured, not assumed: `pnpm calibrate` reports the
 clean-subset calibration separately for markets after this change.
+
+## The pattern as measured on wallet 0x55aeeb3e (Animal00), 14-21 Sep 2026
+
+39,886 activity rows, 2,074 BTC 5-minute markets (every market), 37,849
+buys, 1,534 merges, 259 redemptions, no sells. Per market, in this order:
+
+1. 40-110 s before the close: ~1,000 shares of the *trailing* side at 0.01
+   (10 USD).
+2. 10-50 s before the close, sometimes after it: ~1,000 shares of the
+   *leading* side at 0.99 (990 USD).
+3. Merge 1,000 sets: 1,000 USD back. Net 0.00 to -0.11.
+
+The set costs exactly 1.00, so the hedge is a free exit and the tail is a
+free option on a reversal between step 1 and step 2. What it costs: tails
+that could not be hedged because the leader's ask side had emptied (-10 USD
+each). Net over 1,581 settled markets: +3,992 USD, +2.52 per market on
+about 1,000 USD of working capital.
+
+The brief's description (accumulate the winner at 0.98-0.995, then add a
+cheap complement, merge, retain excess winner) had the order reversed and
+the economics wrong: the profit is not a percent on the winner, it is the
+reversal option paid for by a hedge that costs nothing.
+
+What changed in the bot: the order builder never pays more than 1.00 for a
+set (`maxPairCost`) and caps a hedge at `1.00 - tail entry`, resting a GTC
+at the cap when the leader asks more; the state carries `leader`,
+`leaderAsk`, `leaderAskDepth`, `tailAsk`, `tailAskDepth`, `hedgePriceCap`
+and `hedgeAvailable`; the action question explains the economics. Jev still
+chooses when to buy the tail and when to hedge; nothing here is a rule.

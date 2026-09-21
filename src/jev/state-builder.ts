@@ -40,6 +40,10 @@ export function buildJevState(input: StateBuilderInput): JevInputState {
   const current = state.settlementCurrentPrice ?? start;
   const spot = state.spotPrice ?? current;
   const held = input.holdRate?.(distanceBps(start, current), state.secondsRemaining);
+  const leader: "UP" | "DOWN" | null = up && down ? (upAsk >= downAsk ? "UP" : "DOWN") : null;
+  const inv0 = state.inventory;
+  const hedgeCap = inv0.unpairedUpShares > 0 ? 1 - inv0.avgUpEntry : inv0.unpairedDownShares > 0 ? 1 - inv0.avgDownEntry : null;
+  const hedgeAsk = inv0.unpairedUpShares > 0 ? downAsk : inv0.unpairedDownShares > 0 ? upAsk : undefined;
 
   return {
     market: {
@@ -74,6 +78,10 @@ export function buildJevState(input: StateBuilderInput): JevInputState {
       downSpread: r(down ? (spread(down) ?? 0) : 0, 4),
       imbalanceUp: r(up ? imbalance(up) : 0, 3),
       imbalanceDown: r(down ? imbalance(down) : 0, 3),
+      leader, leaderAsk: r(leader === "UP" ? upAsk : leader === "DOWN" ? downAsk : 0, 4),
+      leaderAskDepth: r(leader === "UP" ? (up ? depth(up.asks) : 0) : leader === "DOWN" ? (down ? depth(down.asks) : 0) : 0, 2),
+      tailAsk: r(leader === "UP" ? downAsk : leader === "DOWN" ? upAsk : 0, 4),
+      tailAskDepth: r(leader === "UP" ? (down ? depth(down.asks) : 0) : leader === "DOWN" ? (up ? depth(up.asks) : 0) : 0, 2),
     },
     inventory: {
       upShares: r(state.inventory.upShares, 2),
@@ -86,6 +94,8 @@ export function buildJevState(input: StateBuilderInput): JevInputState {
       pnlIfUp: r(state.inventory.pnlIfUp, 2),
       pnlIfDown: r(state.inventory.pnlIfDown, 2),
       guaranteedPairPnl: r(state.inventory.guaranteedPairPnl, 2),
+      hedgePriceCap: hedgeCap === null ? null : r(hedgeCap, 4),
+      hedgeAvailable: hedgeCap !== null && hedgeAsk !== undefined && hedgeAsk <= hedgeCap + 1e-9,
     },
     dataQuality: {
       chainlinkAgeMs: Math.round(Number.isFinite(input.chainlinkAgeMs) ? input.chainlinkAgeMs : 1e9),
