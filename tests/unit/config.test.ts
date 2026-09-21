@@ -61,3 +61,23 @@ describe("clock drift", () => {
     expect(c.withinTolerance(1_500)).toBe(true);
   });
 });
+
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { loadEnvFile } from "../../src/app/env.js";
+
+describe("loadEnvFile encodings", () => {
+  it("reads UTF-16 and BOM-prefixed files the way Windows tools write them", () => {
+    const dir = mkdtempSync(join(tmpdir(), "jev-env-"));
+    try {
+      const k1 = `T16_${Date.now()}`, k2 = `TBOM_${Date.now()}`;
+      writeFileSync(join(dir, "a.env"), Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(`${k1}=abc\r\n`, "utf16le")]));
+      writeFileSync(join(dir, "b.env"), `﻿${k2}=xyz\n`);
+      loadEnvFile(join(dir, "a.env"));
+      loadEnvFile(join(dir, "b.env"));
+      expect(process.env[k1]).toBe("abc");
+      expect(process.env[k2]).toBe("xyz");
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+});

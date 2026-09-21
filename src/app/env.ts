@@ -21,7 +21,11 @@ export function parseEnv(text: string): Record<string, string> {
 export function loadEnvFile(path = ".env"): void {
   let text: string;
   try {
-    text = readFileSync(path, "utf8");
+    // Editors and PowerShell on Windows may write UTF-16 or a UTF-8 BOM.
+    const buf = readFileSync(path);
+    text = buf[0] === 0xff && buf[1] === 0xfe ? buf.subarray(2).toString("utf16le")
+      : buf[0] === 0xfe && buf[1] === 0xff ? Buffer.from(buf.subarray(2)).swap16().toString("utf16le")
+      : buf.toString("utf8").replace(/^\uFEFF/, "");
   } catch {
     return;
   }

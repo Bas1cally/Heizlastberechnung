@@ -64,6 +64,8 @@ function pushUrl(remote: string): string {
 
 async function once(): Promise<void> {
   const started = Date.now();
+  const token = process.env["GITHUB_SYNC_TOKEN"]?.trim() ?? "";
+  log("auth", { mode: token ? "token" : "credential manager", tokenLength: token.length, tokenPrefixOk: token.startsWith("github_pat_") || token.startsWith("ghp_"), envFile: existsSync(".env") ? "present" : "missing" });
   const remote = git(["remote", "get-url", "origin"], ".");
   ensureRepo(remote);
   // Fresh tree every time.
