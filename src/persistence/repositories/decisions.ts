@@ -94,6 +94,19 @@ export class DecisionRepository {
     );
   }
 
+  /** Operator control shared between the bot and the dashboard through the database. */
+  setControl(key: string, value: string, nowMs: number): void {
+    this.db.run(`INSERT INTO control (key, value, updated_ms) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_ms = excluded.updated_ms`, [key, value, nowMs]);
+  }
+  getControl(key: string): { value: string; updatedMs: number } | undefined {
+    const row = this.db.get<{ value: string; updated_ms: number }>(`SELECT value, updated_ms FROM control WHERE key = ?`, [key]);
+    return row ? { value: row.value, updatedMs: row.updated_ms } : undefined;
+  }
+  /** Heartbeat so the dashboard can tell a running bot from a dead one. */
+  heartbeat(component: string, info: Record<string, unknown>, nowMs: number): void {
+    this.setControl(`heartbeat:${component}`, JSON.stringify({ ...info, at: nowMs }), nowMs);
+  }
+
   countDecisions(): number {
     return this.db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM jev_requests`)?.n ?? 0;
   }

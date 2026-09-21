@@ -40,16 +40,28 @@ is impossible. Completing a phase never auto-enables anything.
 
 ## Kill switch
 
-Stop new trading on: stale Chainlink, stale WS, clock drift, unknown settlement
-configuration, Jev unavailable / timing out / returning something invalid,
-Polymarket API errors over threshold, inventory mismatch, wallet balance
-mismatch, unexpected token ids, order ACK inconsistency, daily loss reached,
-manual kill.
+`src/risk/kill-switch.ts`, evaluated by the observer on every event.
 
-On trigger: stop creating orders, cancel resting orders, reconcile positions,
-persist state, log the reason. **Do not liquidate at arbitrary prices** — an
-unpaired position is held, not dumped into a book that may be the reason the
-switch fired.
+**Transient reasons** latch while the condition holds and clear on their own
+after 30 s of health: Chainlink stale (>10 s), market WS stale (>10 s), clock
+drift beyond tolerance, Jev unavailable / timeout / invalid (5 consecutive),
+Polymarket API errors (10 in 60 s). Without self-clearing, a three-second
+socket hiccup would end an overnight run.
+
+**Hard reasons** stay tripped until an operator resumes: daily loss reached,
+inventory reconciliation mismatch, wallet balance mismatch, unexpected token
+ids, order ACK inconsistency, unknown settlement configuration, manual kill.
+
+While tripped, every decision that would create an order is recorded as
+`REJECTED (KILL_SWITCH)`; HOLD and ABSTAIN pass. On trip the bot cancels
+resting orders and reconciles (the `onKill` hook), persists the state to the
+`control` table and the errors table, and logs. **It never liquidates at
+arbitrary prices** — an unpaired position is held, not dumped into a book
+that may be the reason the switch fired.
+
+Operator control goes through the database, so it works from another
+process: the dashboard's KILL / Resume buttons, or `pnpm kill` / `pnpm
+resume`. The bot polls the control table once a second.
 
 ## Known residual risks
 

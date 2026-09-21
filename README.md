@@ -31,10 +31,12 @@ Phase 1 groundwork. **No order path exists yet, in any mode.**
 
 | Shadow execution: real signing, no submission, book movement to hypothetical ACK | `src/execution/shadow-engine.ts`, `pnpm bot:shadow` |
 
+| Kill switch: transient (self-clearing) and hard (operator resume) reasons, manual via dashboard/CLI | `src/risk/kill-switch.ts` |
+| Dashboard: current market, last decision, feeds, latency, kill / resume | `pnpm dashboard` |
+
 | Next | |
 | --- | --- |
-| Real execution, cancel management and merge/redeem adapters, behind `ENABLE_LIVE_TRADING` + `--mode live` | `src/execution/`, `src/inventory/` |
-| Kill switch wiring (feed staleness, reconciliation, daily loss) | `src/risk/kill-switch.ts` |
+| Real execution, cancel management and merge/redeem adapters, behind `ENABLE_LIVE_TRADING` + `--mode live` — only after explicit approval (brief §40) | `src/execution/`, `src/inventory/` |
 
 ## Requirements
 
@@ -53,6 +55,8 @@ pnpm calibrate          # calibration + naive edge reports from recorded outcome
 pnpm replay             # causal replay of recorded markets (cached Jev answers)
 pnpm bot:paper          # paper trading over recorded markets -> reports/backtest-summary.json
 pnpm bot:shadow         # live path incl. signing, stops before submission (needs POLYMARKET_PRIVATE_KEY)
+pnpm dashboard          # http://127.0.0.1:8787 - live state, last decision, feeds, kill / resume
+pnpm kill / pnpm resume # operator kill switch from the command line
 pnpm benchmark:jev      # latency + stability over recorded states
 ```
 

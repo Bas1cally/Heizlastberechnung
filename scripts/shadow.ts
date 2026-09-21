@@ -99,6 +99,8 @@ while (!shuttingDown) {
       marketSubscribe: marketSubscribe(publicClient as unknown as RealtimeClientLike),
       chainlinkSubscribe: chainlinkSubscribe(publicClient as unknown as RealtimeClientLike),
       executionMode: "simulated",
+      processName: "shadow",
+      onKill: (state) => { mlog.error("kill: no further orders will be signed", { reasons: state.reasons }); engine.flush(() => undefined); },
       onBookUpdate: (book, nowMono) => engine.onBook(book, nowMono),
       onApproved: (d, snap, decisionMono) => {
         const inv = snap.inventory;

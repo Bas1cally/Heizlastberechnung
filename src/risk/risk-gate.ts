@@ -25,7 +25,9 @@ export type RiskRejectReason =
   | "TOO_MANY_OPEN_ORDERS"
   | "DAILY_LOSS_REACHED"
   | "ERROR_STREAK"
-  | "LIVE_TRADING_DISABLED";
+  | "LIVE_TRADING_DISABLED"
+  /** Set by the observer, not the gate: the kill switch is tripped. */
+  | "KILL_SWITCH";
 
 export interface RiskContext {
   /** Version of the state the decision was made on. */

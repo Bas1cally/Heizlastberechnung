@@ -16,6 +16,8 @@ import { LatencyTracker, breakdown } from "../analytics/latency.js";
 import type { DecisionRepository } from "../persistence/repositories/decisions.js";
 import { formatProbability } from "./format.js";
 import { DEFAULT_MATERIAL, materialChange } from "../jev/material-change.js";
+import { DEFAULT_KILL_THRESHOLDS, KillSwitch, type KillState } from "../risk/kill-switch.js";
+import { APIConnectionError, APITimeoutError } from "@typesafe-ai/sdk";
 import type { JevInputState } from "../jev/decision-types.js";
 
 export interface ObserverDeps {
@@ -33,6 +35,10 @@ export interface ObserverDeps {
   readonly onApproved?: (decision: Decision, snapshot: MarketState, decisionMono: number) => void | Promise<void>;
   /** Called with every normalised book update (for engines that track post-decision book movement). */
   readonly onBookUpdate?: (book: OrderBook, nowMono: number) => void;
+  /** Label for the heartbeat the dashboard shows ("observer", "shadow"). */
+  readonly processName?: string;
+  /** Called when the kill switch trips: cancel resting orders, reconcile. Never liquidate. */
+  readonly onKill?: (state: KillState) => void | Promise<void>;
 }
 
 /**
@@ -56,6 +62,10 @@ export class MarketObserver {
   private submitted = 0;
   private readonly startedMono: number;
   private lastJevState: JevInputState | undefined;
+  private readonly kill: KillSwitch;
+  private lastControlPollMono = Number.NEGATIVE_INFINITY;
+  private lastHeartbeatMono = Number.NEGATIVE_INFINITY;
+  private manualKill = false;
   private lastSubmitMono = Number.NEGATIVE_INFINITY;
   private lastPersistFailMono = Number.NEGATIVE_INFINITY;
 
@@ -79,6 +89,21 @@ export class MarketObserver {
     const { cfg, log, clock } = deps;
     this.startedMono = clock.mono();
     this.store = new MarketStateStore(market, computeInventory(EMPTY_POSITION));
+    this.kill = new KillSwitch(
+      { ...DEFAULT_KILL_THRESHOLDS, maxClockDriftMs: cfg.maxClockDriftMs, maxDailyLossUsd: cfg.limits.maxDailyLossUsd },
+      {
+        onTrip: (reasons) => {
+          log.error("KILL SWITCH TRIPPED - no new orders", { reasons });
+          this.persist("control", () => deps.repo.setControl("kill", JSON.stringify({ tripped: true, reasons, hard: this.kill.state().hard, since: clock.wall() }), clock.wall()));
+          this.persist("error", () => deps.repo.saveError("kill-switch", `tripped: ${reasons.join(", ")}`, market.marketId, clock.wall()));
+          void Promise.resolve(deps.onKill?.(this.kill.state())).catch((err: unknown) => log.error("onKill failed", { err }));
+        },
+        onClear: () => {
+          log.warn("kill switch cleared - resuming");
+          this.persist("control", () => deps.repo.setControl("kill", JSON.stringify({ tripped: false, clearedAt: clock.wall() }), clock.wall()));
+        },
+      },
+    );
     this.persist("market", () => deps.repo.upsertMarket(market, clock.wall()));
 
     this.engine = new DecisionEngine({
@@ -90,6 +115,7 @@ export class MarketObserver {
       minIntervalMs: cfg.jev.minIntervalMs,
       onDecision: (d) => this.onDecision(d),
       onError: (err, v) => {
+        this.kill.jevFailed(err instanceof APITimeoutError ? "JEV_TIMEOUT" : err instanceof APIConnectionError ? "JEV_UNAVAILABLE" : "JEV_INVALID", clock.mono());
         log.error("jev call failed", { err, stateVersion: v });
         this.persist("error", () => deps.repo.saveError("jev", err instanceof Error ? err.message : String(err), market.marketId, clock.wall()));
       },
@@ -144,9 +170,34 @@ export class MarketObserver {
     });
   }
 
+  /** Kill-switch health, operator control and heartbeat. Cheap; runs on every event. */
+  private housekeeping(): void {
+    const { clock, repo, log } = this.deps;
+    const nowMono = clock.mono();
+    this.kill.evaluate({ nowMono, chainlinkAgeMs: this.chainlink.ageMs(), marketWsAgeMs: this.books.ageMs(), clockDriftMs: clock.driftMs(), dailyPnlUsd: 0 });
+
+    if (nowMono - this.lastControlPollMono >= 1_000) {
+      this.lastControlPollMono = nowMono;
+      let ctl: { value: string } | undefined;
+      try { ctl = repo.getControl("kill"); } catch { ctl = undefined; }
+      const wantKill = ctl ? (JSON.parse(ctl.value) as { tripped?: boolean }).tripped === true : false;
+      if (wantKill && !this.manualKill) { this.manualKill = true; this.kill.manualKill(nowMono); }
+      if (!wantKill && this.manualKill) { this.manualKill = false; this.kill.resume(); log.info("operator resume acknowledged"); }
+    }
+    if (nowMono - this.lastHeartbeatMono >= 2_000) {
+      this.lastHeartbeatMono = nowMono;
+      this.persist("heartbeat", () => repo.heartbeat(this.deps.processName ?? "observer", { market: this.market.slug, decisions: this.decisions, killed: this.kill.state().tripped }, clock.wall()));
+    }
+  }
+
+  killState(): KillState {
+    return this.kill.state();
+  }
+
   private maybeDecide(): void {
     if (this.stopped) return;
     const { cfg, clock, log, repo } = this.deps;
+    this.housekeeping();
     const snap = this.store.snapshot(clock.wall());
     const drifted = !clock.withinTolerance(cfg.maxClockDriftMs);
     const missing = [
@@ -199,7 +250,11 @@ export class MarketObserver {
     const snap = this.store.snapshot(clock.wall());
     const spreadOf = (b: typeof snap.upBook) => (b ? (bestAsk(b) ?? 1) - (bestBid(b) ?? 0) : 1);
 
-    const verdict: RiskVerdict = evaluateRisk(
+    this.kill.jevSucceeded();
+    const killed = this.kill.state();
+    const verdict: RiskVerdict = killed.tripped && !["HOLD", "ABSTAIN"].includes(d.requestedAction)
+      ? { result: "REJECTED", reason: "KILL_SWITCH" }
+      : evaluateRisk(
       {
         decisionStateVersion: d.stateVersion,
         currentStateVersion: snap.materialVersion,

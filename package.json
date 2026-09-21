@@ -20,7 +20,10 @@
     "benchmark:jev": "tsx scripts/benchmark-jev.ts",
     "discover": "tsx scripts/discover.ts",
     "probe": "tsx scripts/probe.ts",
-    "calibrate": "tsx scripts/calibrate.ts"
+    "calibrate": "tsx scripts/calibrate.ts",
+    "dashboard": "tsx scripts/dashboard.ts",
+    "kill": "tsx scripts/control.ts kill",
+    "resume": "tsx scripts/control.ts resume"
   },
   "dependencies": {
     "@polymarket/client": "0.10.0",
