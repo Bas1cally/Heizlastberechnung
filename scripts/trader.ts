@@ -29,6 +29,9 @@ const wallet = argv.find((a) => /^0x[0-9a-fA-F]{40}$/.test(a))?.toLowerCase();
 if (!wallet) { console.error("usage: pnpm trader -- 0x<wallet> [--days 7]"); process.exit(1); }
 const daysIdx = argv.indexOf("--days");
 const days = daysIdx >= 0 ? Number(argv[daysIdx + 1]) : 0;
+const pagesIdx = argv.indexOf("--max-pages");
+// The API lists newest first; a small page budget is an incremental refresh.
+const maxPages = pagesIdx >= 0 ? Number(argv[pagesIdx + 1]) : 400;
 
 const db = openDatabase(cfg.databaseUrl);
 db.run(`CREATE TABLE IF NOT EXISTS trader_activity (
@@ -72,7 +75,7 @@ for await (const page of paginator) {
     inserted++;
   }
   process.stdout.write(`\rfetched ${fetched} activity rows (${pages} pages), ${inserted} new`);
-  if (pages >= 400) { console.log("\nstopping at 400 pages"); break; }
+  if (pages >= maxPages) { console.log(`\nstopping at ${maxPages} pages`); break; }
 }
 if (firstPageEmpty) {
   console.log("windowed query returned nothing; retrying over the full history");
@@ -86,7 +89,7 @@ if (firstPageEmpty) {
       inserted++;
     }
     process.stdout.write(`\rfetched ${fetched} activity rows (${pages} pages)`);
-    if (pages >= 400) { console.log("\nstopping at 400 pages"); break; }
+    if (pages >= maxPages) { console.log(`\nstopping at ${maxPages} pages`); break; }
   }
 }
 console.log();

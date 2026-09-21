@@ -73,6 +73,13 @@ async function once(): Promise<void> {
   mkdirSync(join(SYNC_DIR, "reports"), { recursive: true });
   mkdirSync(join(SYNC_DIR, "logs"), { recursive: true });
 
+  // Reference traders (public wallets, TRADER_WALLETS in .env, default Animal00): a
+  // few newest pages per sync keep their history current for the comparison.
+  const wallets = (process.env["TRADER_WALLETS"] ?? "0x55aeeb3eb4e8cc0da6d9e4939caf533bf6c3f5df").split(",").map((w) => w.trim()).filter((w) => /^0x[0-9a-fA-F]{40}$/.test(w));
+  for (const w of wallets) {
+    const r = tsx("scripts/trader.ts", [w, "--max-pages", "20"]);
+    if (!r.ok) log("trader refresh failed", { wallet: w, tail: r.out.slice(-300) });
+  }
   const summary = tsx("scripts/summary.ts");
   writeFileSync(join(SYNC_DIR, "reports", "summary.txt"), summary.out);
   if (existsSync("reports")) for (const f of readdirSync("reports")) if (/\.(json|csv|txt)$/.test(f)) cpSync(join("reports", f), join(SYNC_DIR, "reports", f));
