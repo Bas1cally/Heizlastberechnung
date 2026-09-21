@@ -3,8 +3,8 @@
  * measure its behaviour on the BTC 5-minute markets, trade by trade
  * (brief §19: test the Animal00 pattern against facts, not claims).
  *
- *   pnpm trader -- 0x55aeeb3eb4e8cc0da6d9e4939caf533bf6c3f5df
- *   pnpm trader -- 0x... --days 30
+ *   pnpm trader -- 0x55aeeb3eb4e8cc0da6d9e4939caf533bf6c3f5df      # full history
+ *   pnpm trader -- 0x... --days 30                                  # last 30 days
  *
  * Uses `client.listActivity({ user, window })` (verified in
  * @polymarket/client 0.10.0: TRADE rows carry side, price, shares, amount,
@@ -28,7 +28,7 @@ const argv = process.argv.slice(2);
 const wallet = argv.find((a) => /^0x[0-9a-fA-F]{40}$/.test(a))?.toLowerCase();
 if (!wallet) { console.error("usage: pnpm trader -- 0x<wallet> [--days 7]"); process.exit(1); }
 const daysIdx = argv.indexOf("--days");
-const days = daysIdx >= 0 ? Number(argv[daysIdx + 1]) : 7;
+const days = daysIdx >= 0 ? Number(argv[daysIdx + 1]) : 0;
 
 const db = openDatabase(cfg.databaseUrl);
 db.run(`CREATE TABLE IF NOT EXISTS trader_activity (
@@ -39,11 +39,28 @@ db.run(`CREATE INDEX IF NOT EXISTS trader_activity_wallet_ts ON trader_activity(
 
 const client = createPublicClient();
 type Act = { type: string; timestamp: number; transactionHash: string; conditionId?: string; slug?: string; outcome?: string; side?: string; price?: string; shares?: string; amount?: string | null };
-const paginator = (client as unknown as { listActivity(r: { user: string; pageSize: number; window: { start: number } }): AsyncIterable<{ items: Act[] }> })
-  .listActivity({ user: wallet, pageSize: 100, window: { start: Date.now() - days * 86_400_000 } });
+type Api = {
+  fetchUserStats(r: { user: string }): Promise<{ tradedMarketCount: number; joinDate: number | null; allTimePnl: unknown } | null>;
+  listPositions(r: { user: string; pageSize: number }): { firstPage(): Promise<{ items: unknown[] }> };
+  listActivity(r: { user: string; pageSize: number; window?: { start: number } | "full" }): AsyncIterable<{ items: Act[] }>;
+};
+const api = client as unknown as Api;
+// Is the address known to the data API at all? A wrong address (EOA instead of the
+// Polymarket proxy wallet, or a typo) shows up here before any paging.
+try {
+  const stats = await api.fetchUserStats({ user: wallet });
+  const positions = await api.listPositions({ user: wallet, pageSize: 50 }).firstPage();
+  console.log(`user stats: ${stats ? `${stats.tradedMarketCount} market(s) traded, joined ${stats.joinDate ? new Date(stats.joinDate).toISOString().slice(0, 10) : "?"}, all-time pnl ${JSON.stringify(stats.allTimePnl)}` : "unknown wallet (no stats)"}; open positions on first page: ${positions.items.length}`);
+} catch (err) { console.log(`user stats unavailable: ${err instanceof Error ? err.message : String(err)}`); }
+// Full history unless --days is given (the API's window semantics are not
+// documented in the bindings; an empty windowed result is retried without it).
+const listAll = (window: { start: number } | "full") => api.listActivity({ user: wallet, pageSize: 100, ...(window === "full" ? {} : { window }) });
+let paginator = listAll(days > 0 ? { start: Date.now() - days * 86_400_000 } : "full");
 
 let fetched = 0, inserted = 0, pages = 0;
+let firstPageEmpty = false;
 for await (const page of paginator) {
+  if (pages === 0 && page.items.length === 0 && days > 0) { firstPageEmpty = true; break; }
   pages++;
   for (const a of page.items) {
     fetched++;
@@ -57,7 +74,26 @@ for await (const page of paginator) {
   process.stdout.write(`\rfetched ${fetched} activity rows (${pages} pages), ${inserted} new`);
   if (pages >= 400) { console.log("\nstopping at 400 pages"); break; }
 }
+if (firstPageEmpty) {
+  console.log("windowed query returned nothing; retrying over the full history");
+  paginator = listAll("full");
+  for await (const page of paginator) {
+    pages++;
+    for (const a of page.items) {
+      fetched++;
+      db.run(`INSERT OR IGNORE INTO trader_activity (wallet, type, condition_id, slug, outcome, side, price, shares, amount, ts_ms, tx_hash, raw_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [wallet, a.type, a.conditionId ?? null, a.slug ?? null, a.outcome ?? null, a.side ?? null, a.price === undefined ? null : Number(a.price), a.shares === undefined ? null : Number(a.shares), a.amount === undefined || a.amount === null ? null : Number(a.amount), a.timestamp, a.transactionHash, JSON.stringify(a)]);
+      inserted++;
+    }
+    process.stdout.write(`\rfetched ${fetched} activity rows (${pages} pages)`);
+    if (pages >= 400) { console.log("\nstopping at 400 pages"); break; }
+  }
+}
 console.log();
+if (fetched > 0) {
+  const first = db.get<{ a: number; b: number }>(`SELECT MIN(ts_ms) AS a, MAX(ts_ms) AS b FROM trader_activity WHERE wallet = ?`, [wallet]);
+  console.log(`activity span: ${first?.a ? new Date(first.a).toISOString() : "?"} .. ${first?.b ? new Date(first.b).toISOString() : "?"}`);
+}
 
 const rows = db.all<ActivityRow>(`SELECT type, condition_id AS conditionId, slug, outcome, side, price, shares, amount, ts_ms AS tsMs, tx_hash AS txHash FROM trader_activity WHERE wallet = ? ORDER BY ts_ms`, [wallet]);
 const resolved = new Map(db.all<{ slug: string; resolved_outcome: string | null }>(`SELECT slug, resolved_outcome FROM markets WHERE resolved_outcome IS NOT NULL`).map((m) => [m.slug, m.resolved_outcome!]));
