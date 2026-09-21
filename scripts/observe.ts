@@ -43,10 +43,17 @@ log.info("observer starting", { mode: cfg.mode, liveTradingEnabled: cfg.liveTrad
 let current: MarketObserver | undefined;
 let shuttingDown = false;
 const shutdown = async (signal: string) => {
-  if (shuttingDown) return;
+  if (shuttingDown) {
+    // Second signal: the operator means it. Do not wait for anything.
+    log.warn("forced exit");
+    process.exit(130);
+  }
   shuttingDown = true;
-  log.info("shutting down", { signal });
-  await current?.stop();
+  log.info("shutting down - press Ctrl+C again to force", { signal });
+  // A socket that refuses to close must not keep the process alive.
+  const deadline = setTimeout(() => { log.warn("shutdown timed out, exiting"); process.exit(0); }, 3_000);
+  deadline.unref();
+  try { await current?.stop(); } catch (err) { log.warn("stop failed", { err }); }
   process.exit(0);
 };
 process.on("SIGINT", () => void shutdown("SIGINT"));
