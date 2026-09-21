@@ -38,6 +38,16 @@ Phase 1 groundwork. **No order path exists yet, in any mode.**
 | --- | --- |
 | Real execution, cancel management and merge/redeem adapters, behind `ENABLE_LIVE_TRADING` + `--mode live` — only after explicit approval (brief §40) | `src/execution/`, `src/inventory/` |
 
+## Dashboard
+
+`pnpm dashboard` serves a local page (127.0.0.1 only) for the operator, in
+German: one status sentence, the current market with countdown, what Jev
+thinks right now, feed health, Jev's P(Up) against the market's Up price over
+the current market, the calibration grade, today's decisions and token spend,
+the trading view (paper or live, never mixed), recent markets, messages, and
+the emergency stop with a confirmation. Set `TYPESAFE_USD_PER_MTOKEN` in
+`.env` to see an estimated daily cost.
+
 ## Requirements
 
 **Node.js 24 or newer.** `@polymarket/client@0.10.0` requires it. Check with
@@ -55,7 +65,7 @@ pnpm calibrate          # calibration + naive edge reports from recorded outcome
 pnpm replay             # causal replay of recorded markets (cached Jev answers)
 pnpm bot:paper          # paper trading over recorded markets -> reports/backtest-summary.json
 pnpm bot:shadow         # live path incl. signing, stops before submission (needs POLYMARKET_PRIVATE_KEY)
-pnpm dashboard          # http://127.0.0.1:8787 - trading (PnL curve, fills, position; paper/live), live state, kill / resume
+pnpm dashboard          # http://127.0.0.1:8787 - German operator view: status, current market, Jev vs market, calibration, trading, NOTAUS
 pnpm kill / pnpm resume # operator kill switch from the command line
 pnpm benchmark:jev      # latency + stability over recorded states
 ```
