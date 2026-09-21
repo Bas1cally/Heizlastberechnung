@@ -19,7 +19,8 @@
     "report": "tsx scripts/report.ts",
     "benchmark:jev": "tsx scripts/benchmark-jev.ts",
     "discover": "tsx scripts/discover.ts",
-    "probe": "tsx scripts/probe.ts"
+    "probe": "tsx scripts/probe.ts",
+    "calibrate": "tsx scripts/calibrate.ts"
   },
   "dependencies": {
     "@polymarket/client": "0.10.0",

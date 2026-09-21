@@ -22,14 +22,16 @@ Phase 1 groundwork. **No order path exists yet, in any mode.**
 | Versioned market state, feature engine, Jev state builder | `src/market/market-state.ts`, `src/jev/state-builder.ts` |
 | Decision engine: coalescing, abort of superseded requests | `src/jev/decision-engine.ts` |
 | SQLite audit trail (`node:sqlite`), Jev response cache, latency stages | `src/persistence/` |
-| `pnpm discover`, `pnpm bot:observe` | `scripts/` |
-| 100+ unit tests, no network needed | `pnpm test` |
+| Phase 1 observer, confirmed live: 595 decisions / 3 markets / 0 errors | `scripts/observe.ts` |
+| Calibration by confidence and time, naive edge by time and price | `src/analytics/calibration.ts`, `pnpm calibrate` |
+| Causal replay with Jev response cache (`--fresh-jev` to bypass) | `src/replay/`, `pnpm replay` |
+| 140+ unit tests, no network needed | `pnpm test` |
 
 | Next | |
 | --- | --- |
-| Confirm discovery pattern and WS semantics on a live run | `pnpm discover`, `pnpm bot:observe` |
-| Jev benchmark (`scripts/benchmark-jev.ts`) | latency + stability over recorded states |
-| Replay engine, paper fill model, calibration reports | `src/replay/`, `src/analytics/` |
+| Paper fill model: spread, depth, partial fills, queue uncertainty, latency | `src/replay/paper-fill-model.ts` |
+| Pair / merge simulation and settlement PnL | `src/inventory/` |
+| Shadow execution | `src/execution/` |
 
 ## Requirements
 
@@ -40,8 +42,13 @@ Phase 1 groundwork. **No order path exists yet, in any mode.**
 pnpm install
 cp .env.example .env    # fill in TYPESAFE_API_KEY
 pnpm test               # unit tests, no network
-pnpm discover           # what Gamma returns for the discovery query - confirm slug/labels
+pnpm discover           # the current and next 5-minute market as Gamma returns them
+pnpm probe              # 20 s of raw feed events, unfiltered
 pnpm bot:observe        # Phase 1 observer; never submits an order
+pnpm report             # what the observer recorded
+pnpm calibrate          # calibration + naive edge reports from recorded outcomes
+pnpm replay             # causal replay of recorded markets (cached Jev answers)
+pnpm benchmark:jev      # latency + stability over recorded states
 ```
 
 `LOG_LEVEL=debug` for verbose JSON logs. Decisions, ticks, books and latency

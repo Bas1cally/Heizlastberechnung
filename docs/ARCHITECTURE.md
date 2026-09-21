@@ -72,3 +72,27 @@ submission impossible.
 `docs/DEPENDENCIES.md` first — it records which SDK APIs were verified and
 which were not. Then `docs/JEV_DECISIONS.md` for the question design, and
 `docs/RISK.md` for the limits and kill switch.
+
+## Replay
+
+`pnpm replay` merges recorded Chainlink ticks and book snapshots into one
+time-ordered stream and drives it through the same state store, feature
+builder and material-change gate as the live observer. At recorded time t the
+state holds only events received at or before t. Jev answers are looked up by
+the SHA-256 of the canonical state in the source database's cache; `--jev`
+calls Jev for states not cached, `--fresh-jev` ignores the cache. Replay output
+goes to `data/replay.sqlite`, never into the live database.
+
+Book snapshots are recorded at most every 500 ms per asset, so replay sees
+quotes at that resolution. That is enough for calibration and for a paper fill
+model that reasons about depth; it is not tick-accurate microstructure.
+
+## Calibration
+
+`pnpm calibrate` joins every decision to its market's outcome — the feed's
+`market_resolved` event when present, otherwise derived from the recorded
+ticks (first at or after open vs last before close, tie = UP) — and reports
+predicted vs observed by confidence bucket and by time bucket, Brier score,
+and a *naive* gross edge: buy Jev's favoured side at the executable ask on
+every decision, no fees, fills or slippage. That number is an upper bound and
+is labelled as such in the output.
