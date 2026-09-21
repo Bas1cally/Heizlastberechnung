@@ -22,6 +22,10 @@ const jev = db.all<{ ms: number }>(`SELECT jev_latency_ms AS ms FROM jev_request
 const stages = ["feed_to_state_ms", "state_to_jev_ms", "jev_ms"] as const;
 const pipeline = Object.fromEntries(stages.map((s) => [s, percentiles(db.all<{ v: number | null }>(`SELECT ${s} AS v FROM latency_measurements WHERE ${s} IS NOT NULL`).map((r) => r.v as number))]));
 const errors = db.all<{ c: string; n: number }>(`SELECT component AS c, COUNT(*) AS n FROM errors GROUP BY 1`);
+const lastErrors = db.all<{ ts_ms: number; component: string; message: string }>(`SELECT ts_ms, component, message FROM errors ORDER BY ts_ms DESC LIMIT 5`);
+const ticks = db.get<{ n: number; last: number | null }>(`SELECT COUNT(*) AS n, MAX(received_at_ms) AS last FROM ticks`);
+const books = db.all<{ asset_id: string; n: number; last: number | null }>(`SELECT asset_id, COUNT(*) AS n, MAX(received_at_ms) AS last FROM orderbook_snapshots GROUP BY 1`);
+const iso = (ms: number | null) => (ms ? new Date(ms).toISOString() : null);
 const span = db.get<{ a: number | null; b: number | null }>(`SELECT MIN(timestamp_ms) AS a, MAX(timestamp_ms) AS b FROM jev_requests`);
 
 console.log(JSON.stringify({
@@ -34,5 +38,10 @@ console.log(JSON.stringify({
   risk: risk.map((r) => ({ result: r.r, reason: r.reason, n: r.n })),
   jevLatencyMs: percentiles(jev),
   pipelineLatencyMs: pipeline,
+  feeds: {
+    chainlinkTicks: { count: ticks?.n ?? 0, last: iso(ticks?.last ?? null) },
+    orderbookSnapshots: books.map((b) => ({ asset: b.asset_id.slice(0, 12) + "…", count: b.n, last: iso(b.last) })),
+  },
   errors: Object.fromEntries(errors.map((r) => [r.c, r.n])),
+  lastErrors: lastErrors.map((e) => ({ at: iso(e.ts_ms), component: e.component, message: e.message })),
 }, null, 2));

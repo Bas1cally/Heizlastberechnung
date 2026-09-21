@@ -18,7 +18,8 @@
     "replay": "tsx scripts/replay.ts",
     "report": "tsx scripts/report.ts",
     "benchmark:jev": "tsx scripts/benchmark-jev.ts",
-    "discover": "tsx scripts/discover.ts"
+    "discover": "tsx scripts/discover.ts",
+    "probe": "tsx scripts/probe.ts"
   },
   "dependencies": {
     "@polymarket/client": "0.10.0",

@@ -67,6 +67,7 @@ export class MarketObserver {
       subscribe: deps.marketSubscribe,
       now: clock.mono,
       log: log.child({ feed: "market" }),
+      onStreamError: (reason) => deps.repo.saveError("market-ws", reason, market.marketId, clock.wall()),
       handlers: {
         onBook: (book) => {
           this.lastPacketMono = clock.mono();
@@ -88,6 +89,7 @@ export class MarketObserver {
       subscribe: deps.chainlinkSubscribe,
       now: clock.mono,
       log: log.child({ feed: "chainlink" }),
+      onStreamError: (reason) => deps.repo.saveError("chainlink-ws", reason, market.marketId, clock.wall()),
       onTick: (t) => {
         this.lastPacketMono = clock.mono();
         clock.observeServerTime(t.ts);

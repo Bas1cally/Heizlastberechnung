@@ -33,6 +33,8 @@ export interface ChainlinkFeedOptions {
   readonly onTick: (tick: ChainlinkTick) => void;
   readonly now: () => number;
   readonly log: Logger;
+  /** Called whenever the stream ends or throws, before reconnecting. */
+  readonly onStreamError?: (reason: string) => void;
   readonly reconnectBaseMs?: number;
   readonly reconnectMaxMs?: number;
 }
@@ -76,10 +78,11 @@ export class ChainlinkFeed {
           if (this.stopped) break;
           this.dispatch(ev);
         }
-        if (!this.stopped) this.opts.log.warn("chainlink ws ended, reconnecting");
+        if (!this.stopped) { this.opts.log.warn("chainlink ws ended, reconnecting"); this.opts.onStreamError?.("stream ended"); }
       } catch (err) {
         if (this.stopped) break;
         this.opts.log.warn("chainlink ws error, reconnecting", { err });
+        this.opts.onStreamError?.(err instanceof Error ? `${err.name}: ${err.message}` : String(err));
       }
       if (this.stopped) break;
       attempt++;
