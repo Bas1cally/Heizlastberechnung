@@ -43,9 +43,13 @@ export class MarketObserver {
   private decisions = 0;
   private stopped = false;
   private lastWaitLogMono = Number.NEGATIVE_INFINITY;
+  private lastBookSaveMono = new Map<string, number>();
+  private submitted = 0;
+  private readonly startedMono: number;
 
   constructor(private readonly deps: ObserverDeps, readonly market: MarketIdentity) {
     const { cfg, log, clock } = deps;
+    this.startedMono = clock.mono();
     this.store = new MarketStateStore(market, computeInventory(EMPTY_POSITION));
     deps.repo.upsertMarket(market, clock.wall());
 
@@ -77,7 +81,13 @@ export class MarketObserver {
           this.lastPacketMono = clock.mono();
           this.store.setBook(book);
           this.lastStateMono = clock.mono();
-          deps.repo.saveBook(market.marketId, book.assetId, clock.wall(), book.bids.slice(0, 10), book.asks.slice(0, 10));
+          // Books change hundreds of times a second; one snapshot per asset
+          // every 500 ms is plenty for replay and keeps the event loop free.
+          const lastSave = this.lastBookSaveMono.get(book.assetId) ?? Number.NEGATIVE_INFINITY;
+          if (clock.mono() - lastSave >= 500) {
+            this.lastBookSaveMono.set(book.assetId, clock.mono());
+            deps.repo.saveBook(market.marketId, book.assetId, clock.wall(), book.bids.slice(0, 10), book.asks.slice(0, 10));
+          }
           this.maybeDecide();
         },
         onResolved: (p) => {
@@ -118,9 +128,9 @@ export class MarketObserver {
     ].filter((x): x is string => x !== null);
 
     if (missing.length > 0) {
-      // Say why nothing is happening - once every 10 s, persisted so the
-      // report shows it even when the console is gone.
-      if (clock.mono() - this.lastWaitLogMono > 10_000) {
+      // Say why nothing is happening - once every 10 s after a 3 s warm-up,
+      // persisted so the report shows it even when the console is gone.
+      if (clock.mono() - this.startedMono > 3_000 && clock.mono() - this.lastWaitLogMono > 10_000) {
         this.lastWaitLogMono = clock.mono();
         const msg = `not deciding: ${missing.join(", ")}`;
         if (drifted) log.error(msg, { driftMs: clock.driftMs() }); else log.info(msg);
@@ -137,6 +147,7 @@ export class MarketObserver {
       pairQty: cfg.limits.maxOrderSizeShares,
     });
     this.engine.submit(this.market.marketId, snap.stateVersion, state);
+    if (this.submitted++ === 0) log.info("first state submitted to jev", { stateVersion: snap.stateVersion, secondsRemaining: state.market.secondsRemaining });
   }
 
   private onDecision(d: Decision): void {
@@ -168,6 +179,7 @@ export class MarketObserver {
       cfg.limits,
     );
 
+    if (this.decisions === 0) log.info("first jev decision received", { jevMs: Number(d.jevLatencyMs.toFixed(1)), action: d.requestedAction });
     repo.saveDecision(d, verdict);
     const b = breakdown({
       packetReceived: this.lastPacketMono,

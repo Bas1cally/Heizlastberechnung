@@ -36,7 +36,7 @@ if (cfg.mode !== "observe") {
 const clock = createClock();
 const client = createPublicClient();
 const repo = new DecisionRepository(openDatabase(cfg.databaseUrl));
-const jevCall = createJevCall({ apiKey: cfg.typesafeApiKey, model: cfg.typesafeModel, timeoutMs: cfg.limits.maxJevLatencyMs * 2 });
+const jevCall = createJevCall({ apiKey: cfg.typesafeApiKey, model: cfg.typesafeModel, timeoutMs: 5_000 });
 
 log.info("observer starting", { mode: cfg.mode, liveTradingEnabled: cfg.liveTradingEnabled, db: cfg.databaseUrl, model: cfg.typesafeModel ?? "jev-latest" });
 

@@ -37,3 +37,11 @@ describe("LatencyTracker", () => {
     expect(r["feed_to_state_ms"]).toBeUndefined();
   });
 });
+
+describe("breakdown with unstamped stages", () => {
+  it("treats NaN stamps as not having happened", () => {
+    const b = breakdown({ packetReceived: Number.NaN, stateUpdated: 5, jevRequestStarted: 6, jevResponseReceived: 90 });
+    expect(b.feed_to_state_ms).toBeUndefined();
+    expect(b.jev_ms).toBe(84);
+  });
+});

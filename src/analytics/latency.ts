@@ -24,7 +24,8 @@ export interface LatencyBreakdown {
   feed_to_ack_ms?: number | undefined;
 }
 
-const diff = (a?: number, b?: number) => (a !== undefined && b !== undefined ? b - a : undefined);
+const diff = (a?: number, b?: number) =>
+  a !== undefined && b !== undefined && Number.isFinite(a) && Number.isFinite(b) ? b - a : undefined;
 
 export function breakdown(s: LatencyStamps): LatencyBreakdown {
   return {
