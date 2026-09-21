@@ -24,6 +24,7 @@ Phase 1 groundwork. **No order path exists yet, in any mode.**
 | SQLite audit trail (`node:sqlite`), Jev response cache, latency stages | `src/persistence/` |
 | Phase 1 observer, confirmed live: 595 decisions / 3 markets / 0 errors | `scripts/observe.ts` |
 | Calibration by confidence and time, naive edge by time and price | `src/analytics/calibration.ts`, `pnpm calibrate` |
+| Performance metrics beyond win rate, EV segmentation, Animal00 research, latency report | `src/analytics/metrics.ts`, `pnpm analyze` |
 | Causal replay with Jev response cache (`--fresh-jev` to bypass) | `src/replay/`, `pnpm replay` |
 | 140+ unit tests, no network needed | `pnpm test` |
 
@@ -64,6 +65,7 @@ pnpm probe              # 20 s of raw feed events, unfiltered
 pnpm bot:observe        # Phase 1 observer; never submits an order
 pnpm report             # what the observer recorded
 pnpm calibrate          # calibration + naive edge reports from recorded outcomes
+pnpm analyze            # §26 metrics (ROC, PnL per fill / Jev call, unpaired time, maker/taker, cancel ratio, Jev cost), EV by distance/vol/confidence/action/pair cost, Animal00 research, reports/latency.json
 pnpm replay             # causal replay of recorded markets (cached Jev answers)
 pnpm bot:paper          # Phase 3: paper trading against LIVE books; simulated fills, real outcomes; never submits
 pnpm backtest           # paper trading over RECORDED markets -> reports/backtest-summary.json

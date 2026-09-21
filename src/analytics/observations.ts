@@ -38,12 +38,14 @@ export function loadMarketOutcomes(db: Db, nowMs: number): MarketOutcomeRow[] {
   });
 }
 
+const num = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+
 /** One observation per decision on a market with a known outcome. */
 export function loadObservations(db: Db, outcomes: readonly MarketOutcomeRow[]): Observation[] {
   const byMarket = new Map(outcomes.filter((o) => o.outcome).map((o) => [o.marketId, o.outcome!] as const));
   if (byMarket.size === 0) return [];
-  const rows = db.all<{ market_id: string; state_json: string; answers_json: string; requested_action: string }>(
-    `SELECT r.market_id, r.state_json, a.answers_json, a.requested_action FROM jev_requests r JOIN jev_answers a USING (decision_id)`);
+  const rows = db.all<{ decision_id: string; market_id: string; state_json: string; answers_json: string; requested_action: string }>(
+    `SELECT r.decision_id, r.market_id, r.state_json, a.answers_json, a.requested_action FROM jev_requests r JOIN jev_answers a USING (decision_id)`);
   const out: Observation[] = [];
   for (const r of rows) {
     const outcome = byMarket.get(r.market_id);
@@ -58,7 +60,9 @@ export function loadObservations(db: Db, outcomes: readonly MarketOutcomeRow[]):
       pUp: d.pUp, unresolvedMass: d.unresolvedMass, outcomeUp: outcome === "UP",
       secondsRemaining: Number(state?.market?.secondsRemaining ?? NaN),
       upAsk: Number(state?.orderbook?.upAsk ?? NaN), downAsk: Number(state?.orderbook?.downAsk ?? NaN),
-      action: r.requested_action, marketId: r.market_id,
+      action: r.requested_action, marketId: r.market_id, decisionId: r.decision_id,
+      distanceBps: num(state?.market?.distanceBps), realizedVol30s: num(state?.movement?.realizedVol30s), pairAskCost: num(state?.orderbook?.pairAskCost),
+      actionConfidence: num(answers?.action?.confidence),
     });
   }
   return out.filter((o) => Number.isFinite(o.secondsRemaining) && Number.isFinite(o.upAsk) && Number.isFinite(o.downAsk));

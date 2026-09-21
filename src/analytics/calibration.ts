@@ -17,6 +17,13 @@ export interface Observation {
   readonly downAsk: number;
   readonly action: string;
   readonly marketId: string;
+  /** Optional context for the EV segmentation (brief §26); absent on older records. */
+  readonly distanceBps?: number | undefined;
+  readonly realizedVol30s?: number | undefined;
+  readonly pairAskCost?: number | undefined;
+  /** Jev's confidence in the action it chose. */
+  readonly actionConfidence?: number | undefined;
+  readonly decisionId?: string | undefined;
 }
 
 /** Bucket edges from the brief, applied to max(p, 1-p) - the confidence in the favoured side. */
