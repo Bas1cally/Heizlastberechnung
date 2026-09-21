@@ -106,7 +106,7 @@ export class ChainlinkFeed {
   private async run(): Promise<void> {
     const base = this.opts.reconnectBaseMs ?? 250;
     const max = this.opts.reconnectMaxMs ?? 10_000;
-    let attempt = 0;
+    let attempt = 0, silentRuns = 0;
     if ((this.opts.staleReconnectMs ?? 15_000) > 0) {
       this.watchdog = setInterval(() => this.checkStale(this.opts.now()), 1_000);
       this.watchdog.unref?.();
@@ -120,11 +120,12 @@ export class ChainlinkFeed {
         for await (const ev of handle) {
           if (this.stopped) break;
           this.lastEventMono = this.opts.now();
+          silentRuns = 0;
           this.dispatch(ev);
         }
         if (this.stopped) break;
         if (this.handle === handle) { this.opts.log.warn("chainlink ws ended, reconnecting"); this.opts.onStreamError?.("stream ended"); }
-        // else: the watchdog closed it; already reported.
+        else { silentRuns++; attempt = Math.max(attempt, silentRuns); } // the watchdog closed it (already reported): back off, a storm of resubscribes helps nobody
       } catch (err) {
         if (this.stopped) break;
         this.opts.log.warn("chainlink ws error, reconnecting", { err });

@@ -187,53 +187,86 @@ describe("PaperLiveEngine", () => {
 describe("PaperLiveEngine maker fills", () => {
   // The measured late-market shape: the leader (DOWN) has bids at 0.99 and no ask; the tail (UP) is offered at 0.01.
   const leaderBook = (bid99 = 500) => normalizeBook({ assetId: "DOWN", bids: [{ price: 0.99, size: bid99 }, { price: 0.98, size: 1000 }], asks: [], receivedAtMs: 0 });
-  const withTail = (): MarketState => snapshot(book("UP", 0.0, 0.01, 5000), leaderBook(), computeInventory({ upShares: 10, downShares: 0, avgUpEntry: 0.01, avgDownEntry: 0 }));
+  const tailBook = () => book("UP", 0.0, 0.01, 5000);
+  const late = (): MarketState => snapshot(tailBook(), leaderBook());
+  /** Take the tail for real, so the engine's own position carries 10 UP at 0.01 (hedges are sized against the live position). */
+  const takeTail = (e: PaperLiveEngine, mono: number) => {
+    e.onApproved(decision("BUY_UP", "IMMEDIATE", "ADD_UP", "tail"), late(), mono);
+    e.onBook(tailBook(), mono + 300);
+    expect(e.summary().position.upShares).toBe(10);
+  };
+  const hedge = (orders: () => { order_id: string; status: string; order_type: string; price: number; size: number }[]) => orders().find((o) => o.order_id.endsWith("-2"));
 
   it("rests a hedge at the cap when the leader has no ask, and fills it only after the queue ahead is sold through", () => {
     const { e, orders, fills } = engine({ latencyMs: 300 });
-    e.onApproved(decision("ADD_COMPLEMENT", "IMMEDIATE", "PAIR"), withTail(), 1000);
-    const o = orders();
-    expect(o).toHaveLength(1);
-    expect(o[0]).toMatchObject({ status: "RESTING", order_type: "GTC", size: 10 });
-    expect(o[0]?.price).toBeCloseTo(0.99, 9);
+    takeTail(e, 0);
+    e.onApproved(decision("ADD_COMPLEMENT", "IMMEDIATE", "PAIR"), late(), 1000);
+    expect(orders()).toHaveLength(2);
+    expect(hedge(orders)).toMatchObject({ status: "RESTING", order_type: "GTC", size: 10 });
+    expect(hedge(orders)?.price).toBeCloseTo(0.99, 9);
 
     // Placed after the latency behind 500 shares at 0.99.
     e.onBook(leaderBook(500), 1400);
     e.onTrade({ assetId: "DOWN", price: 0.99, size: 300, side: "SELL", tsMs: undefined }, 1500);
-    expect(fills()).toHaveLength(0); // 200 still ahead
+    expect(fills().filter((f) => f.side === "DOWN")).toHaveLength(0); // 200 still ahead
     e.onTrade({ assetId: "DOWN", price: 0.995, size: 100, side: "SELL", tsMs: undefined }, 1600); // a sell above our price only eats the queue
     e.onTrade({ assetId: "DOWN", price: 0.99, size: 104, side: "SELL", tsMs: undefined }, 1700); // 100 ahead left, 4 reach us
-    expect(fills()).toHaveLength(1);
-    expect(fills()[0]).toMatchObject({ side: "DOWN", size: 4 });
-    expect(orders()[0]?.status).toBe("PARTIAL");
+    expect(fills().filter((f) => f.side === "DOWN")).toEqual([expect.objectContaining({ side: "DOWN", size: 4 })]);
+    expect(hedge(orders)?.status).toBe("PARTIAL");
     e.onTrade({ assetId: "DOWN", price: 0.98, size: 50, side: "SELL", tsMs: undefined }, 1800); // through our price: the remaining 6 fill
-    expect(fills()).toHaveLength(2);
-    expect(orders()[0]?.status).toBe("FILLED");
+    expect(fills().filter((f) => f.side === "DOWN")).toHaveLength(2);
+    expect(hedge(orders)?.status).toBe("FILLED");
     expect(e.summary().position.downShares).toBe(10);
+    expect(e.summary().position.upShares).toBe(10);
   });
 
   it("ignores taker buys and trades on the other asset, and a partly filled hedge ends PARTIAL at the close", () => {
     const { e, orders, fills } = engine({ latencyMs: 0 });
-    e.onApproved(decision("ADD_COMPLEMENT", "IMMEDIATE", "PAIR"), withTail(), 1000);
+    takeTail(e, 0);
+    e.onApproved(decision("ADD_COMPLEMENT", "IMMEDIATE", "PAIR"), late(), 1000);
     e.onBook(leaderBook(0), 1000); // nobody ahead
     e.onTrade({ assetId: "DOWN", price: 0.99, size: 50, side: "BUY", tsMs: undefined }, 1100); // a taker buy lifts asks, never our bid
     e.onTrade({ assetId: "UP", price: 0.99, size: 50, side: "SELL", tsMs: undefined }, 1100);
-    expect(fills()).toHaveLength(0);
+    expect(fills().filter((f) => f.side === "DOWN")).toHaveLength(0);
     e.onTrade({ assetId: "DOWN", price: 0.99, size: 3, side: "SELL", tsMs: undefined }, 1200);
-    expect(fills()).toEqual([expect.objectContaining({ side: "DOWN", size: 3 })]);
+    expect(fills().filter((f) => f.side === "DOWN")).toEqual([expect.objectContaining({ side: "DOWN", size: 3 })]);
     const s = e.settleAt("DOWN", 2000);
-    expect(orders()[0]?.status).toBe("PARTIAL");
+    expect(hedge(orders)?.status).toBe("PARTIAL");
     expect(s.partials).toBe(1);
     expect(s.position.downShares).toBe(3);
   });
 
   it("keeps a hedge resting until the close rather than the 20 s TTL", () => {
     const { e, orders } = engine({ latencyMs: 0 });
-    e.onApproved(decision("ADD_COMPLEMENT", "IMMEDIATE", "PAIR"), withTail(), 1000);
+    takeTail(e, 0);
+    e.onApproved(decision("ADD_COMPLEMENT", "IMMEDIATE", "PAIR"), late(), 1000);
     e.onBook(leaderBook(100), 1000);
     e.tick(1000 + 60_000); // a minute: a plain resting order would have expired
-    expect(orders()[0]?.status).toBe("RESTING");
+    expect(hedge(orders)?.status).toBe("RESTING");
     e.tick(1000 + 300_000 + 1); // past the close (closesAtMs 300_000, wall 123)
-    expect(orders()[0]?.status).toBe("NO_FILL");
+    expect(hedge(orders)?.status).toBe("NO_FILL");
+  });
+});
+
+describe("PaperLiveEngine hedge sizing", () => {
+  it("sizes a hedge against the live position and does not hedge a tail twice while the first hedge is in flight", () => {
+    const { e, orders, fills } = engine({ latencyMs: 300 });
+    // The tail: 10 UP taken at 0.41.
+    e.onApproved(decision("BUY_UP", "IMMEDIATE", "ADD_UP", "d1"), snapshot(book("UP", 0.40, 0.41), book("DOWN", 0.58, 0.59)), 1000);
+    e.onBook(book("UP", 0.40, 0.41), 1300);
+    expect(e.summary().position.upShares).toBe(10);
+    // Jev decides ADD_COMPLEMENT three times within a second on snapshots that still show the tail unpaired; only one hedge may go out.
+    const stale = snapshot(book("UP", 0.40, 0.41), book("DOWN", 0.58, 0.59), computeInventory({ upShares: 10, downShares: 0, avgUpEntry: 0.41, avgDownEntry: 0 }));
+    e.onApproved(decision("ADD_COMPLEMENT", "IMMEDIATE", "PAIR", "d2"), stale, 2000);
+    e.onApproved(decision("ADD_COMPLEMENT", "IMMEDIATE", "PAIR", "d3"), stale, 2100);
+    e.onApproved(decision("ADD_COMPLEMENT", "IMMEDIATE", "PAIR", "d4"), stale, 2200);
+    e.onBook(book("DOWN", 0.58, 0.59), 2600); // the one hedge arrives and fills
+    expect(fills().filter((f) => f.side === "DOWN")).toHaveLength(1);
+    expect(e.summary().position.downShares).toBe(10);
+    // Position now paired: a fourth ADD_COMPLEMENT on a stale snapshot builds nothing because the live position has nothing unpaired.
+    e.onApproved(decision("ADD_COMPLEMENT", "IMMEDIATE", "PAIR", "d5"), stale, 3000);
+    e.onBook(book("DOWN", 0.58, 0.59), 3400);
+    expect(orders().filter((o) => o.status !== "RESTING")).toHaveLength(2);
+    expect(e.summary().position.downShares).toBe(10);
   });
 });

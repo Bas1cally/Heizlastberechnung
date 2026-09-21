@@ -204,12 +204,26 @@ export class PaperLiveEngine {
         this.publish();
       }
     }
-    const exposure = computeInventory(this.position).totalCost;
+    // Sizing uses the position as it is NOW, not the snapshot's copy: a
+    // decision made while the previous hedge was in flight would otherwise
+    // hedge the same tail again (observed: four 0.59 hedges for one 0.41
+    // tail, 300 shares of directional exposure, -177 USD).
+    const live = computeInventory(this.position);
+    const exposure = live.totalCost;
     const allowance = Math.max(0, Math.min(this.o.limits.maxMarketExposureUsd - exposure, this.o.limits.maxTotalExposureUsd - exposure));
-    const intents = buildOrders(d.requestedAction, d.answers.execution_urgency.choice as Urgency, snap, {
+    const intents = buildOrders(d.requestedAction, d.answers.execution_urgency.choice as Urgency, { ...snap, inventory: live }, {
       maxOrderSizeShares: this.o.limits.maxOrderSizeShares, riskAllowanceUsd: allowance, tickSize: this.o.market.tickSize ?? 0.001, minOrderSize: this.o.market.minOrderSize ?? 5,
     });
-    for (const order of intents) {
+    for (const intent of intents) {
+      let order = intent;
+      if (order.completesSet) {
+        // Whatever is already in flight or resting for this side counts as hedged.
+        const open = [...this.pending.map((p) => p.order), ...this.resting.map((r) => r.order)].filter((o) => o.assetId === order.assetId && o.completesSet).reduce((s, o) => s + o.size, 0)
+          + this.resting.filter((r) => r.order.assetId === order.assetId && r.order.completesSet).reduce((s, r) => s - r.filled, 0);
+        const size = Math.floor(order.size - open);
+        if (size < (this.o.market.minOrderSize ?? 5)) { this.o.log("paper skip", { side: order.side, reason: "hedge already in flight or resting", open }); continue; }
+        order = { ...order, size };
+      }
       const bookAtBuild = order.side === "UP" ? snap.upBook : snap.downBook;
       if (bookAtBuild && isMarketable(order, bookAtBuild)) {
         this.pending.push({ order, decisionId: d.decisionId, arriveAtMono: decisionMono + this.o.latencyMs, version: d.stateVersion });

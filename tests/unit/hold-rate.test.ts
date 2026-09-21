@@ -24,12 +24,14 @@ describe("hold-rate table", () => {
 
     const table = buildHoldRateTable(db, 4 * 1_000_000 + 10_000);
     expect(table.markets).toBe(2);
-    const e = table.estimate(8, 200)!;          // 5-10bps @ 300-120s: market 1 held, market 2 held too (reversal came later)
+    const e = table.estimate(8, 200, 20, 1)!;          // 5-10bps @ 300-120s: market 1 held, market 2 held too (reversal came later)
     expect(e.bucket).toBe("5-10bps @ 300-120s");
     expect(e.rate).toBe(0.5);                    // per-second samples: half from market 1 (won), half from market 2 (lost)
-    expect(e.samples).toBe(2 * 171);             // seconds 10..180 of each market have >= 120 s left
-    expect(table.estimate(8, 1)).toBeUndefined(); // <2s bucket for 5-10 bps: market 2 is at -1 bps there, market 1 alone has 2 samples: too few
-    expect(table.estimate(8, 200, 100_000)).toBeUndefined();
+    expect(e.seconds).toBe(2 * 171);             // seconds 10..180 of each market have >= 120 s left
+    expect(e.samples).toBe(2);                   // two markets behind it
+    expect(table.estimate(8, 200)).toBeUndefined(); // fewer than 5 markets: no estimate by default
+    expect(table.estimate(8, 1, 20, 1)).toBeUndefined(); // <2s bucket for 5-10 bps: market 2 is at -1 bps there, market 1 alone has 2 samples: too few
+    expect(table.estimate(8, 200, 100_000, 1)).toBeUndefined();
     expect(HoldRateTable.bucketFor(-3, 45)).toEqual({ distance: "2.5-5bps", time: "60-30s" });
     expect(table.toJSON().cells.every((c) => c.n > 0)).toBe(true);
   });

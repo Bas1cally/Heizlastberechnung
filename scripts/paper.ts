@@ -128,6 +128,7 @@ process.on("SIGINT", () => void shutdown("SIGINT"));
 process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
 let marketIndex = 0;
+let lastFeedRestartMono = Number.NEGATIVE_INFINITY;
 while (!shuttingDown) {
   await maybeRestartForUpdate();
   refreshHoldTable();
@@ -211,5 +212,17 @@ while (!shuttingDown) {
   }
   const s = engine.summary();
   log.info("market finished", { slug: market.slug, decisions: current.decisionCount(), orders: s.orders, fills: s.fills, partials: s.partials, noFills: s.noFills, cancelled: s.cancelled, merges: s.merges, outcome: s.outcome, netPnl: s.netPnl, latency: current.latencyReport() });
+  // A process whose Chainlink streams stay silent through a whole market
+  // (observed twice on 2026-09-21, reconnects included, while the other
+  // runners on the same machine were fine) gets fresh sockets: exit for the
+  // pnpm auto restart. At most once per 10 minutes, never mid-market.
+  const kill = current.killState();
+  if (kill.tripped && kill.reasons.includes("CHAINLINK_STALE") && process.env["AUTO_RESTART"] === "1" && clock.mono() - lastFeedRestartMono > 10 * 60_000) {
+    lastFeedRestartMono = clock.mono();
+    log.error("chainlink streams dead through the market; exiting for a restart with fresh sockets", { reasons: kill.reasons });
+    syncChild?.kill();
+    await tape.stop().catch(() => undefined);
+    process.exit(EXIT_UPDATE);
+  }
   current = undefined;
 }
