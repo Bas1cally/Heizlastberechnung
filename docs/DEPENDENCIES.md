@@ -135,20 +135,31 @@ wrapped in `{model, answers, usage}`. A score is a number and may fall between
 rubric levels. Two models were listed on the account: `jev-latest` and
 `jev-preview`; `jev-latest` resolved to `jev-1.13.0`.
 
-## Assumptions that only a live run can confirm
+## Confirmed on a live run (2026-09-21, `pnpm discover`)
+
+- **Slug pattern**: `btc-updown-5m-<unix seconds of window start>`, e.g.
+  `btc-updown-5m-1766162100` = "December 19, 11:35AM-11:40AM ET". The
+  current market is computed from the clock (`src/market/window.ts`) and
+  fetched with `client.listMarkets({ slug: [slug] })`. A title search returns
+  stale and unrelated markets (hourly candles, daily) and is not used.
+- **Outcome shape**: `client.listMarkets` returns the *transformed* Market:
+  `outcomes: { yes: { label: "Up", tokenId }, no: { label: "Down", tokenId } }`,
+  `state: { active, closed, acceptingOrders, negRisk, startDate?, endDate? }`,
+  `trading: { minimumOrderSize, minimumTickSize }`, `resolution: { source }`.
+  The flat `clobTokenIds` / `outcomes: string[]` fields belong to the raw
+  schema and are not present on this object.
+- **Resolution rule** (from the market description): "resolve to Up if the
+  Bitcoin price at the end of the time range is **greater than or equal to**
+  the price at the beginning" — a tie resolves UP. The `settlement_direction`
+  question states this.
+
+## Assumptions that only the observer can confirm
 
 - `book` is a full snapshot and `price_change` carries level deltas with
   `size: "0"` meaning removal. Standard CLOB semantics, matches the shapes.
-- How BTC 5-minute markets are titled and labelled. Discovery defaults to
-  `titleSearch: "Bitcoin Up or Down"` and maps outcome labels `Up`/`Down`
-  (also Yes/No, Higher/Lower). Anything else fails loudly. `pnpm discover`
-  prints the real candidates so `MARKET_TITLE_SEARCH`, `MARKET_TAG_SLUG` can
-  be pinned.
 - The settlement start price is the first Chainlink value seen at or after
-  the market's open. Confirm against the market description's resolution
-  rule; `MarketStateStore.setSettlementStartPrice` exists for an override.
-- Gamma's `startDate` may be the listing time, not the open; the 5-minute
-  window is anchored on `endDate` when `startDate` is implausibly early.
+  the window's open second. The description's full text names the exact
+  source and timing; confirm on the first observed market.
 
 ## Not verified here
 

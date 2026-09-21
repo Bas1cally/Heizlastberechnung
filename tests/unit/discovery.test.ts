@@ -1,70 +1,74 @@
 import { describe, expect, it } from "vitest";
-import { listCandidates, mapOutcomes, selectCurrent, toIdentity, type GammaMarketLike } from "../../src/market/market-discovery.js";
+import { fetchBySlug, findCurrentMarket, mapOutcomes, toIdentity, type GammaMarketLike } from "../../src/market/market-discovery.js";
 
-const T0 = Date.parse("2026-09-21T12:00:00Z");
-const iso = (ms: number) => new Date(ms).toISOString();
-
+// Shape as returned live by client.listMarkets (transformed Gamma Market).
 const market = (over: Partial<GammaMarketLike> = {}): GammaMarketLike => ({
-  id: "1", conditionId: "0xc", slug: "btc-updown-5m-1200", question: "Bitcoin Up or Down?",
-  outcomes: ["Up", "Down"], clobTokenIds: ["tok-up", "tok-down"],
-  startDate: iso(T0), endDate: iso(T0 + 300_000), active: true, closed: false,
-  orderPriceMinTickSize: 0.001, orderMinSize: "5", ...over,
+  id: "1", slug: "btc-updown-5m-1766162100", conditionId: "0xc", question: "Bitcoin Up or Down - December 19, 11:35AM-11:40AM ET",
+  description: 'This market will resolve to "Up" if the Bitcoin price at the end ... greater than or equal to ...',
+  state: { active: true, closed: false, acceptingOrders: true, negRisk: false },
+  outcomes: { yes: { label: "Up", tokenId: "tok-up", price: "0.99" }, no: { label: "Down", tokenId: "tok-down", price: "0.01" } },
+  trading: { minimumOrderSize: "5", minimumTickSize: 0.001 },
+  resolution: { source: "Chainlink" },
+  ...over,
 });
 
-describe("mapOutcomes", () => {
-  it("maps Up/Down labels regardless of order and case", () => {
-    expect(mapOutcomes(market({ outcomes: ["DOWN", "up"], clobTokenIds: ["d", "u"] })))
-      .toEqual({ upAssetId: "u", downAssetId: "d" });
+describe("mapOutcomes (object form)", () => {
+  it("maps yes/no entries by their labels, not by their keys", () => {
+    expect(mapOutcomes(market())).toEqual({ upAssetId: "tok-up", downAssetId: "tok-down" });
+    const swapped = market({ outcomes: { yes: { label: "Down", tokenId: "d" }, no: { label: "Up", tokenId: "u" } } });
+    expect(mapOutcomes(swapped)).toEqual({ upAssetId: "u", downAssetId: "d" });
   });
-  it("refuses labels it does not recognise instead of guessing", () => {
-    expect(mapOutcomes(market({ outcomes: ["Bull", "Bear"] }))).toBeUndefined();
-    expect(mapOutcomes(market({ outcomes: ["Up"], clobTokenIds: ["u"] }))).toBeUndefined();
+  it("refuses unknown labels or missing token ids", () => {
+    expect(mapOutcomes(market({ outcomes: { yes: { label: "Bull", tokenId: "a" }, no: { label: "Bear", tokenId: "b" } } }))).toBeUndefined();
+    expect(mapOutcomes(market({ outcomes: { yes: { label: "Up", tokenId: null }, no: { label: "Down", tokenId: "b" } } }))).toBeUndefined();
   });
 });
 
 describe("toIdentity", () => {
-  it("anchors the 5-minute window on endDate when startDate is the listing time", () => {
-    const listedEarly = market({ startDate: iso(T0 - 86_400_000) });
-    const idn = toIdentity(listedEarly, 300)!;
-    expect(idn.closesAtMs).toBe(T0 + 300_000);
-    expect(idn.openedAtMs).toBe(T0);
+  it("takes timing from the slug, which Gamma does not reliably provide", () => {
+    const idn = toIdentity(market(), 300)!;
+    expect(idn.openedAtMs).toBe(1766162100_000);
+    expect(idn.closesAtMs).toBe(1766162400_000);
+    expect(idn.tickSize).toBe(0.001);
+    expect(idn.minOrderSize).toBe(5);
+    expect(idn.conditionId).toBe("0xc");
   });
-  it("keeps a plausible startDate", () => {
-    expect(toIdentity(market(), 300)!.openedAtMs).toBe(T0);
+  it("falls back to state.endDate for a non-standard slug", () => {
+    const idn = toIdentity(market({ slug: "custom", state: { endDate: "2026-01-01T00:05:00Z" } }), 300)!;
+    expect(idn.closesAtMs).toBe(Date.parse("2026-01-01T00:05:00Z"));
+    expect(idn.openedAtMs).toBe(Date.parse("2026-01-01T00:00:00Z"));
   });
-  it("needs a condition id and an end date", () => {
+  it("needs a condition id", () => {
     expect(toIdentity(market({ conditionId: null }), 300)).toBeUndefined();
-    expect(toIdentity(market({ endDate: null }), 300)).toBeUndefined();
   });
 });
 
-describe("selectCurrent", () => {
-  const prev = market({ id: "p", slug: "prev", startDate: iso(T0 - 300_000), endDate: iso(T0) });
-  const live = market({ id: "l", slug: "live" });
-  const next = market({ id: "n", slug: "next", startDate: iso(T0 + 300_000), endDate: iso(T0 + 600_000) });
-
-  it("prefers the market whose window contains now", () => {
-    expect(selectCurrent([next, live, prev], T0 + 60_000, 300)?.slug).toBe("live");
-  });
-  it("falls back to the soonest future market between windows", () => {
-    expect(selectCurrent([next, prev], T0 + 60_000, 300)?.slug).toBe("next");
-  });
-  it("never returns a closed or expired market", () => {
-    expect(selectCurrent([prev, market({ closed: true })], T0 + 60_000, 300)).toBeUndefined();
-  });
+const clientWith = (items: GammaMarketLike[], seen: unknown[] = []) => ({
+  listMarkets: (req: unknown) => { seen.push(req); return { firstPage: async () => ({ items }) }; },
 });
 
-describe("listCandidates", () => {
-  it("flattens markets across events and forwards the query", async () => {
-    let seen: unknown;
-    const client = {
-      listEvents: (req: unknown) => {
-        seen = req;
-        return { firstPage: async () => ({ items: [{ id: "e", markets: [market(), market({ id: "2" })] }, { id: "f", markets: null }] }) };
-      },
-    };
-    const out = await listCandidates(client, { titleSearch: "Bitcoin Up or Down", durationSeconds: 300 });
-    expect(out.map((m) => m.id)).toEqual(["1", "2"]);
-    expect(seen).toMatchObject({ titleSearch: "Bitcoin Up or Down", closed: false });
+describe("findCurrentMarket", () => {
+  const now = 1766162100_000 + 42_000;
+
+  it("computes the slug from the clock and fetches exactly that market", async () => {
+    const seen: unknown[] = [];
+    const found = await findCurrentMarket(clientWith([market()], seen), now);
+    expect(seen[0]).toMatchObject({ slug: ["btc-updown-5m-1766162100"] });
+    expect(found?.identity.slug).toBe("btc-updown-5m-1766162100");
+  });
+
+  it("returns nothing when Gamma has not listed the window yet", async () => {
+    expect(await findCurrentMarket(clientWith([]), now)).toBeUndefined();
+  });
+
+  it("refuses a closed market or one not accepting orders", async () => {
+    expect(await findCurrentMarket(clientWith([market({ state: { closed: true } })]), now)).toBeUndefined();
+    expect(await findCurrentMarket(clientWith([market({ state: { acceptingOrders: false } })]), now)).toBeUndefined();
+  });
+
+  it("prefers the exact slug when the page contains more than one market", async () => {
+    const other = market({ id: "9", slug: "btc-updown-5m-1766162400" });
+    const found = await fetchBySlug(clientWith([other, market()]), "btc-updown-5m-1766162100");
+    expect(found?.id).toBe("1");
   });
 });

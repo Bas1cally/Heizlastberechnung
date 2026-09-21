@@ -1,35 +1,36 @@
 /**
- * Prints what Gamma returns for the configured discovery query, so the real
- * slug pattern, outcome labels and timing of BTC 5-minute markets can be
- * confirmed before anything depends on them.
+ * Shows the market for the current 5-minute window and the next one, exactly
+ * as `client.listMarkets({ slug })` returns them - to confirm labels, timing,
+ * tick size and the resolution rule before the observer depends on them.
  *
  *   pnpm discover
- *   MARKET_TITLE_SEARCH="Bitcoin Up or Down" pnpm discover
  */
 import { createPublicClient } from "@polymarket/client";
 import { loadEnvFile } from "../src/app/env.js";
 import { loadConfig } from "../src/app/config.js";
-import { listCandidates, mapOutcomes, selectCurrent, type DiscoveryClient } from "../src/market/market-discovery.js";
+import { fetchBySlug, mapOutcomes, toIdentity, type DiscoveryClient } from "../src/market/market-discovery.js";
+import { nextWindow, windowAt } from "../src/market/window.js";
 
 loadEnvFile();
 const cfg = loadConfig();
 const client = createPublicClient() as unknown as DiscoveryClient;
-
-const q = { titleSearch: cfg.discovery.titleSearch, tagSlug: cfg.discovery.tagSlug, durationSeconds: cfg.discovery.durationSeconds };
-console.log(`query: titleSearch=${JSON.stringify(q.titleSearch)} tagSlug=${q.tagSlug ?? "-"} duration=${q.durationSeconds}s\n`);
-
-const candidates = await listCandidates(client, q);
-console.log(`${candidates.length} market(s) returned\n`);
-for (const m of candidates.slice(0, 25)) {
-  const ids = mapOutcomes(m);
-  console.log(`- ${m.slug ?? "(no slug)"}`);
-  console.log(`    question:  ${m.question ?? ""}`);
-  console.log(`    outcomes:  ${JSON.stringify(m.outcomes)}  -> ${ids ? "mapped UP/DOWN" : "NOT MAPPED"}`);
-  console.log(`    tokens:    ${JSON.stringify(m.clobTokenIds)}`);
-  console.log(`    start/end: ${m.startDate ?? "-"}  ->  ${m.endDate ?? "-"}`);
-  console.log(`    active=${m.active} closed=${m.closed} tick=${m.orderPriceMinTickSize ?? "-"} minSize=${m.orderMinSize ?? "-"}`);
-  if (m.description) console.log(`    desc:      ${m.description.replace(/\s+/g, " ").slice(0, 220)}`);
-}
 const now = Date.now();
-const sel = selectCurrent(candidates, now, q.durationSeconds);
-console.log(`\nselected now: ${sel ? `${sel.slug} closes in ${((sel.closesAtMs - now) / 1000).toFixed(0)}s` : "none"}`);
+const dur = cfg.marketDurationSeconds;
+
+for (const [name, w] of [["current", windowAt(now, dur)], ["next", nextWindow(now, dur)]] as const) {
+  console.log(`\n=== ${name} window: ${w.slug}  (${new Date(w.openedAtMs).toISOString()} -> ${new Date(w.closesAtMs).toISOString()}, closes in ${((w.closesAtMs - now) / 1000).toFixed(0)}s)`);
+  const m = await fetchBySlug(client, w.slug);
+  if (!m) { console.log("  not listed by Gamma (yet)"); continue; }
+  const ids = mapOutcomes(m);
+  const idn = toIdentity(m, dur);
+  console.log(`  id/condition: ${m.id} / ${m.conditionId}`);
+  console.log(`  question:     ${m.question ?? ""}`);
+  console.log(`  outcomes:     yes=${JSON.stringify(m.outcomes.yes)}`);
+  console.log(`                no =${JSON.stringify(m.outcomes.no)}`);
+  console.log(`  mapping:      ${ids ? `UP=${ids.upAssetId.slice(0, 12)}… DOWN=${ids.downAssetId.slice(0, 12)}…` : "NOT MAPPED"}`);
+  console.log(`  state:        ${JSON.stringify(m.state)}`);
+  console.log(`  trading:      ${JSON.stringify(m.trading)}`);
+  console.log(`  resolution:   ${JSON.stringify(m.resolution ?? null)}`);
+  console.log(`  identity:     ${idn ? "OK" : "FAILED"}`);
+  console.log(`  description:  ${(m.description ?? "").replace(/\s+/g, " ")}`);
+}

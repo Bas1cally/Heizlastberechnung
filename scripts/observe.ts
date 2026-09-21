@@ -16,6 +16,7 @@ import { createJevCall } from "../src/jev/client.js";
 import { openDatabase } from "../src/persistence/database.js";
 import { DecisionRepository } from "../src/persistence/repositories/decisions.js";
 import { findCurrentMarket, type DiscoveryClient } from "../src/market/market-discovery.js";
+import { nextWindow, windowAt } from "../src/market/window.js";
 import { chainlinkSubscribe, marketSubscribe, type RealtimeClientLike } from "../src/feeds/sdk-subscriptions.js";
 import { MarketObserver } from "../src/app/observer.js";
 
@@ -52,18 +53,18 @@ process.on("SIGINT", () => void shutdown("SIGINT"));
 process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
 while (!shuttingDown) {
-  const market = await findCurrentMarket(client as unknown as DiscoveryClient, cfg.discovery, clock.wall());
-  if (!market) {
-    log.warn("no BTC 5-minute market found; retrying in 10s (check `pnpm discover` and MARKET_* settings)");
-    await new Promise((r) => setTimeout(r, 10_000));
+  const now = clock.wall();
+  const found = await findCurrentMarket(client as unknown as DiscoveryClient, now, cfg.marketDurationSeconds);
+  if (!found) {
+    // Not listed yet, closed, or not accepting orders: wait for the boundary
+    // (or 5s, whichever is sooner) and look again.
+    const w = windowAt(now, cfg.marketDurationSeconds);
+    const untilNext = Math.max(1_000, Math.min(5_000, nextWindow(now, cfg.marketDurationSeconds).openedAtMs - now));
+    log.warn("current window not tradable; waiting", { slug: w.slug, retryInS: Math.round(untilNext / 1000) });
+    await new Promise((r) => setTimeout(r, untilNext));
     continue;
   }
-  const waitMs = market.openedAtMs - clock.wall();
-  if (waitMs > 0) {
-    log.info("next market not open yet", { slug: market.slug, opensInS: Math.round(waitMs / 1000) });
-    await new Promise((r) => setTimeout(r, Math.min(waitMs, 30_000)));
-    continue;
-  }
+  const market = found.identity;
 
   log.info("observing market", { slug: market.slug, closesInS: Math.round((market.closesAtMs - clock.wall()) / 1000), up: market.upAssetId, down: market.downAssetId });
   current = new MarketObserver(

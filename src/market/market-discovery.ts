@@ -1,132 +1,114 @@
 import type { MarketIdentity } from "./market-state.js";
+import { parseSlug, windowAt, type Window } from "./window.js";
 
 /**
- * Finds the BTC 5-minute market that is live right now (or the next one).
+ * Discovery for BTC 5-minute markets.
  *
- * The Gamma client is injected as the narrow interface below, built from the
- * verified `listEvents`/`listMarkets` signatures. What is NOT verified here is
- * how these markets are titled, slugged and grouped, and what their outcome
- * labels are - `pnpm discover` prints candidates so that can be confirmed and
- * pinned via MARKET_* env vars.
+ * Confirmed live (2026-09-21): markets are slugged
+ * `btc-updown-5m-<unix seconds of window start>`, outcomes are an object
+ * `{ yes: { label: "Up", tokenId }, no: { label: "Down", tokenId } }`, and a
+ * title search returns stale and unrelated (hourly, daily) markets. So the
+ * current market is computed from the clock and fetched by slug; nothing is
+ * searched.
+ *
+ * The client interface below is the transformed `Market` shape returned by
+ * `client.listMarkets({ slug: [...] })` (@polymarket/bindings gamma types).
  */
 export interface GammaMarketLike {
   readonly id: string;
+  readonly slug?: string | null;
   readonly conditionId: string | null;
-  readonly slug?: string | null;
   readonly question?: string | null;
-  readonly outcomes: readonly string[];
-  readonly clobTokenIds: readonly string[];
-  readonly startDate?: string | null;
-  readonly endDate?: string | null;
-  readonly active?: boolean | null;
-  readonly closed?: boolean | null;
-  readonly orderPriceMinTickSize?: number | null;
-  readonly orderMinSize?: string | null;
   readonly description?: string | null;
-}
-
-export interface GammaEventLike {
-  readonly id: string;
-  readonly slug?: string | null;
-  readonly title?: string | null;
-  readonly markets?: readonly GammaMarketLike[] | null;
+  readonly state: {
+    readonly active?: boolean | null;
+    readonly closed?: boolean | null;
+    readonly acceptingOrders?: boolean | null;
+    readonly negRisk?: boolean | null;
+    readonly startDate?: string | null;
+    readonly endDate?: string | null;
+  };
+  readonly outcomes: {
+    readonly yes: { readonly label: string; readonly tokenId: string | null; readonly price?: string | null };
+    readonly no: { readonly label: string; readonly tokenId: string | null; readonly price?: string | null };
+  };
+  readonly trading: {
+    readonly minimumOrderSize?: string | null;
+    readonly minimumTickSize?: number | string | null;
+  };
+  readonly resolution?: { readonly source?: string | null } | null;
 }
 
 export interface DiscoveryClient {
-  listEvents(request: {
-    titleSearch?: string;
-    tagSlug?: string;
-    slug?: string;
-    closed?: boolean;
-    pageSize?: number;
-    order?: string;
-    ascending?: boolean;
-  }): { firstPage(): Promise<{ items: readonly GammaEventLike[] }> };
-}
-
-export interface DiscoveryQuery {
-  readonly titleSearch: string;
-  readonly tagSlug?: string | undefined;
-  readonly durationSeconds: number;
+  listMarkets(request: { slug?: string[]; pageSize?: number }): { firstPage(): Promise<{ items: readonly GammaMarketLike[] }> };
 }
 
 const UP_LABELS = new Set(["up", "yes", "higher", "above"]);
 const DOWN_LABELS = new Set(["down", "no", "lower", "below"]);
 
-/** Map outcome labels to (up, down) token ids. Explicit, so a surprise label fails loudly. */
+/** Map outcome labels to (up, down) token ids. A surprise label fails loudly. */
 export function mapOutcomes(m: GammaMarketLike): { upAssetId: string; downAssetId: string } | undefined {
-  if (m.outcomes.length !== 2 || m.clobTokenIds.length !== 2) return undefined;
   let up: string | undefined;
   let down: string | undefined;
-  m.outcomes.forEach((label, i) => {
-    const key = label.trim().toLowerCase();
-    if (UP_LABELS.has(key)) up = m.clobTokenIds[i];
-    else if (DOWN_LABELS.has(key)) down = m.clobTokenIds[i];
-  });
-  return up && down ? { upAssetId: up, downAssetId: down } : undefined;
+  for (const o of [m.outcomes.yes, m.outcomes.no]) {
+    if (!o?.tokenId) continue;
+    const key = o.label.trim().toLowerCase();
+    if (UP_LABELS.has(key)) up = o.tokenId;
+    else if (DOWN_LABELS.has(key)) down = o.tokenId;
+  }
+  return up && down && up !== down ? { upAssetId: up, downAssetId: down } : undefined;
 }
 
 export function toIdentity(m: GammaMarketLike, durationSeconds: number): MarketIdentity | undefined {
   const ids = mapOutcomes(m);
-  if (!ids || !m.conditionId) return undefined;
-  const closesAtMs = m.endDate ? Date.parse(m.endDate) : Number.NaN;
+  if (!ids || !m.conditionId || !m.slug) return undefined;
+
+  // The slug is authoritative for timing. Gamma's dates are a fallback only.
+  const w: Window | undefined = parseSlug(m.slug, durationSeconds);
+  const closesAtMs = w?.closesAtMs ?? (m.state.endDate ? Date.parse(m.state.endDate) : Number.NaN);
   if (!Number.isFinite(closesAtMs)) return undefined;
-  const parsedStart = m.startDate ? Date.parse(m.startDate) : Number.NaN;
-  // Gamma's startDate is when the market was listed, which for a 5-minute
-  // market can be well before it opens. The window is anchored on endDate.
-  const openedAtMs = Number.isFinite(parsedStart) && closesAtMs - parsedStart <= durationSeconds * 1000 * 1.5
-    ? parsedStart
-    : closesAtMs - durationSeconds * 1000;
+  const openedAtMs = w?.openedAtMs ?? closesAtMs - durationSeconds * 1000;
+
+  const tick = m.trading.minimumTickSize;
+  const minSize = m.trading.minimumOrderSize;
   return {
     marketId: m.id,
     conditionId: m.conditionId,
-    slug: m.slug ?? "",
+    slug: m.slug,
     question: m.question ?? "",
     ...ids,
     openedAtMs,
     closesAtMs,
-    tickSize: m.orderPriceMinTickSize ?? undefined,
-    minOrderSize: m.orderMinSize ? Number(m.orderMinSize) : undefined,
+    tickSize: tick === null || tick === undefined ? undefined : Number(tick),
+    minOrderSize: minSize === null || minSize === undefined ? undefined : Number(minSize),
   };
 }
 
-/** Candidate markets from a query, unfiltered - what `pnpm discover` prints. */
-export async function listCandidates(client: DiscoveryClient, q: DiscoveryQuery): Promise<GammaMarketLike[]> {
-  const page = await client
-    .listEvents({
-      titleSearch: q.titleSearch,
-      ...(q.tagSlug ? { tagSlug: q.tagSlug } : {}),
-      closed: false,
-      pageSize: 50,
-    })
-    .firstPage();
-  const out: GammaMarketLike[] = [];
-  for (const ev of page.items) for (const m of ev.markets ?? []) out.push(m);
-  return out;
+export async function fetchBySlug(client: DiscoveryClient, slug: string): Promise<GammaMarketLike | undefined> {
+  const page = await client.listMarkets({ slug: [slug], pageSize: 5 }).firstPage();
+  return page.items.find((m) => m.slug === slug) ?? page.items[0];
+}
+
+export interface Discovered {
+  readonly identity: MarketIdentity;
+  readonly raw: GammaMarketLike;
 }
 
 /**
- * Pick the market whose window contains `nowMs`; if none, the soonest future
- * one. Returns undefined when nothing usable was found.
+ * The market for the window containing `nowMs`. Returns undefined when Gamma
+ * does not list it (yet), or when it is closed / not accepting orders, so
+ * the caller can wait for the next boundary instead of subscribing to a dead
+ * market.
  */
-export function selectCurrent(
-  candidates: readonly GammaMarketLike[],
-  nowMs: number,
-  durationSeconds: number,
-): MarketIdentity | undefined {
-  const ids = candidates
-    .filter((m) => !m.closed)
-    .map((m) => toIdentity(m, durationSeconds))
-    .filter((x): x is MarketIdentity => x !== undefined)
-    .filter((x) => x.closesAtMs > nowMs)
-    .sort((a, b) => a.closesAtMs - b.closesAtMs);
-  return ids.find((x) => x.openedAtMs <= nowMs) ?? ids[0];
-}
-
 export async function findCurrentMarket(
   client: DiscoveryClient,
-  q: DiscoveryQuery,
   nowMs: number,
-): Promise<MarketIdentity | undefined> {
-  return selectCurrent(await listCandidates(client, q), nowMs, q.durationSeconds);
+  durationSeconds = 300,
+): Promise<Discovered | undefined> {
+  const w = windowAt(nowMs, durationSeconds);
+  const raw = await fetchBySlug(client, w.slug);
+  if (!raw) return undefined;
+  if (raw.state.closed === true || raw.state.acceptingOrders === false) return undefined;
+  const identity = toIdentity(raw, durationSeconds);
+  return identity ? { identity, raw } : undefined;
 }

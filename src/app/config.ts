@@ -35,10 +35,7 @@ const EnvSchema = z.object({
   MAX_ORDERBOOK_AGE_MS: num(DEFAULT_LIMITS.maxOrderbookAgeMs),
   MAX_JEV_LATENCY_MS: num(DEFAULT_LIMITS.maxJevLatencyMs),
 
-  // Market discovery. Unverified defaults - confirm with `pnpm discover`.
-  MARKET_TITLE_SEARCH: z.string().default("Bitcoin Up or Down"),
-  MARKET_SERIES_SLUG: z.string().optional(),
-  MARKET_TAG_SLUG: z.string().optional(),
+  // Market window length; the slug is derived from the clock (src/market/window.ts).
   MARKET_DURATION_SECONDS: num(300),
   CHAINLINK_SYMBOL: z.string().default("btc/usd"),
 
@@ -55,12 +52,7 @@ export interface AppConfig {
   readonly typesafeModel: string | undefined;
   readonly databaseUrl: string;
   readonly limits: RiskLimits;
-  readonly discovery: {
-    readonly titleSearch: string;
-    readonly seriesSlug: string | undefined;
-    readonly tagSlug: string | undefined;
-    readonly durationSeconds: number;
-  };
+  readonly marketDurationSeconds: number;
   readonly chainlinkSymbol: string;
   readonly jev: { readonly coalesceMs: number; readonly minIntervalMs: number };
   readonly maxClockDriftMs: number;
@@ -111,12 +103,7 @@ export function loadConfig(
       maxOrderbookAgeMs: e.MAX_ORDERBOOK_AGE_MS,
       maxJevLatencyMs: e.MAX_JEV_LATENCY_MS,
     },
-    discovery: {
-      titleSearch: e.MARKET_TITLE_SEARCH,
-      seriesSlug: e.MARKET_SERIES_SLUG?.trim() || undefined,
-      tagSlug: e.MARKET_TAG_SLUG?.trim() || undefined,
-      durationSeconds: e.MARKET_DURATION_SECONDS,
-    },
+    marketDurationSeconds: e.MARKET_DURATION_SECONDS,
     chainlinkSymbol: e.CHAINLINK_SYMBOL,
     jev: { coalesceMs: e.JEV_COALESCE_MS, minIntervalMs: e.JEV_MIN_INTERVAL_MS },
     maxClockDriftMs: e.MAX_CLOCK_DRIFT_MS,

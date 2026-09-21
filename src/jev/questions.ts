@@ -36,8 +36,8 @@ export const QUESTIONS = {
   settlement_direction: choice(
     "At settlement, will the market resolve UP or DOWN, judged from the settlement start price, the current settlement price and the time remaining?",
     {
-      UP: "The settlement price will be above the start price when the market closes.",
-      DOWN: "The settlement price will be at or below the start price when the market closes.",
+      UP: "The settlement price at close will be greater than or equal to the start price. An exact tie resolves UP.",
+      DOWN: "The settlement price at close will be strictly below the start price.",
       UNRESOLVED:
         "Too close or too early to call: the outcome is not determined by the current state.",
     },
