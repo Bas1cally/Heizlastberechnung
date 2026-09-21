@@ -55,7 +55,7 @@ pnpm calibrate          # calibration + naive edge reports from recorded outcome
 pnpm replay             # causal replay of recorded markets (cached Jev answers)
 pnpm bot:paper          # paper trading over recorded markets -> reports/backtest-summary.json
 pnpm bot:shadow         # live path incl. signing, stops before submission (needs POLYMARKET_PRIVATE_KEY)
-pnpm dashboard          # http://127.0.0.1:8787 - live state, last decision, feeds, kill / resume
+pnpm dashboard          # http://127.0.0.1:8787 - trading (PnL curve, fills, position; paper/live), live state, kill / resume
 pnpm kill / pnpm resume # operator kill switch from the command line
 pnpm benchmark:jev      # latency + stability over recorded states
 ```
