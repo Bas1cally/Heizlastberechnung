@@ -145,6 +145,27 @@ CREATE TABLE IF NOT EXISTS latency_measurements (
   feed_to_ack_ms REAL
 );
 
+CREATE TABLE IF NOT EXISTS shadow_orders (
+  id INTEGER PRIMARY KEY,
+  decision_id TEXT NOT NULL,
+  market_id TEXT NOT NULL,
+  ts_ms INTEGER NOT NULL,
+  side TEXT NOT NULL,
+  asset_id TEXT NOT NULL,
+  order_type TEXT NOT NULL,
+  price REAL NOT NULL,
+  size REAL NOT NULL,
+  signed INTEGER NOT NULL,
+  sign_error TEXT,
+  signing_ms REAL NOT NULL,
+  expected_price REAL,
+  price_at_ack REAL,
+  moved_against_bps REAL,
+  hypothetical_status TEXT,
+  hypothetical_filled REAL,
+  hypothetical_avg_price REAL
+);
+
 CREATE TABLE IF NOT EXISTS pnl_snapshots (
   id INTEGER PRIMARY KEY,
   market_id TEXT,

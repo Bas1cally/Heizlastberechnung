@@ -5,10 +5,12 @@ export type OrderType = "GTC" | "GTD" | "FAK" | "FOK";
 
 export interface OrderStyle {
   readonly type: OrderType;
-  /** How far past the touch the limit may go, in price units. 0 = at the touch. */
+  /** How far past the touch the limit may go, in ticks. Negative rests inside the touch. */
   readonly aggressionTicks: number;
-  /** For GTD: lifetime in ms. */
+  /** How long we keep a resting order before cancelling it ourselves, in ms. */
   readonly ttlMs?: number;
+  /** Reject rather than take if the order would cross (maker only). */
+  readonly postOnly?: boolean;
 }
 
 /**
@@ -17,11 +19,16 @@ export interface OrderStyle {
  */
 export type UrgencyMap = Readonly<Record<Exclude<Urgency, "DO_NOT_TRADE">, OrderStyle>>;
 
+/**
+ * GTD is not usable here: the SDK documents a minimum expiration of three
+ * minutes, longer than most of a 5-minute market. Resting orders are GTC
+ * with a lifetime we enforce ourselves by cancelling.
+ */
 export const DEFAULT_URGENCY_MAP: UrgencyMap = {
-  PASSIVE: { type: "GTD", aggressionTicks: -1, ttlMs: 20_000 }, // rest one tick inside the touch
-  NORMAL: { type: "GTC", aggressionTicks: 0 },                  // at the touch
-  URGENT: { type: "FAK", aggressionTicks: 2 },                  // cross up to two ticks
-  IMMEDIATE: { type: "FOK", aggressionTicks: 5 },               // fill now or not at all
+  PASSIVE: { type: "GTC", aggressionTicks: -1, ttlMs: 20_000, postOnly: true }, // rest one tick inside the touch
+  NORMAL: { type: "GTC", aggressionTicks: 0, ttlMs: 10_000 },                   // at the touch
+  URGENT: { type: "FAK", aggressionTicks: 2 },                                  // cross up to two ticks
+  IMMEDIATE: { type: "FOK", aggressionTicks: 5 },                               // fill now or not at all
 };
 
 export function styleFor(urgency: Urgency, map: UrgencyMap = DEFAULT_URGENCY_MAP): OrderStyle | undefined {

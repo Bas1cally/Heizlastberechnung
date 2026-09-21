@@ -122,6 +122,25 @@ Each returns a `TransactionCall`; signing and submission stay with viem.
 `closed`, `negRisk`, `seriesSlug`, `gameStartTime`. That is enough to find the
 current BTC 5-minute market and map it to its two token ids.
 
+**Signing and orders** — `@polymarket/client/dist/types-*.d.ts`, `dist/viem.d.ts`
+
+- `createSecureClient({ signer, wallet? })` authenticates; `privateKey(key)`
+  from `@polymarket/client/viem` builds the signer with viem local-account
+  signing. `wallet` selects the Deposit Wallet / Safe / Proxy to trade as.
+- `client.createLimitOrder({ assetId, price, size, side: OrderSide.BUY,
+  postOnly?, expiration? })` returns a `SignedOrder` and **does not submit**.
+  `client.postOrder(signedOrder)` submits. Shadow mode calls the first and
+  never the second.
+- **GTD expirations must be at least 3 minutes in the future** (SDK JSDoc).
+  In a 5-minute market that rules GTD out for resting orders; the bot rests
+  GTC and cancels itself after its own TTL.
+- FAK / FOK are market orders: `createMarketOrder({ assetId, amount,
+  maxPrice?, side, orderType?: FAK | FOK })`.
+- Enums: `OrderSide.BUY | SELL`, `OrderType.GTC | FOK | GTD | FAK`.
+- Cancel: `cancelOrder`, `cancelOrders`, `cancelAll`, `cancelMarketOrders`;
+  `listOpenOrders` paginates; `waitForOrderFillSettlement` follows a fill to
+  its on-chain settlement.
+
 **Jev** — `@typesafe-ai/sdk@0.6.0`, confirmed against a live response:
 
 ```

@@ -21,7 +21,8 @@ const limits = { maxOrderSizeShares: 100, riskAllowanceUsd: 1000, tickSize: 0.00
 
 describe("urgency mapping", () => {
   it("maps every urgency except DO_NOT_TRADE to an order style", () => {
-    expect(styleFor("PASSIVE")?.type).toBe("GTD");
+    expect(styleFor("PASSIVE")).toMatchObject({ type: "GTC", postOnly: true });
+    expect(styleFor("PASSIVE")?.ttlMs).toBeLessThan(180_000); // we cancel ourselves; GTD needs >= 3 min
     expect(styleFor("IMMEDIATE")?.type).toBe("FOK");
     expect(styleFor("DO_NOT_TRADE")).toBeUndefined();
   });

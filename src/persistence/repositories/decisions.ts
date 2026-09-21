@@ -80,6 +80,20 @@ export class DecisionRepository {
     };
   }
 
+  saveShadowOrder(marketId: string, tsMs: number, r: {
+    decisionId: string; side: string; assetId: string; orderType: string; price: number; size: number;
+    signed: boolean; signError: string | undefined; signingMs: number; expectedPrice: number;
+    priceAtAck: number | undefined; movedAgainstBps: number | undefined;
+    status: string | undefined; filled: number | undefined; avgPrice: number | undefined;
+  }): void {
+    this.db.run(
+      `INSERT INTO shadow_orders (decision_id, market_id, ts_ms, side, asset_id, order_type, price, size, signed, sign_error, signing_ms, expected_price, price_at_ack, moved_against_bps, hypothetical_status, hypothetical_filled, hypothetical_avg_price)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [r.decisionId, marketId, tsMs, r.side, r.assetId, r.orderType, r.price, r.size, r.signed ? 1 : 0, r.signError ?? null, r.signingMs,
+       Number.isFinite(r.expectedPrice) ? r.expectedPrice : null, r.priceAtAck ?? null, r.movedAgainstBps ?? null, r.status ?? null, r.filled ?? null, r.avgPrice ?? null],
+    );
+  }
+
   countDecisions(): number {
     return this.db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM jev_requests`)?.n ?? 0;
   }
