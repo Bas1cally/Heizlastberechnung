@@ -19,6 +19,17 @@ Inventory feeds back into the state, so the next decision sees the position the
 last one created. This system is stateful; a trade is never an isolated
 prediction.
 
+## Settlement quantity
+
+These markets resolve on the **60-second Chainlink TWAP of BTC/USD**
+(resolution source: data.chain.link, `btc-usd-twap-60s-streams`), compared
+with its value at the start of the window; a tie resolves UP. The bot takes
+the settlement price from Polymarket's `prices.crypto.chainlink.twap` topic
+(60 s window) and the spot price from `prices.crypto.chainlink`. Spot leads
+the TWAP, so `spotVsTwapBps` - the gap between them - is part of the Jev
+state and a material change in its own right: it says where settlement is
+being pulled in the final seconds.
+
 ## What is computed before Jev is called
 
 Everything that is arithmetic. Jev receives a clean snapshot and interprets it;
