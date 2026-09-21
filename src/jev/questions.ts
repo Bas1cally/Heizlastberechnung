@@ -34,7 +34,7 @@ export const QUESTIONS = {
   ),
 
   settlement_direction: choice(
-    "At settlement, will the market resolve UP or DOWN? The settlement price is the 60-second Chainlink TWAP of BTC/USD (`settlementCurrentPrice`), compared with its value at the start of the window (`settlementStartPrice`). `spotPrice` leads the TWAP; `spotVsTwapBps` shows where the TWAP is being pulled in the seconds remaining. `leadHeldRate` is measured, not guessed: in the recorded markets, the fraction of the time a lead of this size with this much time left was still the winning side at settlement (`leadHeldSamples` observations; null when too few). A lead of a few bps with minutes left is often overturned; treat the measured rate as the base rate and adjust from the momentum and spot-vs-TWAP evidence.",
+    "At settlement, will the market resolve UP or DOWN? The settlement price is the 60-second Chainlink TWAP of BTC/USD (`settlementCurrentPrice`), compared with its value at the start of the window (`settlementStartPrice`). `spotPrice` leads the TWAP; `spotVsTwapBps` shows where the TWAP is being pulled in the seconds remaining. `leadHeldRate` is measured, not guessed: in the recorded markets, the fraction of the time a lead of this size with this much time left was still the winning side at settlement (`leadHeldSamples` observations; null when too few). Anchor on it: with no further evidence, the probability of the leading side IS `leadHeldRate`, and the rest is UNRESOLVED or the other side. Move away from the anchor only as far as the momentum and spot-vs-TWAP evidence justifies. Recorded answers of 0.95 and above for a lead of 1-2 bps with minutes left were right little more than half the time; do not repeat that.",
     {
       UP: "The settlement price at close will be greater than or equal to the start price. An exact tie resolves UP.",
       DOWN: "The settlement price at close will be strictly below the start price.",
@@ -67,15 +67,20 @@ export const QUESTIONS = {
     },
   ),
 
+  // Whether to trade is the `action` question's job. This one only says
+  // HOW an order should reach the book. It used to offer DO_NOT_TRADE as a
+  // fifth option; being the one "no" against four flavours of "yes" it won
+  // the plurality on every single buy signal (236 of 236 recorded), so no
+  // order was ever built. A judgment cannot see the other answers, so the
+  // veto must not live here.
   execution_urgency: choice(
-    "How urgently should the chosen action reach the book?",
+    "If the chosen action places an order, how should it reach the book? Answer as if the order will be sent; whether to send one at all is decided by the action question, not here.",
     {
       PASSIVE: "Rest on the book and wait for the market to come to the order.",
       NORMAL: "A limit order at a controlled price; some waiting is acceptable.",
       URGENT: "Cross the spread if needed; the opportunity is decaying.",
       IMMEDIATE:
         "Fill now or not at all; waiting destroys the value of the trade.",
-      DO_NOT_TRADE: "Send nothing to the book.",
     },
   ),
 

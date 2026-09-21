@@ -94,3 +94,28 @@ anchor. Calibration on those recordings measures our start price, not Jev.
 `pnpm calibrate` therefore reports a separate table over markets whose
 start came from the process-level tape; only that table is a statement
 about Jev.
+
+## Why no order was ever built (found 2026-09-21, 236 buy signals)
+
+Every `BUY_*` answer came with `execution_urgency = DO_NOT_TRADE`, at
+38-53% of the mass, never a majority. The five-way choice had one "no"
+against four flavours of "yes": PASSIVE, NORMAL, URGENT and IMMEDIATE split
+the "send it" mass four ways, so the single "do not send" won the plurality
+every time, and `styleFor` turned every approved buy into no order.
+
+The questions are independent judgments that cannot see one another, so a
+veto in the urgency question is a second, uninformed vote on the action.
+`DO_NOT_TRADE` is gone from the question (the type keeps the value so
+recorded answers still parse); the urgency question now asks only how an
+order should reach the book, given that the action question decided to
+send one.
+
+## Anchoring on the measured hold rate
+
+With the start price fixed, over 13 markets and 3067 decisions Jev still
+answered 0.95-0.99 for leads that the measured hold-rate table puts at
+60-68% with minutes left; observed accuracy in those buckets was 47-68%.
+The settlement question now tells Jev to anchor on `leadHeldRate` and move
+only as far as the momentum and spot-vs-TWAP evidence justifies. Whether
+that is enough is measured, not assumed: `pnpm calibrate` reports the
+clean-subset calibration separately for markets after this change.
