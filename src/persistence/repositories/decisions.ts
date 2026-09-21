@@ -16,6 +16,10 @@ export class DecisionRepository {
     );
   }
 
+  setStartLag(marketId: string, lagMs: number, source: string): void {
+    this.db.run(`UPDATE markets SET start_lag_ms = ?, start_source = ? WHERE market_id = ? AND start_lag_ms IS NULL`, [Math.round(lagMs), source, marketId]);
+  }
+
   markResolved(marketId: string, outcome: string): void {
     this.db.run(`UPDATE markets SET resolved_outcome = ? WHERE market_id = ?`, [outcome, marketId]);
   }

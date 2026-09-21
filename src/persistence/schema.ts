@@ -12,7 +12,10 @@ CREATE TABLE IF NOT EXISTS markets (
   tick_size REAL,
   min_order_size REAL,
   resolved_outcome TEXT,
-  first_seen_ms INTEGER NOT NULL
+  first_seen_ms INTEGER NOT NULL,
+  start_lag_ms INTEGER,
+  start_source TEXT,
+  resolved_source TEXT
 );
 
 CREATE TABLE IF NOT EXISTS ticks (

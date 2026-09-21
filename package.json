@@ -24,6 +24,7 @@
     "calibrate": "tsx scripts/calibrate.ts",
     "analyze": "tsx scripts/analyze.ts",
     "acceptance": "tsx scripts/acceptance.ts",
+    "resolve": "tsx scripts/resolve.ts",
     "summary": "tsx scripts/summary.ts",
     "dashboard": "tsx scripts/dashboard.ts",
     "kill": "tsx scripts/control.ts kill",

@@ -21,11 +21,10 @@ export function loadMarketOutcomes(db: Db, nowMs: number): MarketOutcomeRow[] {
     `SELECT market_id, slug, opened_at_ms, closes_at_ms, resolved_outcome FROM markets ORDER BY opened_at_ms`);
   return markets.map((m) => {
     // The markets settle on the 60 s TWAP; use that stream when it was recorded, else spot.
-    const twap = db.all<{ ts_ms: number; price: number }>(
-      `SELECT ts_ms, price FROM ticks WHERE market_id = ? AND source LIKE 'chainlink-twap%' ORDER BY ts_ms`, [m.market_id]);
-    const ticks = (twap.length > 0 ? twap : db.all<{ ts_ms: number; price: number }>(
-      `SELECT ts_ms, price FROM ticks WHERE market_id = ? AND source = 'chainlink' ORDER BY ts_ms`, [m.market_id]))
-      .map((t) => ({ tsMs: t.ts_ms, price: t.price }));
+    // Ticks are selected by timestamp, not by market id: the ticks at the open
+    // second were recorded by whichever process part was listening then.
+    const twap = ticksBetween(db, `source LIKE 'chainlink-twap%'`, m.opened_at_ms, m.closes_at_ms);
+    const ticks = twap.length > 0 ? twap : ticksBetween(db, `source = 'chainlink'`, m.opened_at_ms, m.closes_at_ms);
     const derived = m.closes_at_ms <= nowMs ? deriveOutcome(ticks, m.opened_at_ms, m.closes_at_ms) : undefined;
     const fromFeed = outcomeFromLabel(m.resolved_outcome);
     const decisions = db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM jev_requests WHERE market_id = ?`, [m.market_id])?.n ?? 0;
@@ -36,6 +35,10 @@ export function loadMarketOutcomes(db: Db, nowMs: number): MarketOutcomeRow[] {
       derivedStart: derived?.startPrice, derivedEnd: derived?.endPrice, decisions,
     };
   });
+}
+
+function ticksBetween(db: Db, where: string, fromMs: number, toMs: number) {
+  return db.all<{ ts_ms: number; price: number }>(`SELECT ts_ms, price FROM ticks WHERE ${where} AND ts_ms >= ? AND ts_ms < ? ORDER BY ts_ms`, [fromMs, toMs]).map((t) => ({ tsMs: t.ts_ms, price: t.price }));
 }
 
 const num = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
@@ -90,17 +93,18 @@ export interface MarketConsistencyRow {
   readonly marketBookAgeS: number | undefined;
   /** Jev's last decision on the market: favoured side, its state's start/current settlement prices, distance, seconds remaining. */
   readonly jevFinal: { side: "UP" | "DOWN"; pUp: number; start: number; current: number; distanceBps: number; secondsRemaining: number; action: string } | undefined;
+  /** How late the observer's start price was, from the markets table (undefined for old recordings). */
+  readonly startLagS: number | undefined;
   readonly agree: boolean;
   readonly notes: string[];
 }
 
 export function marketConsistency(db: Db, nowMs: number): MarketConsistencyRow[] {
-  const markets = db.all<{ market_id: string; slug: string; opened_at_ms: number; closes_at_ms: number; resolved_outcome: string | null; up_asset_id: string }>(
-    `SELECT market_id, slug, opened_at_ms, closes_at_ms, resolved_outcome, up_asset_id FROM markets WHERE closes_at_ms <= ? ORDER BY opened_at_ms`, [nowMs]);
+  const markets = db.all<{ market_id: string; slug: string; opened_at_ms: number; closes_at_ms: number; resolved_outcome: string | null; up_asset_id: string; start_lag_ms: number | null }>(
+    `SELECT market_id, slug, opened_at_ms, closes_at_ms, resolved_outcome, up_asset_id, start_lag_ms FROM markets WHERE closes_at_ms <= ? ORDER BY opened_at_ms`, [nowMs]);
   return markets.map((m) => {
-    const load = (where: string) => db.all<{ ts_ms: number; price: number }>(`SELECT ts_ms, price FROM ticks WHERE market_id = ? AND ${where} ORDER BY ts_ms`, [m.market_id]).map((t) => ({ tsMs: t.ts_ms, price: t.price }));
-    const twapTicks = load(`source LIKE 'chainlink-twap%'`);
-    const spotTicks = load(`source = 'chainlink'`);
+    const twapTicks = ticksBetween(db, `source LIKE 'chainlink-twap%'`, m.opened_at_ms - 60_000, m.closes_at_ms + 60_000);
+    const spotTicks = ticksBetween(db, `source = 'chainlink'`, m.opened_at_ms - 60_000, m.closes_at_ms + 60_000);
     const twap = deriveOutcome(twapTicks, m.opened_at_ms, m.closes_at_ms);
     const spot = deriveOutcome(spotTicks, m.opened_at_ms, m.closes_at_ms);
     const book = db.get<{ received_at_ms: number; bids_json: string; asks_json: string }>(
@@ -130,9 +134,11 @@ export function marketConsistency(db: Db, nowMs: number): MarketConsistencyRow[]
     if (twap && spot && twap.outcome !== spot.outcome) notes.push(`TWAP-derived ${twap.outcome} vs spot-derived ${spot.outcome}`);
     if (reference && marketImplied && reference !== marketImplied) notes.push(`derived ${reference} vs market ${marketImplied} (UP mid ${marketUpMid!.toFixed(3)})`);
     if (reference && jevFinal && reference !== jevFinal.side) notes.push(`derived ${reference} vs Jev ${jevFinal.side} at ${jevFinal.secondsRemaining}s (distance ${jevFinal.distanceBps} bps)`);
-    if (twap && jevFinal && Number.isFinite(jevFinal.start) && Math.abs(twap.startPrice - jevFinal.start) > 0.5) notes.push(`start price: derived ${twap.startPrice} vs Jev's state ${jevFinal.start}`);
-    if (twap && jevFinal && Number.isFinite(jevFinal.current) && Math.abs(twap.endPrice - jevFinal.current) > 0.5) notes.push(`end price: derived ${twap.endPrice} vs Jev's last state ${jevFinal.current}`);
-    if (!twap) notes.push("no TWAP ticks inside the window");
+    const derived = twap ?? spot;
+    if (derived && jevFinal && Number.isFinite(jevFinal.start) && Math.abs(derived.startPrice - jevFinal.start) > 0.5) notes.push(`start price: derived ${derived.startPrice} vs Jev's state ${jevFinal.start}`);
+    if (derived && jevFinal && Number.isFinite(jevFinal.current) && Math.abs(derived.endPrice - jevFinal.current) > 0.5) notes.push(`end price: derived ${derived.endPrice} vs Jev's last state ${jevFinal.current}`);
+    if (!twap) notes.push("no TWAP ticks inside the window (spot used)");
+    if (m.start_lag_ms !== null && m.start_lag_ms > 2_000) notes.push(`start price ${(m.start_lag_ms / 1000).toFixed(0)} s late`);
     const first = twapTicks.find((t) => t.tsMs >= m.opened_at_ms);
     const lastBefore = [...twapTicks].reverse().find((t) => t.tsMs < m.closes_at_ms);
     return {
@@ -141,7 +147,7 @@ export function marketConsistency(db: Db, nowMs: number): MarketConsistencyRow[]
       twapLastBeforeCloseS: lastBefore ? (m.closes_at_ms - lastBefore.tsMs) / 1000 : undefined,
       twapTicks: twapTicks.length,
       marketUpMid, marketImplied, marketBookAgeS: book ? (m.closes_at_ms - book.received_at_ms) / 1000 : undefined,
-      jevFinal, agree: notes.length === 0, notes,
+      jevFinal, startLagS: m.start_lag_ms === null ? undefined : m.start_lag_ms / 1000, agree: notes.length === 0, notes,
     };
   });
 }

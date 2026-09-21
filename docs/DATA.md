@@ -53,12 +53,28 @@ Execution records carry `mode`:
 The dashboard and every report group by `mode`. Nothing adds simulated and
 real money into one number.
 
+## Start price
+
+The start price is the settlement value AT the open second. A market's own
+observer exists only after discovery, so the first tick it sees is late by
+several seconds, and BTC moves several bps in that time; the first 2.2 h of
+recordings had every start 15 s or more late, which flipped 4 of 24 derived
+outcomes against the market's own final price. Every bot process therefore
+runs a `PriceTape` (`src/feeds/price-tape.ts`) that listens to spot and TWAP
+continuously; an observer takes its start from the tape, records that tick
+under its own market, and stores the lag in `markets.start_lag_ms` with the
+source in `markets.start_source`. `pnpm calibrate` flags markets whose start
+was more than 2 s late.
+
 ## Outcomes
 
-The feed's `market_resolved` label is authoritative. Without one (the event
-often arrives after the observer has rolled to the next market), the outcome
-is derived from the recorded TWAP stream: first tick at or after the open
-vs. the last tick before the close, tie resolves UP. Reports say which of the
+The official resolution wins: `pnpm resolve` fetches it from Polymarket's
+resolution API by condition id (`markets.resolved_source = 'official'`) and
+cross-checks it against the market's own final price. A `market_resolved`
+feed event, when it arrives inside the short grace period, is recorded too.
+Without either, the outcome is derived from the recorded TWAP stream, by
+timestamp and across market ids: first tick at or after the open vs. the
+last tick before the close, tie resolves UP. Reports say which of the
 two they used (`source: "feed" | "derived"`). A recording without a TWAP
 stream (before the settlement change) falls back to spot and is marked as
 derived too.

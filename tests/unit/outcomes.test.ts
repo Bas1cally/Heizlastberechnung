@@ -39,7 +39,7 @@ describe("outcomeFromLabel", () => {
 
 import { openDatabase } from "../../src/persistence/database.js";
 import { DecisionRepository } from "../../src/persistence/repositories/decisions.js";
-import { marketConsistency } from "../../src/analytics/observations.js";
+import { loadMarketOutcomes, marketConsistency } from "../../src/analytics/observations.js";
 
 describe("marketConsistency", () => {
   it("flags a market whose derived outcome contradicts the market's own final price and Jev's last read", () => {
@@ -65,5 +65,22 @@ describe("marketConsistency", () => {
     expect(row!.notes.join(" | ")).toMatch(/start price: derived 100 vs Jev's state 102/);
     expect(row!.twapFirstAfterOpenS).toBe(10);
     expect(row!.twapLastBeforeCloseS).toBe(10);
+  });
+});
+
+describe("outcomes across market ids", () => {
+  it("derives from the ticks at the open second even when the previous market's observer recorded them", () => {
+    const db = openDatabase(":memory:");
+    const repo = new DecisionRepository(db);
+    const id = (n: number) => ({ marketId: `m${n}`, conditionId: "c", slug: `btc-updown-5m-${n}`, question: "q", upAssetId: "U", downAssetId: "D", openedAtMs: n * 1000, closesAtMs: n * 1000 + 300_000, tickSize: 0.01, minOrderSize: 5 });
+    repo.upsertMarket(id(1000), 0);
+    repo.upsertMarket(id(1300), 0);
+    // Market 1's observer, still in its grace period, recorded the open-second tick of market 2 under market 1.
+    repo.saveTick("m1000", "chainlink-twap60", 1_300_000, 1_300_000, 100);
+    repo.saveTick("m1300", "chainlink-twap60", 1_300_015_000, 1_300_015_000, 99); // market 2's own first tick, 15 s late and lower
+    repo.saveTick("m1300", "chainlink-twap60", 1_599_000, 1_599_000, 99.5);
+    const m2 = loadMarketOutcomes(db, 2_000_000).find((m) => m.marketId === "m1300")!;
+    expect(m2.derivedStart).toBe(100);
+    expect(m2.outcome).toBe("DOWN"); // 99.5 < 100 at the true open; a per-market query would have said UP (99.5 >= 99)
   });
 });

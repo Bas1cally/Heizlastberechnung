@@ -30,6 +30,13 @@ export interface ObserverDeps {
   /** Chainlink TWAP stream (60 s): the settlement quantity. Falls back to spot when absent. */
   readonly chainlinkTwapSubscribe?: ChainlinkSubscribeFn;
   readonly jevCall: JevCall;
+  /**
+   * The settlement price at the open second, from a tape that was listening
+   * before this observer existed (feeds/price-tape.ts). Without it the first
+   * tick this observer sees becomes the start, which is late by however long
+   * discovery took - and wrong by however far BTC moved meanwhile.
+   */
+  readonly settlementStart?: { readonly price: number; readonly ts: number; readonly source: string } | undefined;
   readonly repo: DecisionRepository;
   readonly display?: (line: string) => void;
   /** Execution mode handed to the risk gate. "none" in observe. */
@@ -116,6 +123,16 @@ export class MarketObserver {
       },
     );
     this.persist("market", () => deps.repo.upsertMarket(market, clock.wall()));
+    if (deps.settlementStart) {
+      const st = deps.settlementStart;
+      this.store.setSettlementStartPrice(st.price);
+      // Record the start tick under this market so a replay derives the same outcome.
+      this.persist("tick", () => deps.repo.saveTick(market.marketId, st.source, st.ts, clock.wall(), st.price));
+      this.persist("market", () => deps.repo.setStartLag(market.marketId, st.ts - market.openedAtMs, st.source));
+      log.info("settlement start price from tape", { price: st.price, source: st.source, lagMs: st.ts - market.openedAtMs });
+    } else {
+      log.warn("no start price on the tape for this market; the first settlement tick will stand in and is late", { openedAt: new Date(market.openedAtMs).toISOString() });
+    }
 
     this.engine = new DecisionEngine({
       call: deps.jevCall,
@@ -195,6 +212,9 @@ export class MarketObserver {
           onStreamError: (reason) => this.persist("error", () => deps.repo.saveError("chainlink-twap-ws", reason, market.marketId, clock.wall())),
           onTick: (t) => {
             this.lastPacketMono = clock.mono();
+            if (this.store.snapshot(clock.wall()).settlementStartPrice === undefined && t.ts >= market.openedAtMs) {
+              this.persist("market", () => deps.repo.setStartLag(market.marketId, t.ts - market.openedAtMs, `chainlink-twap${cfg.chainlinkTwapSeconds}`));
+            }
             this.store.setSettlementPrice(t.price, t.ts);
             this.lastStateMono = clock.mono();
             this.persist("tick", () => deps.repo.saveTick(market.marketId, `chainlink-twap${cfg.chainlinkTwapSeconds}`, t.ts, clock.wall(), t.price));
@@ -260,6 +280,10 @@ export class MarketObserver {
   private maybeDecide(): void {
     if (this.stopped) return;
     const { cfg, clock, log, repo } = this.deps;
+    // After the close there is nothing left to decide; the grace period only
+    // waits for the resolution event. Decisions made there would be judged
+    // against ticks the settlement no longer includes.
+    if (clock.wall() >= this.market.closesAtMs) return;
     this.housekeeping();
     const snap = this.store.snapshot(clock.wall());
     const drifted = !clock.withinTolerance(cfg.maxClockDriftMs);
@@ -392,8 +416,13 @@ export class MarketObserver {
     return this.decisions;
   }
 
-  /** Runs until the market closes (plus a grace period for the resolve event). */
-  async run(graceMs = 15_000): Promise<void> {
+  /**
+   * Runs until the market closes, plus a short grace period for a resolve
+   * event. The resolution normally arrives minutes later (pnpm resolve backfills
+   * it), so the grace is kept short: every second here is a second the next
+   * market is not being observed.
+   */
+  async run(graceMs = 3_000): Promise<void> {
     this.books.start();
     this.chainlink.start();
     this.twap?.start();

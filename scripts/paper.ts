@@ -28,6 +28,7 @@ import { findCurrentMarket, type DiscoveryClient } from "../src/market/market-di
 import { nextWindow, windowAt } from "../src/market/window.js";
 import { chainlinkSubscribe, chainlinkTwapSubscribe, marketSubscribe, type RealtimeClientLike } from "../src/feeds/sdk-subscriptions.js";
 import { MarketObserver } from "../src/app/observer.js";
+import { PriceTape } from "../src/feeds/price-tape.js";
 import { PaperLiveEngine } from "../src/execution/paper-live-engine.js";
 import { DEFAULT_FILL_PARAMS } from "../src/replay/paper-fill-model.js";
 
@@ -47,6 +48,18 @@ if (cfg.mode !== "observe" && cfg.mode !== "paper") {
 
 const clock = createClock();
 const client = createPublicClient();
+// Listens to the settlement streams for the whole process, so every market's
+// start price is the tick AT its open second, not the first tick the market's
+// own observer happens to see after discovery (src/feeds/price-tape.ts).
+const tape = new PriceTape({
+  symbol: cfg.chainlinkSymbol, spotSubscribe: chainlinkSubscribe(client as unknown as RealtimeClientLike), twapSubscribe: chainlinkTwapSubscribe(client as unknown as RealtimeClientLike, cfg.chainlinkTwapSeconds),
+  mono: clock.mono, wall: clock.wall, log: log.child({ feed: "tape" }),
+});
+tape.start();
+const startPriceFor = async (openedAtMs: number) => {
+  const s = await tape.waitForStart(openedAtMs);
+  return s.twap ? { price: s.twap.price, ts: s.twap.ts, source: `chainlink-twap${cfg.chainlinkTwapSeconds}` } : undefined;
+};
 const db = openDatabase(cfg.databaseUrl);
 const repo = new DecisionRepository(db);
 const jevCall = createJevCall({ apiKey: cfg.typesafeApiKey, model: cfg.typesafeModel, timeoutMs: 5_000 });
@@ -60,7 +73,7 @@ const shutdown = async (signal: string) => {
   shuttingDown = true;
   log.info("shutting down - press Ctrl+C again to force", { signal });
   setTimeout(() => { log.warn("shutdown timed out, exiting"); process.exit(0); }, 3_000).unref();
-  try { await current?.stop(); } catch (err) { log.warn("stop failed", { err }); }
+  try { await current?.stop(); await tape.stop(); } catch (err) { log.warn("stop failed", { err }); }
   process.exit(0);
 };
 process.on("SIGINT", () => void shutdown("SIGINT"));
@@ -105,6 +118,7 @@ while (!shuttingDown) {
       marketSubscribe: marketSubscribe(client as unknown as RealtimeClientLike),
       chainlinkSubscribe: chainlinkSubscribe(client as unknown as RealtimeClientLike),
       chainlinkTwapSubscribe: chainlinkTwapSubscribe(client as unknown as RealtimeClientLike, cfg.chainlinkTwapSeconds),
+      settlementStart: await startPriceFor(market.openedAtMs),
       executionMode: "simulated",
       processName: "paper",
       onKill: (state) => { mlog.error("kill: cancelling resting paper orders, no new ones", { reasons: state.reasons }); engine.kill(); },

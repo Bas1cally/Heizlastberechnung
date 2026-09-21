@@ -28,6 +28,10 @@ export function openDatabase(path: string): Db {
   const db = new DatabaseSync(path);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
   db.exec(SCHEMA_SQL);
+  // Columns added after the first release; SQLite has no ADD COLUMN IF NOT EXISTS.
+  for (const ddl of ["ALTER TABLE markets ADD COLUMN start_lag_ms INTEGER", "ALTER TABLE markets ADD COLUMN start_source TEXT", "ALTER TABLE markets ADD COLUMN resolved_source TEXT"]) {
+    try { db.exec(ddl); } catch { /* already there */ }
+  }
 
   return {
     run: (sql, params = []) => { db.prepare(sql).run(...params.map(toParam)); },

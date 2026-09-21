@@ -22,6 +22,7 @@ import { findCurrentMarket, type DiscoveryClient } from "../src/market/market-di
 import { nextWindow, windowAt } from "../src/market/window.js";
 import { chainlinkSubscribe, chainlinkTwapSubscribe, marketSubscribe, type RealtimeClientLike } from "../src/feeds/sdk-subscriptions.js";
 import { MarketObserver } from "../src/app/observer.js";
+import { PriceTape } from "../src/feeds/price-tape.js";
 import { ShadowEngine } from "../src/execution/shadow-engine.js";
 import { sdkSigner, signingSurface } from "../src/execution/sdk-signer.js";
 import { buildOrders } from "../src/execution/order-builder.js";
@@ -39,6 +40,15 @@ if (!pk) { log.error("POLYMARKET_PRIVATE_KEY is not set; shadow mode signs real 
 
 const clock = createClock();
 const publicClient = createPublicClient();
+const tape = new PriceTape({
+  symbol: cfg.chainlinkSymbol, spotSubscribe: chainlinkSubscribe(publicClient as unknown as RealtimeClientLike), twapSubscribe: chainlinkTwapSubscribe(publicClient as unknown as RealtimeClientLike, cfg.chainlinkTwapSeconds),
+  mono: clock.mono, wall: clock.wall, log: log.child({ feed: "tape" }),
+});
+tape.start();
+const startPriceFor = async (openedAtMs: number) => {
+  const s = await tape.waitForStart(openedAtMs);
+  return s.twap ? { price: s.twap.price, ts: s.twap.ts, source: `chainlink-twap${cfg.chainlinkTwapSeconds}` } : undefined;
+};
 const wallet = process.env["POLYMARKET_DEPOSIT_WALLET"]?.trim();
 const secure = await createSecureClient({ signer: privateKey(pk), ...(wallet ? { wallet } : {}) });
 // The signer is built from the two signing methods only; postOrder is never referenced.
@@ -55,7 +65,7 @@ const shutdown = async (signal: string) => {
   shuttingDown = true;
   log.info("shutting down - press Ctrl+C again to force", { signal });
   setTimeout(() => process.exit(0), 3_000).unref();
-  try { await current?.stop(); } catch { /* exiting anyway */ }
+  try { await current?.stop(); await tape.stop(); } catch { /* exiting anyway */ }
   process.exit(0);
 };
 process.on("SIGINT", () => void shutdown("SIGINT"));
@@ -109,6 +119,7 @@ while (!shuttingDown) {
       marketSubscribe: marketSubscribe(publicClient as unknown as RealtimeClientLike),
       chainlinkSubscribe: chainlinkSubscribe(publicClient as unknown as RealtimeClientLike),
       chainlinkTwapSubscribe: chainlinkTwapSubscribe(publicClient as unknown as RealtimeClientLike, cfg.chainlinkTwapSeconds),
+      settlementStart: await startPriceFor(market.openedAtMs),
       executionMode: "simulated",
       processName: "shadow",
       onKill: (state) => { mlog.error("kill: no further orders will be signed", { reasons: state.reasons }); engine.flush(() => undefined); },

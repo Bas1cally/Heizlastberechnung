@@ -11,6 +11,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const steps: [string, string[]][] = [
+  ["resolve (official outcomes)", ["scripts/resolve.ts"]],
   ["report", ["scripts/report.ts"]],
   ["acceptance", ["scripts/acceptance.ts"]],
   ["calibrate", ["scripts/calibrate.ts"]],

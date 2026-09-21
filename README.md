@@ -65,6 +65,7 @@ pnpm probe              # 20 s of raw feed events, unfiltered
 pnpm bot:observe        # Phase 1 observer; never submits an order
 pnpm report             # what the observer recorded
 pnpm calibrate          # calibration + naive edge reports from recorded outcomes
+pnpm resolve            # backfill official outcomes from Polymarket's resolution API, cross-checked against the market's final price
 pnpm acceptance         # Phase 1 acceptance (§36) PASS/FAIL/INSUFFICIENT per criterion -> reports/acceptance.json
 pnpm summary            # report + acceptance + calibrate + analyze in one file (reports/summary.txt); pipe to Set-Clipboard
 pnpm analyze            # §26 metrics (ROC, PnL per fill / Jev call, unpaired time, maker/taker, cancel ratio, Jev cost), EV by distance/vol/confidence/action/pair cost, Animal00 research, reports/latency.json
