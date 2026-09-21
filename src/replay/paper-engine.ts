@@ -44,7 +44,7 @@ export interface PaperOptions {
   readonly call: JevCall | undefined;
   readonly out: DecisionRepository;
   readonly outDb: Db;
-  readonly mode: "paper";
+  readonly mode: "paper" | "backtest";
 }
 
 export interface PaperMarketResult {

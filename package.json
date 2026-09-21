@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "bot:observe": "tsx scripts/observe.ts",
     "bot:paper": "tsx scripts/paper.ts",
+    "backtest": "tsx scripts/backtest.ts",
     "bot:shadow": "tsx scripts/shadow.ts",
     "replay": "tsx scripts/replay.ts",
     "report": "tsx scripts/report.ts",

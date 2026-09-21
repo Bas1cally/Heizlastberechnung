@@ -1,71 +1,148 @@
 /**
- * Paper trading over recorded markets (brief §38).
+ * Phase 3: PAPER mode against LIVE order books (brief §14, §38).
  *
- *   pnpm bot:paper                    # cached Jev answers only
- *   pnpm bot:paper -- --jev           # call Jev for uncached states
- *   pnpm bot:paper -- --latency 400 --seed 7
+ * Everything the observer does - discovery, feeds, Jev, risk gate in
+ * `simulated` mode - plus a simulated execution engine that turns approved
+ * decisions into hypothetical orders, fills them against the real book that
+ * arrives after the configured latency, tracks resting orders until traded
+ * through or expired, feeds the simulated position back into the next state,
+ * and settles at the real outcome.
  *
- * Output: data/paper.sqlite and reports/backtest-summary.json. Never sends
- * anything anywhere.
+ *   pnpm bot:paper                       # latency 350 ms, seed 1
+ *   pnpm bot:paper -- --latency 500 --seed 7
+ *
+ * Records land in the main database with mode "paper" (orders, fills,
+ * inventory_snapshots, merges, redemptions, pnl_snapshots) and show up under
+ * "Paper" in `pnpm dashboard`. No exchange client with a signer exists in
+ * this process; nothing can be sent.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { createPublicClient } from "@polymarket/client";
 import { loadEnvFile } from "../src/app/env.js";
 import { loadConfig } from "../src/app/config.js";
+import { createLogger } from "../src/observability/logger.js";
+import { createClock } from "../src/feeds/clock.js";
+import { createJevCall } from "../src/jev/client.js";
 import { openDatabase } from "../src/persistence/database.js";
 import { DecisionRepository } from "../src/persistence/repositories/decisions.js";
-import { createJevCall } from "../src/jev/client.js";
-import { loadMarketIdentity, loadReplayEvents } from "../src/replay/replay-engine.js";
-import { loadMarketOutcomes } from "../src/analytics/observations.js";
+import { findCurrentMarket, type DiscoveryClient } from "../src/market/market-discovery.js";
+import { nextWindow, windowAt } from "../src/market/window.js";
+import { chainlinkSubscribe, chainlinkTwapSubscribe, marketSubscribe, type RealtimeClientLike } from "../src/feeds/sdk-subscriptions.js";
+import { MarketObserver } from "../src/app/observer.js";
+import { PaperLiveEngine } from "../src/execution/paper-live-engine.js";
 import { DEFAULT_FILL_PARAMS } from "../src/replay/paper-fill-model.js";
-import { paperMarket, type PaperMarketResult } from "../src/replay/paper-engine.js";
 
 loadEnvFile();
 const cfg = loadConfig();
+const log = createLogger({ level: (process.env["LOG_LEVEL"] as never) ?? "info" });
 const argv = process.argv.slice(2);
-const flag = (n: string) => argv.includes(`--${n}`);
-const opt = (n: string, d: number) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? Number(argv[i + 1]) : d; };
-
-const src = openDatabase(cfg.databaseUrl);
-const srcRepo = new DecisionRepository(src);
-const outDb = openDatabase("data/paper.sqlite");
-const out = new DecisionRepository(outDb);
-const call = flag("jev") && cfg.typesafeApiKey ? createJevCall({ apiKey: cfg.typesafeApiKey, model: cfg.typesafeModel, timeoutMs: 10_000, retries: 2 }) : undefined;
-const latencyMs = opt("latency", 350);
+const opt = (n: string, d: number) => { const i = argv.indexOf(`--${n}`); const v = i >= 0 ? Number(argv[i + 1]) : d; return Number.isFinite(v) ? v : d; };
+const latencyMs = opt("latency", Number(process.env["PAPER_LATENCY_MS"] ?? 350));
 const seed = opt("seed", 1);
 
-const outcomes = loadMarketOutcomes(src, Date.now()).filter((m) => m.outcome);
-console.log(`paper: ${outcomes.length} resolved market(s), latency ${latencyMs} ms, seed ${seed}, jev ${call ? "cache-then-call" : "cache only"}\n`);
-
-const results: PaperMarketResult[] = [];
-for (const m of outcomes) {
-  const identity = loadMarketIdentity(src, m.marketId);
-  if (!identity) continue;
-  const r = await paperMarket({
-    identity, events: loadReplayEvents(src, m.marketId), outcome: m.outcome!, limits: cfg.limits,
-    heartbeatMs: cfg.jev.heartbeatMs, minIntervalMs: cfg.jev.minIntervalMs, latencyMs, fill: DEFAULT_FILL_PARAMS, seed, mergeGas: 0,
-    cached: (h) => srcRepo.cachedAnswers(h), call, out, outDb, mode: "paper",
-  });
-  results.push(r);
-  console.log(`${r.slug}  ${r.outcome.padEnd(4)}  dec ${String(r.decisions).padStart(3)} appr ${String(r.approved).padStart(3)}  orders ${String(r.orders).padStart(3)} fills ${String(r.fills).padStart(3)} part ${String(r.partials).padStart(2)} miss ${String(r.noFills).padStart(3)}  merges ${r.merges}  pos UP ${r.finalPosition.upShares}/DOWN ${r.finalPosition.downShares}  net ${r.netPnl.toFixed(3)}`);
+if (!cfg.typesafeApiKey) { log.error("TYPESAFE_API_KEY is not set"); process.exit(1); }
+if (cfg.mode !== "observe" && cfg.mode !== "paper") {
+  log.error(`bot:paper only runs in paper mode (got ${cfg.mode}); live execution does not exist`);
+  process.exit(1);
 }
 
-const sum = (f: (r: PaperMarketResult) => number) => results.reduce((s, r) => s + f(r), 0);
-const orders = sum((r) => r.orders);
-const summary = {
-  generatedAt: new Date().toISOString(), markets: results.length, latencyMs, seed, fillParams: DEFAULT_FILL_PARAMS,
-  decisions: sum((r) => r.decisions), approved: sum((r) => r.approved), orders,
-  fillRatio: orders ? sum((r) => r.fills + r.partials) / orders : null,
-  partialRatio: orders ? sum((r) => r.partials) / orders : null,
-  merges: sum((r) => r.merges),
-  grossPnl: sum((r) => r.grossPnl), netPnl: sum((r) => r.netPnl), mergePnl: sum((r) => r.mergePnl), fees: sum((r) => r.fees),
-  pnlPerMarket: results.length ? sum((r) => r.netPnl) / results.length : null,
-  worstMarket: results.length ? Math.min(...results.map((r) => r.netPnl)) : null,
-  bestMarket: results.length ? Math.max(...results.map((r) => r.netPnl)) : null,
-  skippedNoJev: sum((r) => r.skippedNoJev),
-  note: "Simulated fills against recorded books at 500 ms resolution with a fixed latency; no live order was ever built.",
-  perMarket: results,
+const clock = createClock();
+const client = createPublicClient();
+const db = openDatabase(cfg.databaseUrl);
+const repo = new DecisionRepository(db);
+const jevCall = createJevCall({ apiKey: cfg.typesafeApiKey, model: cfg.typesafeModel, timeoutMs: 5_000 });
+
+log.info("paper starting", { mode: "paper", latencyMs, seed, fill: DEFAULT_FILL_PARAMS, limits: cfg.limits, db: cfg.databaseUrl, model: cfg.typesafeModel ?? "jev-latest" });
+
+let current: MarketObserver | undefined;
+let shuttingDown = false;
+const shutdown = async (signal: string) => {
+  if (shuttingDown) { log.warn("forced exit"); process.exit(130); }
+  shuttingDown = true;
+  log.info("shutting down - press Ctrl+C again to force", { signal });
+  setTimeout(() => { log.warn("shutdown timed out, exiting"); process.exit(0); }, 3_000).unref();
+  try { await current?.stop(); } catch (err) { log.warn("stop failed", { err }); }
+  process.exit(0);
 };
-mkdirSync("reports", { recursive: true });
-writeFileSync("reports/backtest-summary.json", JSON.stringify(summary, null, 2));
-console.log(`\ntotal net ${summary.netPnl.toFixed(3)} over ${results.length} market(s); fill ratio ${summary.fillRatio === null ? "-" : (summary.fillRatio * 100).toFixed(0) + "%"}; written reports/backtest-summary.json`);
-if (summary.skippedNoJev > 0 && !call) console.log(`${summary.skippedNoJev} state(s) had no cached answer; run with --jev to evaluate them`);
+process.on("SIGINT", () => void shutdown("SIGINT"));
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+
+let marketIndex = 0;
+while (!shuttingDown) {
+  const now = clock.wall();
+  let found: Awaited<ReturnType<typeof findCurrentMarket>>;
+  try {
+    found = await findCurrentMarket(client as unknown as DiscoveryClient, now, cfg.marketDurationSeconds);
+  } catch (err) {
+    log.error("market discovery failed; retrying in 5s", { err });
+    try { repo.saveError("discovery", err instanceof Error ? `${err.name}: ${err.message}` : String(err), null, now); repo.heartbeat("paper", { phase: "waiting", market: "discovery-error", decisions: 0, killed: false }, now); } catch { /* db unavailable; keep going */ }
+    await new Promise((r) => setTimeout(r, 5_000));
+    continue;
+  }
+  if (!found) {
+    const w = windowAt(now, cfg.marketDurationSeconds);
+    const untilNext = Math.max(1_000, Math.min(5_000, nextWindow(now, cfg.marketDurationSeconds).openedAtMs - now));
+    log.warn("current window not tradable; waiting", { slug: w.slug, retryInS: Math.round(untilNext / 1000) });
+    try { repo.heartbeat("paper", { phase: "waiting", market: w.slug, decisions: 0, killed: false }, now); } catch { /* dashboard only */ }
+    await new Promise((r) => setTimeout(r, untilNext));
+    continue;
+  }
+  const market = found.identity;
+  const mlog = log.child({ market: market.slug, mode: "paper" });
+  marketIndex++;
+
+  // One engine per market; the position never carries over (each market settles).
+  const engine = new PaperLiveEngine({
+    market, limits: cfg.limits, latencyMs, fill: DEFAULT_FILL_PARAMS, seed: seed * 1_000_003 + marketIndex,
+    mono: clock.mono, wall: clock.wall, db,
+    onInventory: (inv, open) => { current?.setInventory(inv); current?.setOpenOrderCount(open); },
+    log: (msg, fields) => mlog.info(msg, fields),
+  });
+
+  log.info("paper trading market", { slug: market.slug, closesInS: Math.round((market.closesAtMs - clock.wall()) / 1000), up: market.upAssetId, down: market.downAssetId });
+  current = new MarketObserver(
+    {
+      cfg, log: mlog, clock, repo, jevCall,
+      marketSubscribe: marketSubscribe(client as unknown as RealtimeClientLike),
+      chainlinkSubscribe: chainlinkSubscribe(client as unknown as RealtimeClientLike),
+      chainlinkTwapSubscribe: chainlinkTwapSubscribe(client as unknown as RealtimeClientLike, cfg.chainlinkTwapSeconds),
+      executionMode: "simulated",
+      processName: "paper",
+      onKill: (state) => { mlog.error("kill: cancelling resting paper orders, no new ones", { reasons: state.reasons }); engine.kill(); },
+      onBookUpdate: (book, nowMono) => engine.onBook(book, nowMono),
+      onApproved: (d, snap, decisionMono) => engine.onApproved(d, snap, decisionMono),
+      onResolved: (outcome) => {
+        if (!outcome) return;
+        const s = engine.settleAt(outcome, clock.mono());
+        mlog.info("paper settled on feed resolution", { outcome, netPnl: s.netPnl });
+      },
+    },
+    market,
+  );
+  // Resting orders expire on a timer, not only on book events.
+  const ticker = setInterval(() => engine.tick(clock.mono()), 250);
+  try {
+    await current.run();
+  } catch (err) {
+    log.error("market run failed; moving on", { err });
+    try { repo.saveError("observer", err instanceof Error ? `${err.name}: ${err.message}` : String(err), market.marketId, clock.wall()); } catch { /* keep going */ }
+    await current.stop().catch(() => undefined);
+  } finally {
+    clearInterval(ticker);
+  }
+  // No market_resolved event inside the grace period: settle on the observed
+  // rule (60 s TWAP at close >= TWAP at open -> UP). Recorded as "derived".
+  if (!engine.summary().settled) {
+    const { start, current: end } = current.settlementNow();
+    if (start !== undefined && end !== undefined) {
+      const outcome = end >= start ? "UP" : "DOWN";
+      const s = engine.settleAt(outcome, clock.mono());
+      mlog.warn("paper settled on derived outcome (no resolution event)", { outcome, start, end, netPnl: s.netPnl });
+    } else {
+      engine.cancelAll("market ended without settlement data");
+      mlog.error("cannot settle: no settlement prices recorded; position left unsettled", { position: engine.summary().position });
+    }
+  }
+  const s = engine.summary();
+  log.info("market finished", { slug: market.slug, decisions: current.decisionCount(), orders: s.orders, fills: s.fills, partials: s.partials, noFills: s.noFills, cancelled: s.cancelled, merges: s.merges, outcome: s.outcome, netPnl: s.netPnl, latency: current.latencyReport() });
+  current = undefined;
+}

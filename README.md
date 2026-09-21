@@ -27,7 +27,8 @@ Phase 1 groundwork. **No order path exists yet, in any mode.**
 | Causal replay with Jev response cache (`--fresh-jev` to bypass) | `src/replay/`, `pnpm replay` |
 | 140+ unit tests, no network needed | `pnpm test` |
 
-| Paper trading: order mechanics, fills with latency and queue draw, merge, settlement | `src/replay/paper-engine.ts`, `pnpm bot:paper` |
+| Paper trading against live books: latency, resting orders, merge, settlement at the real outcome | `src/execution/paper-live-engine.ts`, `pnpm bot:paper` |
+| Backtest over recorded books: same fill model, same mechanics | `src/replay/paper-engine.ts`, `pnpm backtest` |
 
 | Shadow execution: real signing, no submission, book movement to hypothetical ACK | `src/execution/shadow-engine.ts`, `pnpm bot:shadow` |
 
@@ -64,7 +65,8 @@ pnpm bot:observe        # Phase 1 observer; never submits an order
 pnpm report             # what the observer recorded
 pnpm calibrate          # calibration + naive edge reports from recorded outcomes
 pnpm replay             # causal replay of recorded markets (cached Jev answers)
-pnpm bot:paper          # paper trading over recorded markets -> reports/backtest-summary.json
+pnpm bot:paper          # Phase 3: paper trading against LIVE books; simulated fills, real outcomes; never submits
+pnpm backtest           # paper trading over RECORDED markets -> reports/backtest-summary.json
 pnpm bot:shadow         # live path incl. signing, stops before submission (needs POLYMARKET_PRIVATE_KEY)
 pnpm dashboard          # http://127.0.0.1:8787 - German operator view: status, current market, Jev vs market, calibration, trading, NOTAUS
 pnpm kill / pnpm resume # operator kill switch from the command line

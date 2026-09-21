@@ -108,23 +108,38 @@ and a *naive* gross edge: buy Jev's favoured side at the executable ask on
 every decision, no fees, fills or slippage. That number is an upper bound and
 is labelled as such in the output.
 
-## Paper trading
+## Paper trading (live books)
 
-`pnpm bot:paper` runs the replay stream through the full simulated lifecycle
-(brief §38): Jev decision -> risk gate in `simulated` mode -> deterministic
-order sizing (`execution/order-builder.ts`) -> fill against the first book
-recorded at or after decision time plus a fixed latency -> inventory ->
-merge when Jev's inventory intent says so -> settlement at the recorded
-outcome. Fills are never assumed: FOK is all or nothing, FAK reports partials,
-a resting order fills only when traded through or by a seeded queue draw when
-touched. Inventory is fed back into the state, so the next decision sees the
-position the last one created. Output goes to `data/paper.sqlite`; the
-summary to `reports/backtest-summary.json`.
+`pnpm bot:paper` is the observer plus `execution/paper-live-engine.ts`, in
+real time (brief §14, PAPER): Jev decision -> risk gate in `simulated` mode
+-> deterministic order sizing (`execution/order-builder.ts`) -> a marketable
+order is held in flight for the configured latency (`--latency`, default
+350 ms) and evaluated against the first live book that arrives after it; a
+resting order is watched on every book update until traded through, touched
+(seeded queue draw) or its TTL expires -> inventory -> merge when Jev's
+inventory intent says so -> settlement at the market's own `market_resolved`
+event, or, when none arrives in the grace period, at the observed rule (60 s
+TWAP at close >= TWAP at open -> UP), logged as "derived". The simulated
+position and open-order count are fed back into the market state, so the
+next decision sees the position the last one created. The kill switch cancels
+resting paper orders and blocks new ones. Records go to the main database
+with `mode = 'paper'`; the dashboard shows them under "Paper".
 
-Known limits of the simulation, stated plainly: books are recorded at 500 ms,
-so fills inside that interval are invisible; latency is a constant, not a
-distribution; fees and gas default to zero and must be set from the real fee
-schedule before any number here is believed.
+Nothing in this process can reach the exchange: the only Polymarket client
+is the public one, there is no signer, and `postOrder` is never imported.
+
+## Backtest (recorded books)
+
+`pnpm backtest` runs the same mechanics (`replay/paper-engine.ts`) over the
+replay stream of recorded, resolved markets, with cached Jev answers (or
+`--jev` for uncached states). Output goes to `data/backtest.sqlite` with
+`mode = 'backtest'`; the summary to `reports/backtest-summary.json`.
+
+Known limits of both simulations, stated plainly: recorded books are sampled
+at 500 ms, so a backtest cannot see fills inside that interval; latency is a
+constant, not a distribution; queue position is a probability, not a model;
+fees and gas default to the observed zero (docs/DEPENDENCIES.md) and must be
+revisited if Polymarket changes its fee schedule.
 
 ## Shadow execution
 

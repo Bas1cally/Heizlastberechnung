@@ -105,7 +105,7 @@ export function collectState(db: Db, nowMs: number): Record<string, unknown> {
 
 import { HTML } from "./dashboard-html.js";
 
-export function startDashboard(db: Db, port: number, log: (msg: string) => void, paperDb?: Db): () => void {
+export function startDashboard(db: Db, port: number, log: (msg: string) => void, backtestDb?: Db): () => void {
   const repo = new DecisionRepository(db);
   const json = (res: ServerResponse, code: number, body: unknown) => { res.writeHead(code, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
   const readBody = (req: IncomingMessage) => new Promise<string>((resolve) => { let b = ""; req.on("data", (c) => (b += c)); req.on("end", () => resolve(b)); });
@@ -118,7 +118,8 @@ export function startDashboard(db: Db, port: number, log: (msg: string) => void,
         const state = collectState(db, Date.now());
         // Execution records, grouped by mode so simulated and real money never share a number.
         const trading = {
-          paper: paperDb ? collectTrading(paperDb, "paper") : null,
+          paper: collectTrading(db, "paper"),
+          backtest: backtestDb ? collectTrading(backtestDb, "backtest") : null,
           live: collectTrading(db, "live"),
         };
         return json(res, 200, { ...state, trading });

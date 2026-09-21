@@ -15,7 +15,9 @@ loadEnvFile();
 const cfg = loadConfig();
 const opt = (n: string) => { const i = process.argv.indexOf(`--${n}`); return i >= 0 ? process.argv[i + 1] : undefined; };
 const port = Number(opt("port") ?? 8787);
-// Execution records: the paper database when it exists, else the live database (mode "live").
-const paperPath = opt("paper") ?? "data/paper.sqlite";
-const paper = existsSync(paperPath) ? openDatabase(paperPath) : undefined;
-startDashboard(openDatabase(cfg.databaseUrl), port, (m) => console.log(m), paper);
+// Execution records live in the main database, grouped by mode ("paper" from
+// pnpm bot:paper, "live" once it exists). The recorded-book backtest writes
+// its own database; it is shown as a third, clearly separate tab when present.
+const backtestPath = opt("backtest") ?? "data/backtest.sqlite";
+const backtest = existsSync(backtestPath) ? openDatabase(backtestPath) : undefined;
+startDashboard(openDatabase(cfg.databaseUrl), port, (m) => console.log(m), backtest);

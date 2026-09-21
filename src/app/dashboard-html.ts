@@ -56,9 +56,9 @@ details summary{cursor:pointer;color:var(--mut)}details p{color:var(--mut);margi
 <section class="card"><h2>Letzte Stunde</h2><p class="sub">Wie oft, wie schnell, was entschieden.</p><div id="hour"></div></section>
 <section class="card"><h2>Letzte Märkte</h2><p class="sub">Fenster · Ausgang · Entscheidungen</p><div id="markets"></div></section>
 
-<section class="card w12"><h2>Handel <span id="tbadge" class="badge">keine Aufträge</span></h2><p class="sub">Paper = mit echten Kursen simuliert, aber ohne Geld. Live = echte Aufträge. Beides wird nie zusammengerechnet.</p>
-<div class="tabs"><button id="tab-paper" class="on" onclick="setMode('paper')">Paper (simuliert)</button><button id="tab-live" onclick="setMode('live')">Live</button></div>
-<div id="tempty" class="muted">Noch keine Aufträge. Im Beobachtungsmodus wird nie gehandelt. <code>pnpm bot:paper</code> erzeugt ein simuliertes Ergebnis aus den Aufzeichnungen.</div>
+<section class="card w12"><h2>Handel <span id="tbadge" class="badge">keine Aufträge</span></h2><p class="sub">Paper = live gegen echte Orderbücher simuliert, ohne Geld. Backtest = über Aufzeichnungen simuliert. Live = echte Aufträge. Nichts davon wird zusammengerechnet.</p>
+<div class="tabs"><button id="tab-paper" class="on" onclick="setMode('paper')">Paper (live, simuliert)</button><button id="tab-backtest" onclick="setMode('backtest')">Backtest</button><button id="tab-live" onclick="setMode('live')">Live</button></div>
+<div id="tempty" class="muted">Noch keine Aufträge. Im Beobachtungsmodus wird nie gehandelt. <code>pnpm bot:paper</code> handelt simuliert gegen die echten Kurse, <code>pnpm backtest</code> rechnet die Aufzeichnungen nach.</div>
 <div id="tbody" style="display:none">
  <div class="hero"><div><span class="lbl">Netto-Ergebnis</span><span id="tnet" class="huge"></span></div><div><span class="lbl">Märkte</span><span id="tmk" class="big"></span></div><div><span class="lbl">Gewonnen / verloren</span><span id="twl" class="big"></span></div><div><span class="lbl">Größter Rückgang</span><span id="tdd" class="big"></span></div><div><span class="lbl">Ausführungsquote</span><span id="tfr" class="big"></span></div></div>
  <div class="two">
@@ -141,9 +141,9 @@ function drawJevMarket(tl){const svg=$('jm');const W=800,H=240,L=40,R=14,T=12,Bt
   line('Jev P(Up)',(p.pUp*100).toFixed(1)+' %');line('Markt Up-Preis',(p.upAsk*100).toFixed(1)+' %');line(hhmmss(p.t)+' · noch '+f(p.s,0)+' s · '+(ACT[p.action]||p.action),'');};
  hit.onmouseleave=()=>{tip.style.display='none';cx.style.display='none';};}
 let mode=localStorage.getItem('tmode')||'paper';function setMode(m){mode=m;localStorage.setItem('tmode',m);load();}
-function renderTrading(tr){$('tab-paper').className=mode==='paper'?'on':'';$('tab-live').className=mode==='live'?'on':'';const t=tr[mode];const badge=$('tbadge');
- if(!t){badge.className='badge';badge.textContent=mode==='paper'?'noch kein Paper-Lauf':'keine Live-Aufträge';$('tempty').style.display='';$('tbody').style.display='none';return;}
- badge.className='badge '+(mode==='paper'?'sim':'live');badge.textContent=mode==='paper'?'SIMULIERT – kein echtes Geld':'LIVE – echtes Geld';$('tempty').style.display='none';$('tbody').style.display='';
+function renderTrading(tr){for(const m of ['paper','backtest','live'])$('tab-'+m).className=mode===m?'on':'';const t=tr[mode];const badge=$('tbadge');
+ if(!t){badge.className='badge';badge.textContent=mode==='paper'?'noch kein Paper-Lauf':mode==='backtest'?'noch kein Backtest':'keine Live-Aufträge';$('tempty').style.display='';$('tbody').style.display='none';return;}
+ badge.className='badge '+(mode==='live'?'live':'sim');badge.textContent=mode==='live'?'LIVE – echtes Geld':'SIMULIERT – kein echtes Geld';$('tempty').style.display='none';$('tbody').style.display='';
  $('tnet').textContent=money(t.netPnl);$('tmk').textContent=t.settledMarkets;$('twl').textContent=t.wins+' / '+t.losses;$('tdd').textContent='−'+(+t.maxDrawdown).toFixed(2).replace('.',',')+' $';$('tfr').textContent=t.fillRatio==null?'—':(t.fillRatio*100).toFixed(0)+' %';
  $('tpos').innerHTML=t.openPosition?'<div class="lbl muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Offene Position</div>'+row('Up / Down Stück',t.openPosition.upShares+' / '+t.openPosition.downShares)+row('davon gepaart',t.openPosition.pairedShares)+row('Einsatz',(+t.openPosition.totalCost).toFixed(2)+' $')+row('Ergebnis wenn Up / Down',money(t.openPosition.pnlIfUp)+' / '+money(t.openPosition.pnlIfDown)):'<div class="muted" style="margin-bottom:8px">Keine offene Position.</div>';
  $('tstats').innerHTML=row('Brutto',money(t.grossPnl))+row('aus Paaren (Merge)',money(t.mergePnl))+row('Gebühren / Gas',(+t.fees).toFixed(2)+' / '+(+t.gas).toFixed(2)+' $')+row('bester / schlechtester Markt',(t.bestMarket==null?'—':money(t.bestMarket))+' / '+(t.worstMarket==null?'—':money(t.worstMarket)))+row('Orders → ganz / teils / gar nicht',t.orders+' → '+t.fills+' / '+t.partials+' / '+t.noFills)+row('Umsatz',(+t.volumeUsd).toFixed(2)+' $');

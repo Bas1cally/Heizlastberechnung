@@ -1,10 +1,10 @@
 import type { Db } from "../persistence/database.js";
 
 /**
- * Trading state for the dashboard, from whichever database holds execution
- * records: paper (data/paper.sqlite), or the live database once live mode
- * exists. Everything is grouped by `mode` so simulated and real money never
- * add up in one number.
+ * Trading state for the dashboard. Execution records are grouped by `mode`:
+ * "paper" (simulated against live books, main database), "backtest"
+ * (simulated over recorded books, data/backtest.sqlite) and "live" once it
+ * exists. Simulated and real money never add up in one number.
  */
 export interface TradingSummary {
   readonly mode: string;

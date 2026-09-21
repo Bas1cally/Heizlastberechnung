@@ -5,7 +5,7 @@ import { BookFeed, type SubscribeFn } from "../feeds/polymarket-ws.js";
 import { ChainlinkFeed, type ChainlinkSubscribeFn } from "../feeds/chainlink-feed.js";
 import { MarketStateStore, type MarketIdentity, type MarketState } from "../market/market-state.js";
 import type { OrderBook } from "../market/types.js";
-import { computeInventory, EMPTY_POSITION } from "../inventory/accounting.js";
+import { computeInventory, EMPTY_POSITION, type InventoryAccounting } from "../inventory/accounting.js";
 import { PriceWindow } from "../features/returns.js";
 import { buildJevState } from "../jev/state-builder.js";
 import { DecisionEngine, type Decision, type JevCall } from "../jev/decision-engine.js";
@@ -42,6 +42,8 @@ export interface ObserverDeps {
   readonly processName?: string;
   /** Called when the kill switch trips: cancel resting orders, reconcile. Never liquidate. */
   readonly onKill?: (state: KillState) => void | Promise<void>;
+  /** Called when the feed reports the market resolved. */
+  readonly onResolved?: (outcome: "UP" | "DOWN" | undefined, raw: { conditionId: string; winningAssetId?: string | null; winningOutcome?: string | null }) => void;
 }
 
 /**
@@ -152,6 +154,10 @@ export class MarketObserver {
         onResolved: (p) => {
           log.info("market resolved", { conditionId: p.conditionId, winningOutcome: p.winningOutcome });
           if (p.winningOutcome) this.persist("resolved", () => deps.repo.markResolved(market.marketId, p.winningOutcome!));
+          const k = p.winningOutcome?.trim().toLowerCase();
+          const outcome = k === "up" || k === "yes" ? "UP" : k === "down" || k === "no" ? "DOWN"
+            : p.winningAssetId === market.upAssetId ? "UP" : p.winningAssetId === market.downAssetId ? "DOWN" : undefined;
+          deps.onResolved?.(outcome, p);
         },
         onReconnect: (n) => log.warn("market feed reconnected", { attempt: n }),
       },
@@ -216,6 +222,24 @@ export class MarketObserver {
   /** Age of the settlement stream: TWAP when subscribed, else spot. */
   private settlementAgeMs(): number {
     return this.twap ? this.twap.ageMs() : this.chainlink.ageMs();
+  }
+
+  /** Execution engines feed the position back so the next decision sees it. */
+  setInventory(inv: InventoryAccounting): void {
+    this.store.setInventory(inv);
+  }
+
+  setOpenOrderCount(n: number): void {
+    this.store.setOpenOrderCount(n);
+  }
+
+  latestBook(assetId: string): OrderBook | undefined {
+    return this.books.book(assetId);
+  }
+
+  settlementNow(): { start: number | undefined; current: number | undefined } {
+    const s = this.store.snapshot(this.deps.clock.wall());
+    return { start: s.settlementStartPrice, current: s.settlementCurrentPrice };
   }
 
   killState(): KillState {
