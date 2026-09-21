@@ -207,8 +207,36 @@ pulled in the final seconds. Recordings made before this change carry spot
 under `ticks.source = 'chainlink'` only; replay and outcome derivation fall
 back to spot for those markets.
 
-Still open: the fee schedule for these markets. The page shows none; paper
-results run with zero fees until it is set.
+## Confirmed from a real redemption on Polygon (2026-09-21)
+
+A $5 winning position was redeemed; the transaction on polygonscan shows the
+path the bot's merge/redeem adapters (brief §20, §21) must follow:
+
+- The transaction was sent **through `Polymarket: Relay Hub`**
+  (`0xD216153c06E857cD7f72665E0aF1d7D82172F494`) — a **gasless** relayed
+  call. The 0.18 POL (~$0.02) fee was paid by the relayer's EOA, not the
+  user's wallet. User-side gas for redemption is therefore 0; the paper
+  engine's `mergeGas = 0` default matches, and `settle(..., feesGas)` stays 0
+  unless a relayer fee is ever introduced.
+- 7.142856 winning outcome tokens (ERC-1155) moved from the user's proxy
+  wallet to **`Polymarket: Ctf Collateral Adapter`** and were burned; the
+  losing token id moved with amount 0.
+- Payout: 7.142856 USDC.e left the Conditional Tokens contract through the
+  adapter and was credited to the wallet as **pUSD** (Polymarket's USDC
+  wrapper, `Polymarket U... (pUSD)`). Balance reconciliation must read pUSD,
+  not USDC.e.
+- $5.00 for 7.142856 shares implies an entry price of exactly $0.7000 — the
+  activity line's quoted price decides whether a taker fee was charged.
+
+The SDK exposes this path as `client.redeemPositions({ marketId | conditionId
+| positionId })` and `client.mergePositions(...)`, both returning a
+`TransactionHandle` (`await handle.wait()` → `outcome.transactionHash`)
+through the gasless workflow (`prepareGaslessTransaction` in the client
+types). The raw viem `ctfRedeemPositionsCall` builders remain available but
+are not the path Polymarket's own UI takes.
+
+Still open: the fee schedule. The market page shows none; the buy activity
+line for the $5 position will settle it empirically.
 
 ## Not verified here
 
