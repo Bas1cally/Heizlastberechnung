@@ -81,7 +81,11 @@ const updateCheck = createUpdateCheck();
 let holdTable: HoldRateTable | undefined;
 // A policy runner in its own database reads the hold rates from the main one (HOLD_RATE_DB).
 const holdDb = process.env["HOLD_RATE_DB"]?.trim() ? openDatabase(process.env["HOLD_RATE_DB"]!.trim()) : undefined;
+let holdTableAt = -Infinity;
 const refreshHoldTable = () => {
+  // Once per market normally; while discovery is retrying, at most once a minute.
+  if (clock.mono() - holdTableAt < 60_000) return;
+  holdTableAt = clock.mono();
   try { holdTable = buildHoldRateTable(holdDb ?? db, clock.wall()); log.info("hold-rate table", { markets: holdTable.markets, cells: holdTable.toJSON().cells.length, source: holdDb ? process.env["HOLD_RATE_DB"] : cfg.databaseUrl }); }
   catch (err) { log.warn("hold-rate table failed; feature stays null", { err }); }
 };

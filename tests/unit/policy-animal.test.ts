@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { animalPolicy, animalPolicyCall } from "../../src/jev/policy-animal.js";
 import type { JevInputState } from "../../src/jev/decision-types.js";
+import { QUESTIONS } from "../../src/jev/questions.js";
+
+const ask = (call: ReturnType<typeof animalPolicyCall>, s: JevInputState) => call(s, QUESTIONS, new AbortController().signal);
 
 // Late in a market: DOWN leads at 0.98, UP (the tail) is offered at 0.01 with a hedge on the book.
 const base: JevInputState = {
@@ -100,9 +103,9 @@ describe("animalPolicy: with inventory", () => {
 
 describe("animalPolicyCall", () => {
   it("returns Jev-shaped answers, costs nothing, and marks the model", async () => {
-    const r = await animalPolicyCall(plus)(base);
+    const r = await ask(animalPolicyCall(plus), base);
     expect(r.model).toBe("policy-animal-plus");
-    expect((await animalPolicyCall(plain)(base)).model).toBe("policy-animal");
+    expect((await ask(animalPolicyCall(plain), base)).model).toBe("policy-animal");
     expect(r.usage).toEqual({ input_tokens: 0, output_tokens: 0 });
     expect(r.answers.action.choice).toBe("BUY_UP");
     expect(r.answers.inventory_action.choice).toBe("ADD_UP");
@@ -115,6 +118,6 @@ describe("animalPolicyCall", () => {
 
   it("is deterministic: the same state gives the same answer", async () => {
     const call = animalPolicyCall(plain);
-    expect(await call(base)).toEqual(await call(base));
+    expect(await ask(call, base)).toEqual(await ask(call, base));
   });
 });
