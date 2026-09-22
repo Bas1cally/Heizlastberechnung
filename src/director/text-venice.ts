@@ -61,6 +61,8 @@ export async function chatJson<T>(o: ChatJsonOptions<T>): Promise<ClaudeResult<T
   const text = typeof content === "string" ? content : Array.isArray(content) ? content.map((c) => (c as { text?: string }).text ?? "").join("") : "";
   let parsed: unknown;
   try { parsed = JSON.parse(stripFences(text)); } catch { throw new Error(`${o.purpose}: no parsable JSON (finish_reason ${choice?.finish_reason ?? "?"}): ${text.slice(0, 200)}`); }
+  // Some models wrap the object in a one-element list; take it.
+  if (Array.isArray(parsed) && parsed.length === 1 && parsed[0] && typeof parsed[0] === "object") parsed = parsed[0];
   const value = o.schema.safeParse(parsed);
   if (!value.success) throw new Error(`${o.purpose}: answer does not match the schema: ${value.error.issues.map((i) => `${i.path.join(".")} ${i.message}`).join("; ")}`);
   const usage = { input_tokens: j.usage?.prompt_tokens ?? 0, output_tokens: j.usage?.completion_tokens ?? 0, model: j.model ?? o.model };

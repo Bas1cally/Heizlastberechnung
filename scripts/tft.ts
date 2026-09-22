@@ -95,10 +95,10 @@ async function cycle(imagePath?: string): Promise<void> {
   const bytes = statSync(shot).size;
   log.info("captured", { shot, kb: Math.round(bytes / 1024), ms: Math.round(performance.now() - tc) });
   const t0 = performance.now();
-  const r = await readBoard(shot, { apiKey: veniceKey!, model: visionModel }, meta ? `TFT ${meta.set} patch ${meta.patch}.` : "");
+  const r = await readBoard(shot, { apiKey: veniceKey!, model: visionModel }, meta ? `TFT ${meta.set} patch ${meta.patch}. Champion names in this set include: ${[...new Set(meta.comps.flatMap((c) => [...c.core_units, ...c.carries]))].join(", ")}.` : "");
   const fp = fingerprint(r.value);
   const reading = store.addReading(shot, r.value, fp, r.usage.model, Math.round(performance.now() - t0), r.usage);
-  log.info("read", { id: reading.id, phase: r.value.phase, stage: r.value.stage, gold: r.value.gold, level: r.value.level, shop: r.value.shop, board: r.value.board.length, ms: reading.latency_ms, conf: r.value.confidence });
+  log.info("read", { id: reading.id, phase: r.value.phase, stage: r.value.stage, gold: r.value.gold, lvl: r.value.level, hp: r.value.hp, shop: r.value.shop, board: r.value.board.map((u) => `${u.name}${u.stars > 1 ? "*" + u.stars : ""}`), bench: r.value.bench.map((u) => u.name), ms: reading.latency_ms, conf: r.value.confidence });
   if (!meta || r.value.phase === "not_tft" || r.value.phase === "loading" || r.value.phase === "combat" || (r.value.board.length === 0 && r.value.shop.every((s) => !s))) return;
   if (fp === lastFingerprint) return;
   lastFingerprint = fp;
