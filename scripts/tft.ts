@@ -120,7 +120,9 @@ async function cycle(imagePath?: string): Promise<void> {
   const fp = fingerprint(r.value);
   const reading = store.addReading(shot, r.value, fp, r.usage.model, Math.round(performance.now() - t0), r.usage);
   log.info("read", { id: reading.id, phase: r.value.phase, stage: r.value.stage, gold: r.value.gold, lvl: r.value.level, hp: r.value.hp, ...(r.value.augment_options.length ? { augment_options: r.value.augment_options } : {}), shop: r.value.shop, board: r.value.board.map((u) => `${u.name}${u.stars > 1 ? "*" + u.stars : ""}`), bench: r.value.bench.map((u) => u.name), ms: reading.latency_ms, conf: r.value.confidence });
-  if (!meta || r.value.phase === "not_tft" || r.value.phase === "loading" || r.value.phase === "unknown") return;
+  // Off the game screen: forget the last board so the next game starts with fresh advice.
+  if (r.value.phase === "not_tft" || r.value.phase === "loading") { lastFingerprint = ""; return; }
+  if (!meta || r.value.phase === "unknown") return;
   const augmentChoice = r.value.phase === "augment_choice" && r.value.augment_options.length >= 2;
   if (!augmentChoice && r.value.board.length === 0 && r.value.shop.every((s) => !s)) return;
   // Stage 1 is PvE with no gold to spend; turn advice starts at 2-1. Augment choices count at any stage.

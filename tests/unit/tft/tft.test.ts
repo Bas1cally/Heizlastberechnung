@@ -195,3 +195,24 @@ describe("tft report", () => {
     expect(text).toContain("Antwort abgeschnitten (Token-Limit): 1×");
   });
 });
+
+describe("tft stale advice", () => {
+  it("hides advice from before the game left the screen, and advice older than 10 minutes", () => {
+    let now = 5_000_000;
+    const store = new TftStore(openDatabase(":memory:"), () => now);
+    const api = () => createTftApi({ store, now: () => now, meta: () => meta, status: () => ({}), log: () => {} });
+    const r1 = store.addReading("/1.jpg", read, "a", "m", 1, { input_tokens: 0, output_tokens: 0 });
+    store.addAdvice(r1.id, { comp: "Old Comp", compKey: "o", action: "ROLL", buy: [], urgency: "low", onTrack: 0.5, confidence: 0.5, reasons: [], source: "jev", model: "jev", latencyMs: 1 }, { input_tokens: 0, output_tokens: 0 });
+    expect(api().advice().line1).toContain("Old Comp");
+    now += 60_000;
+    store.addReading("/2.jpg", { ...read, phase: "not_tft", stage: "", shop: [], board: [] }, "b", "m", 1, { input_tokens: 0, output_tokens: 0 });
+    const a = api().advice();
+    expect(a.advice).toBeNull();
+    expect(a.line2).toBe("Kein TFT im Bild");
+    const r3 = store.addReading("/3.jpg", read, "c", "m", 1, { input_tokens: 0, output_tokens: 0 });
+    store.addAdvice(r3.id, { comp: "New Comp", compKey: "n", action: "BUY", buy: [], urgency: "low", onTrack: 0.5, confidence: 0.5, reasons: [], source: "jev", model: "jev", latencyMs: 1 }, { input_tokens: 0, output_tokens: 0 });
+    expect(api().advice().line1).toContain("New Comp");
+    now += 11 * 60_000;
+    expect(api().advice().advice).toBeNull();
+  });
+});

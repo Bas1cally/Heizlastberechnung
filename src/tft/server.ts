@@ -8,7 +8,7 @@ import type { Advice, BoardRead, Meta } from "./types.js";
  * text), the browser page shows the last screenshot, what the reader saw and
  * what the advisor said, refreshed every few seconds.
  */
-export interface TftServerDeps { readonly store: TftStore; readonly meta: () => Meta | undefined; readonly status: () => Record<string, unknown>; readonly log: (msg: string, fields?: Record<string, unknown>) => void }
+export interface TftServerDeps { readonly now?: () => number; readonly store: TftStore; readonly meta: () => Meta | undefined; readonly status: () => Record<string, unknown>; readonly log: (msg: string, fields?: Record<string, unknown>) => void }
 
 export function overlayText(advice: Advice | undefined, read: BoardRead | undefined): { line1: string; line2: string; line3: string } {
   if (!advice) return { line1: read ? `Stage ${read.stage || "?"} · ${read.gold} Gold · Lvl ${read.level}` : "TFT-Berater: warte auf den ersten Screenshot", line2: read?.phase === "not_tft" ? "Kein TFT im Bild" : read ? "noch kein Rat" : "", line3: "" };
@@ -20,7 +20,10 @@ export function overlayText(advice: Advice | undefined, read: BoardRead | undefi
 export function createTftApi(d: TftServerDeps) {
   return {
     advice: () => {
-      const a = d.store.lastAdvice(); const r = d.store.lastReading();
+      const r = d.store.lastReading();
+      // Only advice of the running game: none from before the game last left the screen, none older than 10 minutes.
+      const last = d.store.lastAdvice();
+      const a = last && last.ts >= d.store.lastBoundary() && (d.now ?? Date.now)() - last.ts < 10 * 60_000 ? last : undefined;
       const advice = a ? (JSON.parse(a.advice_json) as Advice) : undefined; const read = r ? (JSON.parse(r.read_json) as BoardRead) : undefined;
       const status = d.status();
       const lines = overlayText(advice, read);

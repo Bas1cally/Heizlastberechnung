@@ -30,6 +30,12 @@ export class TftStore {
   readingsSince(ts: number): ReadingRow[] { return this.db.all<ReadingRow>(`SELECT * FROM tft_reading WHERE ts >= ? ORDER BY ts`, [ts]); }
   adviceSince(ts: number): AdviceRow[] { return this.db.all<AdviceRow>(`SELECT * FROM tft_advice WHERE ts >= ? ORDER BY ts`, [ts]); }
   errorsSince(ts: number): { kind: string; n: number; example: string }[] { return this.db.all(`SELECT kind, COUNT(*) AS n, MAX(message) AS example FROM tft_error WHERE ts >= ? GROUP BY kind ORDER BY n DESC`, [ts]); }
+  /** When the game last left the screen (desktop, client, loading): advice from before that belongs to an old game. */
+  lastBoundary(): number {
+    const rows = this.db.all<{ ts: number; read_json: string }>(`SELECT ts, read_json FROM tft_reading ORDER BY id DESC LIMIT 200`);
+    const hit = rows.find((r) => { try { const p = (JSON.parse(r.read_json) as { phase?: string }).phase; return p === "not_tft" || p === "loading"; } catch { return false; } });
+    return hit?.ts ?? 0;
+  }
   lastReading(): ReadingRow | undefined { return this.db.get<ReadingRow>(`SELECT * FROM tft_reading ORDER BY id DESC LIMIT 1`); }
   lastAdvice(): AdviceRow | undefined { return this.db.get<AdviceRow>(`SELECT * FROM tft_advice ORDER BY id DESC LIMIT 1`); }
   totals(): { readings: number; advices: number; readTokens: number; adviceTokens: number } {
