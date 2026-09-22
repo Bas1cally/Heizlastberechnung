@@ -21,7 +21,10 @@ export function createTftApi(d: TftServerDeps) {
     advice: () => {
       const a = d.store.lastAdvice(); const r = d.store.lastReading();
       const advice = a ? (JSON.parse(a.advice_json) as Advice) : undefined; const read = r ? (JSON.parse(r.read_json) as BoardRead) : undefined;
-      return { ...overlayText(advice, read), advice: advice ?? null, read: read ?? null, readAt: r?.ts ?? null, adviceAt: a?.ts ?? null, screenshot: r?.screenshot ?? null, totals: d.store.totals(), status: d.status() };
+      const status = d.status();
+      const lines = overlayText(advice, read);
+      if (typeof status["error"] === "string") lines.line3 = status["error"];
+      return { ...lines, advice: advice ?? null, read: read ?? null, readAt: r?.ts ?? null, adviceAt: a?.ts ?? null, screenshot: r?.screenshot ?? null, totals: d.store.totals(), status };
     },
     meta: () => d.meta() ?? null,
   };

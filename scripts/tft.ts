@@ -50,6 +50,8 @@ log.info("capture backend", { backend, hint: backend === "powershell" ? "ffmpeg 
 const typesafeKey = env("TYPESAFE_API_KEY");
 const jev = typesafeKey ? createJevAsk(new TypeSafeClient({ apiKey: typesafeKey, timeout: 15_000, retry: { maxRetries: 0 }, logLevel: "off" })) : undefined;
 let jevDown: string | undefined;
+// A 402 from Venice pauses everything for a minute instead of knocking every 8 s.
+let venicePausedUntil = 0; let veniceError: string | undefined;
 
 // ---- measure mode: recognition rate on hand-labelled screenshots ----
 const measureDir = opt("measure");
@@ -73,7 +75,7 @@ if (measureDir) {
 let meta: Meta | undefined;
 let lastFingerprint = "";
 let metaError: string | undefined;
-const status = () => ({ capture: backend, vision: visionModel, advisor: jev && !jevDown ? "jev" : `text:${adviceModel}`, ...(jevDown ? { jev_error: jevDown.slice(0, 80) } : {}), meta: meta ? `${meta.patch || "?"} (${meta.comps.length} comps)` : metaError ? `Fehler: ${metaError.slice(0, 80)}` : "wird geladen …", interval_s: intervalMs / 1000 });
+const status = () => ({ ...(veniceError ? { error: veniceError } : {}), capture: backend, vision: visionModel, advisor: jev && !jevDown ? "jev" : `text:${adviceModel}`, ...(jevDown ? { jev_error: jevDown.slice(0, 80) } : {}), meta: meta ? `${meta.patch || "?"} (${meta.comps.length} comps)` : metaError ? `Fehler: ${metaError.slice(0, 80)}` : "wird geladen …", interval_s: intervalMs / 1000 });
 startTftServer({ store, meta: () => meta, status, log: (m, f) => log.info(m, f) }, port);
 
 // ---- meta ----
@@ -120,6 +122,16 @@ if (flag("once") || image) {
 } else {
   log.info("loop", { intervalMs, port, overlay: "powershell -ExecutionPolicy Bypass -File scripts\\tft-overlay.ps1" });
   let n = 0;
-  const loop = async () => { const t = performance.now(); try { await cycle(); } catch (err) { log.error("cycle failed", { n, err: err instanceof Error ? err.message : String(err) }); } n++; setTimeout(loop, Math.max(1000, intervalMs - (performance.now() - t))); };
+  const loop = async () => {
+    const t = performance.now();
+    if (Date.now() < venicePausedUntil) { setTimeout(loop, 5000); return; }
+    try { await cycle(); veniceError = undefined; }
+    catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      log.error("cycle failed", { n, err: msg });
+      if (/ 402:|Insufficient .* balance/i.test(msg)) { veniceError = "Venice: kein Guthaben (402), Pause 60 s"; venicePausedUntil = Date.now() + 60_000; }
+    }
+    n++; setTimeout(loop, Math.max(1000, intervalMs - (performance.now() - t)));
+  };
   void loop();
 }
