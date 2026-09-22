@@ -18,7 +18,7 @@ import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { loadEnvFile } from "../src/app/env.js";
 import { createLogger } from "../src/observability/logger.js";
 import { teeSink } from "../src/observability/file-sink.js";
-import { captureScreen, ffmpegAvailable, type CaptureBackend } from "../src/tft/capture.js";
+import { captureScreen, ffmpegAvailable, primaryMonitor, type CaptureBackend, type CaptureSource } from "../src/tft/capture.js";
 import { fingerprint, readBoard } from "../src/tft/vision.js";
 import { ensureMeta } from "../src/tft/meta.js";
 import { adviseWithJev, adviseWithText, createJevAsk } from "../src/tft/advisor.js";
@@ -46,7 +46,11 @@ const width = Number(env("TFT_CAPTURE_WIDTH") ?? 1600);
 const store = TftStore.open(join(dataDir, "tft.sqlite"));
 const ffmpeg = env("FFMPEG") ?? "ffmpeg";
 const backend: CaptureBackend = (env("TFT_CAPTURE") as CaptureBackend | undefined) ?? ((await ffmpegAvailable(ffmpeg)) ? "ffmpeg" : "powershell");
-log.info("capture backend", { backend, hint: backend === "powershell" ? "ffmpeg not found; if Defender blocks the script: winget install Gyan.FFmpeg, then restart" : "" });
+// The game window first (TFT_WINDOW_TITLE), then the primary monitor, then everything.
+const windowTitle = env("TFT_WINDOW_TITLE") ?? "League of Legends (TM) Client";
+const primary = backend === "ffmpeg" ? await primaryMonitor() : undefined;
+const sources: CaptureSource[] = [{ kind: "window", title: windowTitle }, ...(primary ? [{ kind: "region" as const, x: 0, y: 0, w: primary.w, h: primary.h }] : []), { kind: "desktop" }];
+log.info("capture backend", { backend, windowTitle, primary: primary ? `${primary.w}x${primary.h}` : "unknown", hint: backend === "powershell" ? "ffmpeg not found; if Defender blocks the script: winget install Gyan.FFmpeg, then restart" : "" });
 const typesafeKey = env("TYPESAFE_API_KEY");
 const jev = typesafeKey ? createJevAsk(new TypeSafeClient({ apiKey: typesafeKey, timeout: 15_000, retry: { maxRetries: 0 }, logLevel: "off" })) : undefined;
 let jevDown: string | undefined;
@@ -93,9 +97,10 @@ void loadMeta(flag("refresh-meta"));
 
 async function cycle(imagePath?: string): Promise<void> {
   const tc = performance.now();
-  const shot = imagePath ?? (await captureScreen(join(dataDir, "shots", `shot-${Date.now()}.jpg`), { width, backend, ffmpeg }));
+  const cap = imagePath ? { path: imagePath, source: "file" } : await captureScreen(join(dataDir, "shots", `shot-${Date.now()}.jpg`), { width, backend, ffmpeg, sources });
+  const shot = cap.path;
   const bytes = statSync(shot).size;
-  log.info("captured", { shot, kb: Math.round(bytes / 1024), ms: Math.round(performance.now() - tc) });
+  log.info("captured", { shot, source: cap.source, kb: Math.round(bytes / 1024), ms: Math.round(performance.now() - tc) });
   const t0 = performance.now();
   const r = await readBoard(shot, { apiKey: veniceKey!, model: visionModel }, meta ? `TFT ${meta.set} patch ${meta.patch}. Champion names in this set include: ${[...new Set(meta.comps.flatMap((c) => [...c.core_units, ...c.carries]))].join(", ")}.` : "");
   const fp = fingerprint(r.value);

@@ -44,11 +44,14 @@ describe("tft vision", () => {
     expect(fingerprint({ ...read, shop: [...read.shop].reverse() })).not.toBe(a);
     expect(fingerprint({ ...read, gold: 35 })).not.toBe(a);
   });
-  it("ffmpeg capture grabs one desktop frame scaled to the width", () => {
+  it("ffmpeg capture grabs the game window, a monitor region, or the desktop, scaled to the width", () => {
     const a = ffmpegArgs("C:\\x\\s.jpg", 1600, 85);
     expect(a).toContain("gdigrab");
     expect(a).toContain("scale=1600:-2");
     expect(a[a.length - 1]).toBe("C:\\x\\s.jpg");
+    expect(ffmpegArgs("o.jpg", 1600, 85, { kind: "window", title: "League of Legends (TM) Client" })).toContain("title=League of Legends (TM) Client");
+    const r = ffmpegArgs("o.jpg", 1600, 85, { kind: "region", x: 0, y: 0, w: 2560, h: 1440 });
+    expect(r.slice(r.indexOf("-offset_x"), r.indexOf("-offset_x") + 6)).toEqual(["-offset_x", "0", "-offset_y", "0", "-video_size", "2560x1440"]);
   });
 });
 
