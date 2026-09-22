@@ -5,6 +5,11 @@
  *   pnpm cards -- blackjack --n 200
  *   pnpm cards -- equity call --n 50 --text  # plus a text model on Venice as comparison
  *   pnpm cards -- all --text deepseek-v4-flash --seed 7
+ *   pnpm cards -- all --text --team         # plus Jev with the text model's guide and with its suggestion
+ *
+ * --team adds two teams: "jev+wissen" (the text model writes a guide once per
+ * test, Jev reads it with every decision, stays fast) and "jev+vorschlag"
+ * (Jev sees the text model's answer to the same situation and decides).
  *
  * Writes reports/cards-<test>.json with every situation, answer and truth.
  */
@@ -12,7 +17,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { loadEnvFile } from "../src/app/env.js";
 import { rng } from "../src/cards/cards.js";
-import { blackjackItems, callItems, equityItems, jevAsker, render, renderTeam, run, textAsker, type Asker, type Item, type Result } from "../src/cards/bench.js";
+import { blackjackItems, callItems, equityItems, headline, jevAsker, makeGuide, render, renderTeam, run, textAsker, type Asker, type Item, type Result } from "../src/cards/bench.js";
 import { cardStr } from "../src/cards/cards.js";
 
 loadEnvFile();
@@ -26,18 +31,19 @@ const seed = Number(opt("seed") ?? 1);
 const concurrency = Number(opt("concurrency") ?? 4);
 
 const askers: Asker[] = [];
+const typesafeKey = env("TYPESAFE_API_KEY");
+const jevClient = typesafeKey ? new TypeSafeClient({ apiKey: typesafeKey, timeout: 20_000, retry: { maxRetries: 1 }, logLevel: "off" }) : undefined;
 if (!argv.includes("--no-jev")) {
-  const key = env("TYPESAFE_API_KEY");
-  if (key) askers.push(jevAsker(new TypeSafeClient({ apiKey: key, timeout: 20_000, retry: { maxRetries: 1 }, logLevel: "off" })));
+  if (jevClient) askers.push(jevAsker(jevClient));
   else console.log("TYPESAFE_API_KEY fehlt: Jev wird übersprungen.");
 }
-if (argv.includes("--text")) {
-  const key = env("VENICE_API_KEY");
-  const t = opt("text");
-  const model = t && !t.startsWith("--") && !["blackjack", "equity", "call", "all"].includes(t) ? t : env("CARDS_TEXT_MODEL") ?? "deepseek-v4-flash";
-  if (key) askers.push(textAsker({ apiKey: key, model }));
-  else console.log("VENICE_API_KEY fehlt: kein Textmodell-Vergleich.");
-}
+const veniceKey = env("VENICE_API_KEY");
+const t = opt("text");
+const textModel = t && !t.startsWith("--") && !["blackjack", "equity", "call", "all"].includes(t) ? t : env("CARDS_TEXT_MODEL") ?? "deepseek-v4-flash";
+const text = argv.includes("--text") || argv.includes("--team") ? (veniceKey ? textAsker({ apiKey: veniceKey, model: textModel }) : undefined) : undefined;
+if ((argv.includes("--text") || argv.includes("--team")) && !text) console.log("VENICE_API_KEY fehlt: kein Textmodell-Vergleich.");
+if (text) askers.push(text);
+const team = argv.includes("--team") && jevClient && text;
 if (!askers.length) { console.log("Niemand zu testen."); process.exit(1); }
 
 mkdirSync("reports", { recursive: true });
@@ -64,7 +70,27 @@ for (const test of selected) {
       ...(x.item.kind !== "blackjack" ? { cards: [...x.item.hand, ...x.item.board].map(cardStr).join(" ") } : {}),
     }));
   }
-  if (runs.length === 2) { const t = renderTeam(test, runs[0]!, runs[1]!); if (t) console.log(t); }
+  if (runs.length === 2) { const tm = renderTeam(test, runs[0]!, runs[1]!); if (tm) console.log(tm); }
+  if (team) {
+    // Knowledge once: the text model writes a guide, Jev reads it with every decision.
+    process.stdout.write(`  Spickzettel von ${textModel} schreiben …`);
+    const g = await makeGuide(test, { apiKey: veniceKey!, model: textModel }).catch((err: unknown) => { console.log(` fehlgeschlagen: ${err instanceof Error ? err.message.slice(0, 160) : String(err)}`); return undefined; });
+    const extra: Asker[] = [];
+    if (g) { process.stdout.write(` ${g.guide.length} Zeichen\n`); writeFileSync(`reports/cards-guide-${test}.txt`, g.guide); extra.push(jevAsker(jevClient!, undefined, { name: "jev+wissen", extra: () => ({ guide: g.guide }) })); }
+    // Suggestion per situation: the text model's answer from the run above, Jev decides.
+    const textRun = runs.find((r) => r.name === text!.name);
+    const suggestion = new Map<Item, string | number>();
+    for (const r of textRun?.results ?? []) if (r.answer) suggestion.set(r.item, r.answer.value);
+    const withSuggestion = items.filter((i) => suggestion.has(i));
+    const teams: { asker: Asker; items: Item[] }[] = [...extra.map((a) => ({ asker: a, items })), { asker: jevAsker(jevClient!, undefined, { name: "jev+vorschlag", extra: (i) => ({ suggestion_from_a_larger_model: test === "equity" ? { win_probability: suggestion.get(i) } : { action: suggestion.get(i) } }) }), items: withSuggestion }];
+    for (const tm of teams) {
+      const results = await run(tm.items, tm.asker, { concurrency, stopOn: (e) => / 402|credits|Insufficient/i.test(e) });
+      console.log(render(test, tm.asker.name, results));
+      runs.push({ name: tm.asker.name, results });
+      report[tm.asker.name] = results.map((x) => ({ state: x.item.state, answer: x.answer ?? null, error: x.error ?? null }));
+    }
+  }
+  if (runs.length > 1) { console.log(`-- Übersicht ${test} --`); for (const r of runs) console.log(`  ${r.name.padEnd(28)} ${headline(test, r.results)}`); }
   writeFileSync(`reports/cards-${test}.json`, JSON.stringify(report, null, 1));
   console.log(`  → reports/cards-${test}.json\n`);
 }

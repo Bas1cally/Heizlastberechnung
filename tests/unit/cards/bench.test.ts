@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { rng } from "../../../src/cards/cards.js";
-import { blackjackItems, callItems, equityItems, jevAsker, render, renderTeam, run, scoreBlackjack, scoreCall, scoreEquity, textAsker, type Asker } from "../../../src/cards/bench.js";
+import { blackjackItems, callItems, equityItems, headline, jevAsker, makeGuide, render, renderTeam, run, scoreBlackjack, scoreCall, scoreEquity, textAsker, type Asker } from "../../../src/cards/bench.js";
 import type { FetchLike } from "../../../src/director/venice.js";
 
 describe("card benchmark", () => {
@@ -78,5 +78,23 @@ describe("team of two", () => {
     const hi: Asker = { name: "hi", ask: async (i) => ({ value: i.kind === "equity" ? Math.min(1, i.truth + 0.1) : 0, ms: 1, tokens: 0 }) };
     const lo: Asker = { name: "lo", ask: async (i) => ({ value: i.kind === "equity" ? Math.max(0, i.truth - 0.1) : 0, ms: 1, tokens: 0 }) };
     expect(renderTeam("equity", { name: "hi", results: await run(eq, hi) }, { name: "lo", results: await run(eq, lo) })).toMatch(/Mittelwert beider 0\.\d/);
+  });
+});
+
+describe("jev teams", () => {
+  it("extra state reaches Jev; the guide is one text-model call; headlines summarise each run", async () => {
+    const seen: Record<string, unknown>[] = [];
+    const jev = jevAsker({ systemOne: async (req) => { seen.push(req.state as Record<string, unknown>); return { answers: { action: { choice: "HIT", confidence: 0.7 } }, model: "jev", usage: { input_tokens: 1, output_tokens: 1 } }; } }, undefined, { name: "jev+wissen", extra: () => ({ guide: "hit 12 vs 2" }) });
+    const items = blackjackItems(3, rng(21));
+    const res = await run(items, jev);
+    expect(jev.name).toBe("jev+wissen");
+    expect(seen[0]).toMatchObject({ guide: "hit 12 vs 2", dealer_upcard: expect.any(String) });
+    expect(headline("blackjack", res)).toMatch(/% richtig \(3\), Median \d+ ms/);
+    const bodies: string[] = [];
+    const fetch: FetchLike = async (_u, init) => { bodies.push(init?.body ?? ""); const b = { choices: [{ message: { content: JSON.stringify({ guide: "x".repeat(80) }) } }], usage: { prompt_tokens: 100, completion_tokens: 200 } }; return { status: 200, ok: true, json: async () => b, text: async () => JSON.stringify(b), headers: { get: () => null } }; };
+    const g = await makeGuide("blackjack", { apiKey: "k", model: "m", fetch });
+    expect(g.guide).toHaveLength(80);
+    expect(g.tokens).toBe(300);
+    expect(bodies[0]).toContain("basic strategy");
   });
 });

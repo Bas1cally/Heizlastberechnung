@@ -79,12 +79,17 @@ export interface Asker { readonly name: string; ask(item: Item): Promise<Answer>
 
 export interface JevClientLike { systemOne(req: { state: unknown; questions: unknown }, opts?: unknown): Promise<{ answers: unknown; model: string; usage: { input_tokens: number; output_tokens: number } }> }
 
-export function jevAsker(client: JevClientLike, now: () => number = () => performance.now()): Asker {
+/**
+ * Jev on the situation's state. `extra` adds fields to the state: the guide a
+ * text model wrote once ("jev+wissen"), or the text model's answer to this
+ * very situation ("jev+vorschlag").
+ */
+export function jevAsker(client: JevClientLike, now: () => number = () => performance.now(), opts: { name?: string; extra?: (item: Item) => Record<string, unknown> } = {}): Asker {
   return {
-    name: "jev",
+    name: opts.name ?? "jev",
     async ask(item) {
       const t0 = now();
-      const r = await client.systemOne({ state: item.state, questions: QUESTIONS[item.kind] });
+      const r = await client.systemOne({ state: { ...item.state, ...(opts.extra?.(item) ?? {}) }, questions: QUESTIONS[item.kind] });
       const a = r.answers as Record<string, { choice?: string; confidence?: number; noul?: number }>;
       const tokens = r.usage.input_tokens + r.usage.output_tokens, ms = Math.round(now() - t0);
       if (item.kind === "equity") return { value: a["win"]!.noul!, ms, tokens };
@@ -111,6 +116,26 @@ export function textAsker(o: { apiKey: string; model: string; fetch?: FetchLike 
       return { value: item.kind === "equity" ? v.win_probability! : v.action!, ms: Math.round(now() - t0), tokens: r.usage.input_tokens + r.usage.output_tokens };
     },
   };
+}
+
+// ---- knowledge written once ----
+const GUIDE_PROMPT: Record<Item["kind"], string> = {
+  blackjack: `Write the complete basic strategy for these rules as a compact reference a player can apply without a table: ${RULES}. Cover hard totals, soft totals and every pair against every dealer upcard, including exactly when to double and when to split. Plain text, at most 350 words.`,
+  equity: "Write a compact reference for estimating, without a computer, the probability that a Texas hold'em hand wins at showdown heads-up against ONE opponent holding two random cards. Include reference values preflop (pairs, suited/offsuit high cards, weak hands), how made hands (pair, two pair, sets, straights, flushes) fare on flop, turn and river against a random hand, and the outs rule. Note that a random opponent hand is usually weak. Plain text, at most 350 words.",
+  call: "Write a compact reference for deciding fold or call heads-up when all remaining cards will be dealt without further betting: how to estimate the win probability against a random hand, and how to compare it with the pot odds (call when win probability > bet / (pot including the bet + bet)). Plain text, at most 300 words.",
+};
+
+/** One text-model call per test: its knowledge as a guide Jev reads with every decision. */
+export async function makeGuide(test: Item["kind"], o: { apiKey: string; model: string; fetch?: FetchLike | undefined }): Promise<{ guide: string; tokens: number }> {
+  const r = await chatJson({ apiKey: o.apiKey, model: o.model, purpose: `cards_guide_${test}`, system: "You write short, exact reference material. Output only the JSON.", user: GUIDE_PROMPT[test], schema: z.object({ guide: z.string().min(50) }), maxTokens: 6000, temperature: 0, reasoningEffort: "low", fetch: o.fetch, timeoutMs: 240_000 });
+  return { guide: r.value.guide, tokens: r.usage.input_tokens + r.usage.output_tokens };
+}
+
+/** One line per asker for the overview at the end of a test. */
+export function headline(test: Item["kind"], results: readonly Result[]): string {
+  if (test === "blackjack") { const s = scoreBlackjack(results); return `${(100 * s.accuracy).toFixed(1)} % richtig (${s.n}), Median ${s.msMedian} ms`; }
+  if (test === "equity") { const s = scoreEquity(results); return `Fehler ${(100 * s.mae).toFixed(1)} Pkt, nach Umrechnung ${(100 * s.calibratedMae).toFixed(1)} (${s.n}), Median ${s.msMedian} ms`; }
+  const s = scoreCall(results); return `${(100 * s.accuracy).toFixed(1)} % richtig, EV-Verlust ${s.evLostPerHandPctPot.toFixed(2)} % Pot (${s.n}), Median ${s.msMedian} ms`;
 }
 
 // ---- running and scoring ----

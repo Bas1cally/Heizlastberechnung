@@ -33,6 +33,23 @@ vergleichen lassen. Jede Situation mit Antwort und Wahrheit landet in
 `reports/cards-<test>.json`. Bei „keine Credits“ bricht der Lauf nach der
 ersten Ablehnung ab, statt 100 Fehler zu sammeln.
 
+## Teams (`--team`, Standard in `cards.cmd`)
+
+Erster Lauf (22.09.): Blackjack Jev 58 %, DeepSeek V4 Flash 96 % (bei 11 s
+statt 0,3 s pro Hand); Gewinnchance Jev mit 18 Punkten Fehler, aber
+durchgehend 16 Punkte zu pessimistisch bei Korrelation 0,80. Das Wissen
+steckt im großen Modell, die Geschwindigkeit in Jev. Zwei Arten, beides zu
+verbinden, laufen gegeneinander:
+
+- **jev+wissen:** das Textmodell schreibt pro Test einmal einen
+  Spickzettel (Blackjack-Strategie, Faustwerte für Pokerhände, Pot Odds),
+  gespeichert in `reports/cards-guide-<test>.txt`. Jev bekommt ihn bei jeder
+  Entscheidung mit und bleibt so schnell wie allein.
+- **jev+vorschlag:** Jev sieht die Antwort des Textmodells zur selben
+  Situation und entscheidet. Braucht pro Entscheidung beide Modelle.
+
+Am Ende jedes Tests steht eine Übersicht aller Läufe nebeneinander.
+
 ## Was die Zahlen bedeuten
 
 - **Blackjack:** Übereinstimmung mit der Tabelle, getrennt nach harten
