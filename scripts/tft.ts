@@ -18,7 +18,7 @@ import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { loadEnvFile } from "../src/app/env.js";
 import { createLogger } from "../src/observability/logger.js";
 import { teeSink } from "../src/observability/file-sink.js";
-import { captureScreen } from "../src/tft/capture.js";
+import { captureScreen, ffmpegAvailable, type CaptureBackend } from "../src/tft/capture.js";
 import { fingerprint, readBoard } from "../src/tft/vision.js";
 import { ensureMeta } from "../src/tft/meta.js";
 import { adviseWithJev, adviseWithText, createJevAsk } from "../src/tft/advisor.js";
@@ -44,6 +44,9 @@ const intervalMs = Number(opt("interval") ?? env("TFT_INTERVAL_S") ?? 8) * 1000;
 const port = Number(env("TFT_PORT") ?? 8788);
 const width = Number(env("TFT_CAPTURE_WIDTH") ?? 1600);
 const store = TftStore.open(join(dataDir, "tft.sqlite"));
+const ffmpeg = env("FFMPEG") ?? "ffmpeg";
+const backend: CaptureBackend = (env("TFT_CAPTURE") as CaptureBackend | undefined) ?? ((await ffmpegAvailable(ffmpeg)) ? "ffmpeg" : "powershell");
+log.info("capture backend", { backend, hint: backend === "powershell" ? "ffmpeg not found; if Defender blocks the script: winget install Gyan.FFmpeg, then restart" : "" });
 const typesafeKey = env("TYPESAFE_API_KEY");
 const jev = typesafeKey ? createJevAsk(new TypeSafeClient({ apiKey: typesafeKey, timeout: 15_000, retry: { maxRetries: 0 }, logLevel: "off" })) : undefined;
 let jevDown: string | undefined;
@@ -70,7 +73,7 @@ if (measureDir) {
 let meta: Meta | undefined;
 let lastFingerprint = "";
 let metaError: string | undefined;
-const status = () => ({ vision: visionModel, advisor: jev && !jevDown ? "jev" : `text:${adviceModel}`, ...(jevDown ? { jev_error: jevDown.slice(0, 80) } : {}), meta: meta ? `${meta.patch || "?"} (${meta.comps.length} comps)` : metaError ? `Fehler: ${metaError.slice(0, 80)}` : "wird geladen …", interval_s: intervalMs / 1000 });
+const status = () => ({ capture: backend, vision: visionModel, advisor: jev && !jevDown ? "jev" : `text:${adviceModel}`, ...(jevDown ? { jev_error: jevDown.slice(0, 80) } : {}), meta: meta ? `${meta.patch || "?"} (${meta.comps.length} comps)` : metaError ? `Fehler: ${metaError.slice(0, 80)}` : "wird geladen …", interval_s: intervalMs / 1000 });
 startTftServer({ store, meta: () => meta, status, log: (m, f) => log.info(m, f) }, port);
 
 // ---- meta ----
@@ -88,7 +91,7 @@ void loadMeta(flag("refresh-meta"));
 
 async function cycle(imagePath?: string): Promise<void> {
   const tc = performance.now();
-  const shot = imagePath ?? (await captureScreen(join(dataDir, "shots", `shot-${Date.now()}.jpg`), { width }));
+  const shot = imagePath ?? (await captureScreen(join(dataDir, "shots", `shot-${Date.now()}.jpg`), { width, backend, ffmpeg }));
   const bytes = statSync(shot).size;
   log.info("captured", { shot, kb: Math.round(bytes / 1024), ms: Math.round(performance.now() - tc) });
   const t0 = performance.now();

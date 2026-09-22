@@ -25,6 +25,14 @@ Browser: `http://127.0.0.1:8788` zeigt den letzten Screenshot, was gelesen
 wurde und den Rat. TFT im **randlosen Fenstermodus** laufen lassen, im
 exklusiven Vollbild liegt kein Overlay obendrauf.
 
+## Screenshot und Defender
+
+Windows Defender blockierte den Bildschirm-Screenshot als Inline-PowerShell
+(„enthält schädliche Daten“). Deshalb zwei Wege: mit installiertem ffmpeg
+(`winget install Gyan.FFmpeg`, neues Fenster) nimmt `pnpm tft` ffmpeg, sonst
+das Skript `scripts\tft-capture.ps1` als Datei. Welcher Weg läuft, steht
+beim Start als `capture backend` im Log.
+
 ## Bevor es sinnvoll wird: die Erkennung messen
 
 Zehn Screenshots aus echten Planungsphasen in einen Ordner legen (Win+Shift+S
@@ -62,7 +70,7 @@ in echten Spielen taugt.
 
 ## Dateien
 
-- `src/tft/capture.ts` Screenshot per PowerShell und System.Drawing, JPEG 1600 px
+- `src/tft/capture.ts` Screenshot per ffmpeg gdigrab (bevorzugt) oder `scripts/tft-capture.ps1`, JPEG 1600 px
 - `src/tft/vision.ts` Lesen mit JSON-Schema, Fingerprint der Lage
 - `src/tft/meta.ts` Meta per Web-Suche, 24 h Cache in `data/tft/meta.json`
 - `src/tft/advisor.ts` Jev-Fragen (comp, action, on_track, urgency), Text-Fallback

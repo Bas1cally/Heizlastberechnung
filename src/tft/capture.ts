@@ -1,36 +1,44 @@
 import { execFile } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 
 const run = promisify(execFile);
 
 /**
- * A screenshot of the primary screen as JPEG, scaled to `width`, via
- * PowerShell and System.Drawing (nothing to install on Windows). Reads the
- * screen like any screen recorder would; it never touches the game process.
+ * A screenshot of the primary screen as JPEG, scaled to `width`. Two ways,
+ * both read the screen like a screen recorder and never touch the game:
+ *
+ *   ffmpeg gdigrab      - preferred: one process call, nothing for an
+ *                         antivirus to parse.
+ *   scripts/tft-capture.ps1 - PowerShell + System.Drawing as a script FILE.
+ *                         Defender blocked the same code inline ("enthält
+ *                         schädliche Daten"); a plain file usually passes.
  */
-export function captureScript(outPath: string, width: number, quality: number): string {
-  const p = outPath.replace(/'/g, "''");
-  return [
-    "Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing",
-    "$b=[System.Windows.Forms.Screen]::PrimaryScreen.Bounds",
-    "$src=New-Object System.Drawing.Bitmap $b.Width,$b.Height",
-    "$g=[System.Drawing.Graphics]::FromImage($src); $g.CopyFromScreen($b.Location,[System.Drawing.Point]::Empty,$b.Size); $g.Dispose()",
-    `$w=${Math.round(width)}; $h=[int]($b.Height*$w/$b.Width)`,
-    "$dst=New-Object System.Drawing.Bitmap $w,$h; $g2=[System.Drawing.Graphics]::FromImage($dst); $g2.InterpolationMode='HighQualityBicubic'; $g2.DrawImage($src,0,0,$w,$h); $g2.Dispose()",
-    "$codec=[System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq 'image/jpeg' }",
-    "$ep=New-Object System.Drawing.Imaging.EncoderParameters 1",
-    `$ep.Param[0]=New-Object System.Drawing.Imaging.EncoderParameter ([System.Drawing.Imaging.Encoder]::Quality), ${Math.round(quality)}`,
-    `$dst.Save('${p}',$codec,$ep); $src.Dispose(); $dst.Dispose()`,
-  ].join("; ");
+export type CaptureBackend = "ffmpeg" | "powershell";
+export interface CaptureOptions { width?: number; quality?: number; backend?: CaptureBackend; ffmpeg?: string; powershell?: string; script?: string }
+
+export async function ffmpegAvailable(ffmpeg = "ffmpeg"): Promise<boolean> {
+  try { await run(ffmpeg, ["-version"], { windowsHide: true, timeout: 5000 }); return true; } catch { return false; }
 }
 
-export async function captureScreen(outPath: string, opts: { width?: number; quality?: number; powershell?: string } = {}): Promise<string> {
+export function ffmpegArgs(outPath: string, width: number, quality: number): string[] {
+  // -q:v 2..31, lower is better; map 85 % -> about 4.
+  const q = Math.max(2, Math.min(31, Math.round(31 - (quality / 100) * 29)));
+  return ["-y", "-loglevel", "error", "-f", "gdigrab", "-framerate", "2", "-i", "desktop", "-frames:v", "1", "-vf", `scale=${Math.round(width)}:-2`, "-q:v", String(q), outPath];
+}
+
+export async function captureScreen(outPath: string, opts: CaptureOptions = {}): Promise<string> {
   mkdirSync(dirname(outPath), { recursive: true });
-  const script = captureScript(outPath, opts.width ?? 1600, opts.quality ?? 85);
-  try { await run(opts.powershell ?? "powershell.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script], { windowsHide: true, timeout: 20_000 }); }
-  catch (err) { const e = err as { stderr?: string; message?: string; killed?: boolean }; throw new Error(`screenshot failed${e.killed ? " (timeout)" : ""}: ${(e.stderr || e.message || "").toString().trim().slice(0, 300)}`); }
-  if (!existsSync(outPath)) throw new Error("screenshot failed: PowerShell wrote no file");
+  const width = opts.width ?? 1600, quality = opts.quality ?? 85;
+  const backend = opts.backend ?? "powershell";
+  try {
+    if (backend === "ffmpeg") await run(opts.ffmpeg ?? "ffmpeg", ffmpegArgs(outPath, width, quality), { windowsHide: true, timeout: 20_000 });
+    else await run(opts.powershell ?? "powershell.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", resolve(opts.script ?? "scripts/tft-capture.ps1"), "-OutPath", resolve(outPath), "-Width", String(Math.round(width)), "-Quality", String(Math.round(quality))], { windowsHide: true, timeout: 20_000 });
+  } catch (err) {
+    const e = err as { stderr?: string; message?: string; killed?: boolean };
+    throw new Error(`screenshot failed (${backend})${e.killed ? " (timeout)" : ""}: ${(e.stderr || e.message || "").toString().trim().slice(0, 300)}`);
+  }
+  if (!existsSync(outPath)) throw new Error(`screenshot failed (${backend}): no file written`);
   return outPath;
 }

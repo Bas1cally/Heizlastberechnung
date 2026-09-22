@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { adviceFrom, adviseWithJev, adviseWithText, buildQuestions, buildState, compKey, unitsToBuy, type Answers } from "../../../src/tft/advisor.js";
-import { captureScript } from "../../../src/tft/capture.js";
+import { ffmpegArgs } from "../../../src/tft/capture.js";
 import { ensureMeta, loadCachedMeta } from "../../../src/tft/meta.js";
 import { createTftApi, overlayText } from "../../../src/tft/server.js";
 import { TftStore } from "../../../src/tft/store.js";
@@ -44,11 +44,11 @@ describe("tft vision", () => {
     expect(fingerprint({ ...read, shop: [...read.shop].reverse() })).not.toBe(a);
     expect(fingerprint({ ...read, gold: 35 })).not.toBe(a);
   });
-  it("capture script scales to the given width and writes a JPEG", () => {
-    const s = captureScript("C:\\x\\it's.jpg", 1600, 85);
-    expect(s).toContain("$w=1600");
-    expect(s).toContain("'C:\\x\\it''s.jpg'");
-    expect(s).toContain("image/jpeg");
+  it("ffmpeg capture grabs one desktop frame scaled to the width", () => {
+    const a = ffmpegArgs("C:\\x\\s.jpg", 1600, 85);
+    expect(a).toContain("gdigrab");
+    expect(a).toContain("scale=1600:-2");
+    expect(a[a.length - 1]).toBe("C:\\x\\s.jpg");
   });
 });
 
