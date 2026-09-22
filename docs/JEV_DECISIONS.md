@@ -278,6 +278,20 @@ over eight days that is a loss the size of his rebates. There is no edge
 here to copy, and none for Jev to add to. The copy runs measure a
 lottery.
 
+## What the reference trader is actually doing (2026-09-22, 07:00Z)
+
+The numbers only make sense as volume farming. Eight days: 1.2 million
+USD of buys, every single 5-minute market around the clock, net cash -63
+USD, maker rebates +424 USD. A tail at 0.01 plus a hedge at 0.99 merged
+back to 1.00 is 1,000 USD of volume per market at a cost of zero when the
+hedge fills, and three quarters of the time it does; the 0.99 bid is a
+maker order, so the volume also earns rebates and whatever a future
+Polymarket airdrop counts. The occasional reversal jackpot and the lost
+tails are noise around that. The strategy is not a trading edge; it is
+the cheapest known way to print maker volume. Nothing in it is a
+judgment, so nothing in it is Jev's, and copying it only makes sense
+with the same goal and the same colocation.
+
 ## The directional question, closed (2026-09-22)
 
 302 directional fills by Jev between 21:45Z and 06:25Z, with the state at
