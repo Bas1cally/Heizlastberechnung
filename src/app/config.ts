@@ -26,6 +26,7 @@ const EnvSchema = z.object({
   DATABASE_URL: z.string().optional(),
   BOT_MODE: z.enum(BOT_MODES).default("observe"),
   ENABLE_LIVE_TRADING: bool,
+  ALLOW_DIRECTIONAL_BUYS: bool,
 
   MAX_MARKET_EXPOSURE_USD: num(DEFAULT_LIMITS.maxMarketExposureUsd),
   MAX_TOTAL_EXPOSURE_USD: num(DEFAULT_LIMITS.maxTotalExposureUsd),
@@ -109,6 +110,7 @@ export function loadConfig(
     maxChainlinkAgeMs: e.MAX_CHAINLINK_AGE_MS,
     maxOrderbookAgeMs: e.MAX_ORDERBOOK_AGE_MS,
     maxJevLatencyMs: e.MAX_JEV_LATENCY_MS,
+    allowDirectionalBuys: e.ALLOW_DIRECTIONAL_BUYS,
   };
   return {
     mode,

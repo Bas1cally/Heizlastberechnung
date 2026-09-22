@@ -243,6 +243,31 @@ Morning of 22 Sep, after 92 markets overnight (Jev -848 USD, copy -101 and
   to the observer (three runners had twelve subscriptions; one runner's
   streams went silent for whole markets while the others were fine).
 
+## The directional question, closed (2026-09-22)
+
+302 directional fills by Jev between 21:45Z and 06:25Z, with the state at
+each decision and the outcome:
+
+| price bucket | fills | won | table said | market said |
+| --- | --- | --- | --- | --- |
+| ~0.1 | 36 | 0% | 21% | 7% |
+| ~0.2 | 68 | 16% | 41% | 22% |
+| ~0.3 | 110 | 25% | 48% | 31% |
+| ~0.4 | 85 | 31% | 57% | 40% |
+| all | 302 | 21.5% | 45.8% | 28.8% |
+
+The market's price was the better estimate in every bucket; the hold-rate
+table was off by 24 points; and the sides Jev picked did worse than the
+price implied. Directional buys are off in the gate (docs/RISK.md).
+
+Also from the same stretch: the copy's hedge, placed at the tail's fill,
+still found 1,600 shares ahead of it (the tail's arrival takes the
+latency, then the hedge goes out). It now goes out in the same instant as
+the tail, from the decision's book, and is withdrawn or shrunk when the
+tail's fill turns out smaller. And a tail intent the gate rejected used
+to count as the market's one tail; the policies now count a tail when the
+position or its order is seen.
+
 ## Jev where the judgment is (added 2026-09-22)
 
 The overnight answer to §45 as originally framed is no: 92 markets, -848

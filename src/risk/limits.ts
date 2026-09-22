@@ -17,6 +17,15 @@ export interface RiskLimits {
   readonly minMeasuredEdge: number;
   /** Up to this price a buy with its hedge on the book is a free option and exempt from the edge rule. */
   readonly maxFreeTailPrice: number;
+  /**
+   * Whether a directional buy above the free-tail price may go out at all.
+   * Default false: measured over 302 such fills (21/22 Sep), the side Jev
+   * bought won 21.5% of the time, the market's price said 28.8%, the
+   * hold-rate table said 45.8%. A table of a few hundred markets does not
+   * out-measure a liquid market's price, and the buys were adversely
+   * selected on top. True only for a deliberate experiment.
+   */
+  readonly allowDirectionalBuys: boolean;
 }
 
 /** Deliberately tight. Phase 1 never trades, so these only need to be safe. */
@@ -36,4 +45,5 @@ export const DEFAULT_LIMITS: RiskLimits = {
   maxJevLatencyMs: 750,
   minMeasuredEdge: 0.02,
   maxFreeTailPrice: 0.05,
+  allowDirectionalBuys: false,
 };

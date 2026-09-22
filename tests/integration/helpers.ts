@@ -13,7 +13,8 @@ export const testConfig = () => {
     TYPESAFE_API_KEY: "test", MAX_MARKET_EXPOSURE_USD: "100", MAX_TOTAL_EXPOSURE_USD: "100", MAX_UNPAIRED_EXPOSURE_USD: "100",
     JEV_MIN_INTERVAL_MS: "100", JEV_COALESCE_MS: "5", JEV_HEARTBEAT_MS: "400",
   }, []);
-  return { ...cfg, limits: { ...cfg.limits, maxOrderSizeShares: 10, minMarketLiquidityShares: 10 } };
+  // The scripted Jev of these tests buys directionally; the default gate refuses that (limits.ts), so it is enabled here on purpose.
+  return { ...cfg, limits: { ...cfg.limits, maxOrderSizeShares: 10, minMarketLiquidityShares: 10, allowDirectionalBuys: true } };
 };
 
 export function identityFor(now: number, closesInMs: number): MarketIdentity {

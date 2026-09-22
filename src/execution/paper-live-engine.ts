@@ -48,7 +48,7 @@ export interface PaperLiveOptions {
   readonly log: (msg: string, fields?: Record<string, unknown>) => void;
 }
 
-interface PendingMarketable { order: OrderIntent; decisionId: string; arriveAtMono: number; version: bigint; pairOnFill: boolean }
+interface PendingMarketable { order: OrderIntent; decisionId: string; arriveAtMono: number; version: bigint; pairOnFill: boolean; /** The hedge already resting for this tail, placed in the same instant; reconciled when the tail's fill is known. */ hedgeId?: string }
 interface Resting {
   order: OrderIntent; decisionId: string; placedAtMono: number; expiresAtMono: number; version: bigint; id: string;
   /** The decision said PAIR: the moment this fills, the hedge for the filled shares is placed, without waiting for another decision. */
@@ -93,8 +93,9 @@ export class PaperLiveEngine {
     return id;
   }
 
-  private applyFillResult(id: string, decisionId: string, order: OrderIntent, r: FillResult, version: bigint, pairOnFill = false): void {
+  private applyFillResult(id: string, decisionId: string, order: OrderIntent, r: FillResult, version: bigint, pairOnFill = false, hedgeId?: string): void {
     const now = this.o.wall();
+    if (hedgeId !== undefined) this.reconcileHedge(hedgeId, r.filledQty);
     this.o.db.run(`UPDATE orders SET status = ?, updated_ms = ? WHERE order_id = ?`, [r.status, now, id]);
     this.o.log("paper fill", { orderId: id, side: order.side, type: order.style.type, price: order.price, size: order.size, status: r.status, filled: r.filledQty, at: r.avgPrice, reason: r.reason });
     if (r.filledQty <= 0) { this.counts.noFills++; this.publish(); return; }
@@ -105,7 +106,68 @@ export class PaperLiveEngine {
     if (r.status === "PARTIAL") this.counts.partials++; else this.counts.fills++;
     this.o.db.run(`INSERT INTO inventory_snapshots (market_id, mode, ts_ms, inventory_json) VALUES (?,?,?,?)`, [this.o.market.marketId, "paper", now, JSON.stringify(computeInventory(this.position))]);
     this.publish();
-    if (pairOnFill && !order.completesSet) this.hedgeNow(order, r, decisionId, version);
+    if (pairOnFill && !order.completesSet && hedgeId === undefined) this.hedgeNow(order, r, decisionId, version);
+  }
+
+  /**
+   * The hedge went out with the tail, sized for the tail's full size; now
+   * the tail's fill is known. Nothing filled: the hedge is withdrawn. A
+   * partial: the hedge shrinks to the filled shares (queue position kept).
+   */
+  private reconcileHedge(hedgeId: string, tailFilled: number): void {
+    const i = this.resting.findIndex((r) => r.id === hedgeId);
+    if (i < 0) return;
+    const r = this.resting[i]!;
+    const keep = Math.floor(tailFilled);
+    if (keep >= r.order.size) return;
+    if (keep - r.filled < (this.o.market.minOrderSize ?? 5) || keep <= 0) {
+      this.resting.splice(i, 1);
+      this.o.db.run(`UPDATE orders SET status = 'CANCELLED', updated_ms = ? WHERE order_id = ?`, [this.o.wall(), r.id]);
+      this.counts.cancelled++;
+      this.o.log("paper cancel", { orderId: r.id, reason: `tail filled ${tailFilled}: hedge withdrawn` });
+    } else {
+      this.resting[i] = { ...r, order: { ...r.order, size: keep } };
+      this.o.db.run(`UPDATE orders SET size = ?, updated_ms = ? WHERE order_id = ?`, [keep, this.o.wall(), r.id]);
+      this.o.log("paper resize", { orderId: r.id, size: keep, reason: `tail filled ${tailFilled}` });
+    }
+    this.publish();
+  }
+
+  /**
+   * The hedge for a tail that is about to be taken, placed in the same
+   * instant as the tail: a bid for the other side at 1.00 minus the tail's
+   * touch, resting from the decision's book (the queue as it was when we
+   * decided). Waiting for the tail's fill cost ~700 ms, and the 0.99 level
+   * held 1,600 shares by then (measured 22 Sep, 06:19Z). Returns the order
+   * id, or undefined when nothing could be placed.
+   */
+  private hedgeWithTail(tail: OrderIntent, touch: number, snap: MarketState, decisionId: string, version: bigint, decisionMono: number): string | undefined {
+    const side = tail.side === "UP" ? "DOWN" : "UP";
+    const assetId = side === "UP" ? this.o.market.upAssetId : this.o.market.downAssetId;
+    const tick = this.o.market.tickSize ?? 0.001;
+    const cap = Math.floor((1 - touch) / tick + 1e-9) * tick;
+    if (cap < tick) return undefined;
+    const price = Number(cap.toFixed(4));
+    const open = [...this.pending.map((p) => p.order), ...this.resting.map((x) => x.order)].filter((o) => o.assetId === assetId && o.completesSet).reduce((s, o) => s + o.size, 0)
+      - this.resting.filter((x) => x.order.assetId === assetId && x.order.completesSet).reduce((s, x) => s + x.filled, 0);
+    const size = Math.floor(tail.size - Math.max(0, open));
+    if (size < (this.o.market.minOrderSize ?? 5)) return undefined;
+    const book = side === "UP" ? snap.upBook : snap.downBook;
+    const ask = book?.asks[0]?.price;
+    if (ask !== undefined && ask <= price + 1e-12) {
+      // Offered under the cap right now: take it at arrival, like the tail.
+      const order: OrderIntent = { side, assetId, price, size, style: { type: "FOK", aggressionTicks: 0, ttlMs: 20_000 }, sizedBy: "complement", completesSet: true };
+      this.pending.push({ order, decisionId, arriveAtMono: decisionMono + this.o.latencyMs, version, pairOnFill: false });
+      this.o.log("paper hedge now", { side, price, size, reason: "offered under the cap, with the tail" });
+      return undefined;
+    }
+    const order: OrderIntent = { side, assetId, price, size, style: { type: "GTC", aggressionTicks: 0, ttlMs: 20_000 }, sizedBy: "complement", completesSet: true };
+    const id = this.record(order, decisionId, version, "RESTING");
+    const ttl = Math.max(20_000, this.o.market.closesAtMs - this.o.wall());
+    const queueAhead = book ? queueAheadOf(order, book) : undefined;
+    this.o.log("paper rest", { orderId: id, side, price, size, queueAhead, ttlMs: ttl, reason: "hedge with the tail" });
+    this.resting.push({ order, decisionId, placedAtMono: decisionMono, expiresAtMono: decisionMono + ttl, booksSeen: [], version, id, queueAhead, filled: 0, pairOnFill: false });
+    return id;
   }
 
   /**
@@ -159,7 +221,7 @@ export class PaperLiveEngine {
       if (p.order.assetId !== book.assetId || nowMono < p.arriveAtMono) continue;
       this.pending.splice(i, 1);
       const id = this.record(p.order, p.decisionId, p.version, "SUBMITTED");
-      this.applyFillResult(id, p.decisionId, p.order, fillMarketable(p.order, book, this.o.fill), p.version, p.pairOnFill);
+      this.applyFillResult(id, p.decisionId, p.order, fillMarketable(p.order, book, this.o.fill), p.version, p.pairOnFill, p.hedgeId);
     }
     for (let i = this.resting.length - 1; i >= 0; i--) {
       const r = this.resting[i]!;
@@ -288,7 +350,10 @@ export class PaperLiveEngine {
       }
       const bookAtBuild = order.side === "UP" ? snap.upBook : snap.downBook;
       if (bookAtBuild && isMarketable(order, bookAtBuild)) {
-        this.pending.push({ order, decisionId: d.decisionId, arriveAtMono: decisionMono + this.o.latencyMs, version: d.stateVersion, pairOnFill: pairOnFill && !order.completesSet });
+        const tailToPair = pairOnFill && !order.completesSet;
+        const touch = bookAtBuild.asks[0]?.price;
+        const hedgeId = tailToPair && touch !== undefined ? this.hedgeWithTail(order, touch, snap, d.decisionId, d.stateVersion, decisionMono) : undefined;
+        this.pending.push({ order, decisionId: d.decisionId, arriveAtMono: decisionMono + this.o.latencyMs, version: d.stateVersion, pairOnFill: tailToPair, ...(hedgeId !== undefined ? { hedgeId } : {}) });
       } else {
         const id = this.record(order, d.decisionId, d.stateVersion, "RESTING");
         // A hedge keeps its place in the queue until the close; anything else lives for its TTL.
@@ -308,7 +373,7 @@ export class PaperLiveEngine {
     for (const p of this.pending.splice(0)) {
       const book = this.latest.get(p.order.assetId);
       const id = this.record(p.order, p.decisionId, p.version, "SUBMITTED");
-      this.applyFillResult(id, p.decisionId, p.order, book ? fillMarketable(p.order, book, this.o.fill) : { status: "NO_FILL", filledQty: 0, avgPrice: 0, fee: 0, reason: "no book" }, p.version);
+      this.applyFillResult(id, p.decisionId, p.order, book ? fillMarketable(p.order, book, this.o.fill) : { status: "NO_FILL", filledQty: 0, avgPrice: 0, fee: 0, reason: "no book" }, p.version, false, p.hedgeId);
     }
     while (this.resting.length) this.resolveResting(0, nowMono);
     const s = settle(this.position, outcome);

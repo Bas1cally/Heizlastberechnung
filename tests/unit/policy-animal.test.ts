@@ -124,10 +124,14 @@ describe("animalPolicyCall", () => {
     expect(await ask(animalPolicyCall(plain), base)).toEqual(await ask(animalPolicyCall(plain), base));
   });
 
-  it("remembers the tail it bought in this market, and starts afresh in the next one", async () => {
+  it("remembers a tail once the position or its order is seen, retries a rejected intent, and starts afresh in the next market", async () => {
     const call = animalPolicyCall(plain);
     expect((await ask(call, base)).answers.action.choice).toBe("BUY_UP");
-    expect((await ask(call, base)).answers.action.choice).toBe("HOLD");
+    // The gate rejected it: the state is still flat, the intent is emitted again.
+    expect((await ask(call, base)).answers.action.choice).toBe("BUY_UP");
+    // An order in flight: from now on this market has its tail.
+    expect((await ask(call, st({ inventory: { openOrders: 1 } }))).answers.note).toBe("tail order in flight");
+    expect((await ask(call, base)).answers.note).toBe("tail already bought this market");
     const next = st({ market: { openedAtMs: base.market.openedAtMs + 300_000 } });
     expect((await ask(call, next)).answers.action.choice).toBe("BUY_UP");
   });

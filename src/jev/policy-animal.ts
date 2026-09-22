@@ -110,8 +110,11 @@ export function animalPolicyCall(o: AnimalPolicyOptions): JevCall {
   return async (state) => {
     const key = state.market.openedAtMs;
     for (const k of tails.keys()) if (k < key - 3_600_000) tails.delete(k);
+    // Counted when the position (or an order in flight) is SEEN, not when the intent is emitted:
+    // an intent the gate rejects must not use up the market's one tail.
+    const inv = state.inventory;
+    if (inv.upShares > 0 || inv.downShares > 0 || inv.openOrders > 0) tails.set(key, Math.max(1, tails.get(key) ?? 0));
     const d = animalPolicy(state, { ...o, tailsBought: tails.get(key) ?? 0 });
-    if (d.action === "BUY_UP" || d.action === "BUY_DOWN") tails.set(key, (tails.get(key) ?? 0) + 1);
     return { answers: policyAnswers(d, state), model, usage: { input_tokens: 0, output_tokens: 0 } };
   };
 }

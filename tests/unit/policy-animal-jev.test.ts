@@ -45,9 +45,12 @@ describe("policy-animal-jev: the tail question", () => {
     expect(r.model).toBe("policy-animal-jev");
     expect(r.usage.input_tokens).toBe(10);
     expect(asked[0]?.state).toMatchObject({ secondsRemaining: 90, leader: "DOWN", tailAsk: 0.01, leaderAsk: null, hedgeBidResting: false });
-    // Once per market: no second tail, no second question.
+    // Rejected by the gate (state still flat): asked again. Once the order is seen: once per market, no second question.
+    expect((await run(c, base)).answers.action.choice).toBe("BUY_UP");
+    expect(asked).toHaveLength(2);
+    await run(c, st({ inventory: { openOrders: 1 } }));
     expect((await run(c, base)).answers.note).toBe("tail already bought this market");
-    expect(asked).toHaveLength(1);
+    expect(asked).toHaveLength(2);
   });
 
   it("WAIT asks again on the next change; SKIP is final for the market and a new market starts afresh", async () => {

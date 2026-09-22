@@ -107,6 +107,8 @@ export function animalJevPolicyCall(o: AnimalJevOptions): JevCall {
   return async (state, _questions, signal) => {
     const { market: m, orderbook: b, inventory: inv } = state;
     const mm = mem(m.openedAtMs);
+    // The tail counts once the position (or an order in flight) is seen, not on intent: a rejected intent must not use up the market.
+    if (inv.upShares > 0 || inv.downShares > 0 || inv.openOrders > 0) mm.tails = Math.max(1, mm.tails);
     let d: PolicyDecision;
     let focused: JevAnswers["focused"] | undefined;
     let usage = { input_tokens: 0, output_tokens: 0 };
@@ -154,7 +156,6 @@ export function animalJevPolicyCall(o: AnimalJevOptions): JevCall {
       // 1. The tail decision.
       const c = await askJev("tail", TAIL_QUESTION);
       if (c === "TAKE_NOW") {
-        mm.tails++;
         const tailSide = b.leader === "UP" ? "DOWN" : "UP";
         d = { action: tailSide === "UP" ? "BUY_UP" : "BUY_DOWN", inventory: "PAIR", urgency: "NORMAL", why: "jev: take the tail now" };
       } else if (c === "SKIP") {

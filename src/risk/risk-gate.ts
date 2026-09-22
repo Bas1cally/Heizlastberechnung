@@ -145,6 +145,9 @@ export function evaluateRisk(ctx: RiskContext, limits: RiskLimits): RiskVerdict 
   // price (held by the unpaired-exposure limit), the hedge that makes it free
   // is a bid resting at 1.00 minus the tail, filled by holders selling out.
   const freeOption = ctx.buyPrice !== undefined && ctx.buyPrice <= limits.maxFreeTailPrice + 1e-9;
+  // Directional buys are off unless deliberately enabled (see limits.ts): the
+  // market's price out-measured our table on every price level we tried.
+  if ((ctx.action === "BUY_UP" || ctx.action === "BUY_DOWN") && !freeOption && ctx.buyPrice !== undefined && !limits.allowDirectionalBuys) return reject("NO_MEASURED_EDGE");
   if ((ctx.action === "BUY_UP" || ctx.action === "BUY_DOWN") && !freeOption && ctx.buyPrice !== undefined && ctx.measuredWinProbability !== undefined) {
     // The measurement is a sample rate: with n markets behind it, its standard
     // error is sqrt(p(1-p)/n). An "edge" inside two of those is the noise of

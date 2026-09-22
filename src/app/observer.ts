@@ -371,15 +371,16 @@ export class MarketObserver {
       if (d.requestedAction !== "BUY_UP" && d.requestedAction !== "BUY_DOWN") return {};
       const side = d.requestedAction === "BUY_UP" ? "UP" : "DOWN";
       const completesSet = side === "UP" ? snap.inventory.unpairedDownShares > 0 : snap.inventory.unpairedUpShares > 0;
-      if (completesSet || snap.settlementStartPrice === undefined || snap.settlementCurrentPrice === undefined) return {};
-      const dist = ((snap.settlementCurrentPrice - snap.settlementStartPrice) / snap.settlementStartPrice) * 10_000;
-      const spotVsTwap = snap.spotPrice !== undefined ? ((snap.spotPrice - snap.settlementCurrentPrice) / snap.settlementCurrentPrice) * 10_000 : 0;
-      const held = this.deps.holdRate?.(dist, snap.secondsRemaining, spotVsTwap);
-      if (!held) return {};
-      const leader = dist >= 0 ? "UP" : "DOWN";
+      if (completesSet) return {};
       const book = side === "UP" ? snap.upBook : snap.downBook;
       const ask = book ? bestAsk(book) : undefined;
       if (ask === undefined) return {};
+      if (snap.settlementStartPrice === undefined || snap.settlementCurrentPrice === undefined) return { buyPrice: ask };
+      const dist = ((snap.settlementCurrentPrice - snap.settlementStartPrice) / snap.settlementStartPrice) * 10_000;
+      const spotVsTwap = snap.spotPrice !== undefined ? ((snap.spotPrice - snap.settlementCurrentPrice) / snap.settlementCurrentPrice) * 10_000 : 0;
+      const held = this.deps.holdRate?.(dist, snap.secondsRemaining, spotVsTwap);
+      if (!held) return { buyPrice: ask };
+      const leader = dist >= 0 ? "UP" : "DOWN";
       return { buyPrice: ask, measuredWinProbability: side === leader ? held.rate : 1 - held.rate, measuredSamples: held.samples };
     })();
     const verdict: RiskVerdict = killed.tripped && !["HOLD", "ABSTAIN"].includes(d.requestedAction)

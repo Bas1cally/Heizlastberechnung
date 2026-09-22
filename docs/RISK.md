@@ -24,6 +24,18 @@ one. That asymmetry is the whole point: Jev owns intent, the gate owns safety.
 7. Time to close, liquidity, spread, order size, open orders, then the three
    exposure limits.
 
+## Directional buys are off (added 2026-09-22)
+
+`allowDirectionalBuys` (default false, `ALLOW_DIRECTIONAL_BUYS=true` to
+enable for an experiment): a `BUY_UP` / `BUY_DOWN` above the free-tail
+price that does not complete a set is refused as `NO_MEASURED_EDGE`
+whatever the measurement says. Measured over 302 such fills on 21/22 Sep:
+the bought side won 21.5% of the time, the market's price said 28.8%, the
+hold-rate table said 45.8%, in every price bucket. A table built from a
+few hundred markets does not out-measure a liquid market's price, and the
+buys were adversely selected on top of that. Tails (at or under 0.05) and
+hedges are unaffected.
+
 ## Measured edge (added 2026-09-21)
 
 `NO_MEASURED_EDGE`: a directional buy (`BUY_UP` / `BUY_DOWN` that does not

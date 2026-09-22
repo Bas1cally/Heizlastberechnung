@@ -272,11 +272,30 @@ describe("PaperLiveEngine hedge on fill", () => {
     e.onBook(tailBook(), 1300); // tail fills at 0.01
     const o = orders();
     expect(o).toHaveLength(2);
-    expect(o[1]).toMatchObject({ status: "RESTING", order_type: "GTC", size: 10 });
-    expect(o[1]?.price).toBeCloseTo(0.99, 9);
+    const hedge = o.find((x) => x.price > 0.5)!;
+    expect(hedge).toMatchObject({ status: "RESTING", order_type: "GTC", size: 10 });
+    expect(hedge.price).toBeCloseTo(0.99, 9);
     // 120 ahead: a sell of 125 at 0.99 fills 5.
     e.onTrade({ assetId: "DOWN", price: 0.99, size: 125, side: "SELL", tsMs: undefined }, 1700);
     expect(fills().filter((f) => f.side === "DOWN")).toEqual([expect.objectContaining({ size: 5 })]);
+  });
+
+  it("places the hedge in the same instant as a marketable PAIR tail, from the decision's book, and withdraws it if the tail does not fill", () => {
+    const { e, orders, fills } = engine({ latencyMs: 300 });
+    e.onApproved(decision("BUY_UP", "IMMEDIATE", "PAIR"), snapshot(tailBook(), leaderBook(40)), 1000);
+    // Before the tail has even arrived, the hedge rests behind the 40 shares of the decision's book.
+    expect(orders()).toEqual([expect.objectContaining({ status: "RESTING", size: 10 })]);
+    expect(orders()[0]?.price).toBeCloseTo(0.99, 9);
+    e.onBook(tailBook(), 1300); // tail fills: the hedge stays as it is
+    expect(orders().map((o) => o.status).sort()).toEqual(["FILLED", "RESTING"]);
+    e.onTrade({ assetId: "DOWN", price: 0.99, size: 45, side: "SELL", tsMs: undefined }, 1400);
+    expect(fills().filter((f) => f.side === "DOWN")).toEqual([expect.objectContaining({ size: 5 })]);
+
+    const gone = engine({ latencyMs: 300 });
+    gone.e.onApproved(decision("BUY_UP", "IMMEDIATE", "PAIR"), snapshot(tailBook(), leaderBook(40)), 1000);
+    gone.e.onBook(book("UP", 0.19, 0.20, 5000), 1300); // the tail ran away past the FOK's limit: no fill, the hedge is withdrawn
+    expect(gone.orders().map((o) => o.status).sort()).toEqual(["CANCELLED", "NO_FILL"]);
+    expect(gone.e.summary().position.upShares).toBe(0);
   });
 
   it("takes the hedge at once when the other side is offered under the cap, and does nothing without PAIR", () => {

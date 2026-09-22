@@ -152,22 +152,32 @@ describe("liquidityFor", () => {
 });
 
 describe("measured edge", () => {
+  // The rule itself, with directional buys deliberately enabled.
+  const EDGE = { ...DEFAULT_LIMITS, allowDirectionalBuys: true };
   const base = { decisionStateVersion: 1n, currentStateVersion: 1n, orderSizeShares: 10, secondsRemaining: 100, chainlinkAgeMs: 100, orderbookAgeMs: 100, jevLatencyMs: 100, marketLiquidityShares: 1000, spread: 0.01, marketExposureUsd: 0, totalExposureUsd: 0, unpairedExposureUsd: 0, openOrders: 0, dailyPnlUsd: 0, consecutiveErrors: 0, executionMode: "simulated" as const };
   it("rejects a directional buy priced above the measured win probability minus the edge, and nothing else", () => {
-    expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.45, measuredWinProbability: 0.4 }, DEFAULT_LIMITS)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" });
-    expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.59, measuredWinProbability: 0.6 }, DEFAULT_LIMITS)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" }); // 0.01 under: less than the 0.02 edge
-    expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.57, measuredWinProbability: 0.6 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" });
+    expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.45, measuredWinProbability: 0.4 }, EDGE)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" });
+    expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.59, measuredWinProbability: 0.6 }, EDGE)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" }); // 0.01 under: less than the 0.02 edge
+    expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.57, measuredWinProbability: 0.6 }, EDGE)).toEqual({ result: "APPROVED" });
     // With few samples the measurement is noisy: 0.55 from 70 markets has a standard error of 0.059, so 0.44 (an "edge" of 0.11) is inside two of them.
-    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.44, measuredWinProbability: 0.55, measuredSamples: 70 }, DEFAULT_LIMITS)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" });
-    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.42, measuredWinProbability: 0.55, measuredSamples: 70 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" });
-    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.50, measuredWinProbability: 0.55, measuredSamples: 2000 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // 2 se = 0.022
-    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.01, measuredWinProbability: 0.05 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // a tail under its measured reversal chance
-    expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.45 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // no measurement: no rule
-    expect(evaluateRisk({ ...base, action: "ADD_COMPLEMENT", buyPrice: 0.99, measuredWinProbability: 0.5 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // hedges need no edge
+    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.44, measuredWinProbability: 0.55, measuredSamples: 70 }, EDGE)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" });
+    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.42, measuredWinProbability: 0.55, measuredSamples: 70 }, EDGE)).toEqual({ result: "APPROVED" });
+    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.50, measuredWinProbability: 0.55, measuredSamples: 2000 }, EDGE)).toEqual({ result: "APPROVED" }); // 2 se = 0.022
+    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.01, measuredWinProbability: 0.05 }, EDGE)).toEqual({ result: "APPROVED" }); // a tail under its measured reversal chance
+    expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.45 }, EDGE)).toEqual({ result: "APPROVED" }); // no measurement: no rule
+    expect(evaluateRisk({ ...base, action: "ADD_COMPLEMENT", buyPrice: 0.99, measuredWinProbability: 0.5 }, EDGE)).toEqual({ result: "APPROVED" }); // hedges need no edge
     // A tail at a few cents is a bounded option (its hedge is a resting bid, not something on the book now), exempt even where the measured reversal rate is below its price.
-    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.01, measuredWinProbability: 0.005 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" });
-    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.05, measuredWinProbability: 0.005 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" });
-    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.06, measuredWinProbability: 0.005 }, DEFAULT_LIMITS)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" });
+    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.01, measuredWinProbability: 0.005 }, EDGE)).toEqual({ result: "APPROVED" });
+    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.05, measuredWinProbability: 0.005 }, EDGE)).toEqual({ result: "APPROVED" });
+    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.06, measuredWinProbability: 0.005 }, EDGE)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" });
+  });
+
+  it("refuses every directional buy above the free-tail price by default, measured or not", () => {
+    expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.30, measuredWinProbability: 0.9, measuredSamples: 500 }, DEFAULT_LIMITS)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" });
+    expect(evaluateRisk({ ...base, action: "BUY_UP", buyPrice: 0.30 }, DEFAULT_LIMITS)).toEqual({ result: "REJECTED", reason: "NO_MEASURED_EDGE" });
+    expect(evaluateRisk({ ...base, action: "BUY_DOWN", buyPrice: 0.01 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // a tail
+    expect(evaluateRisk({ ...base, action: "ADD_COMPLEMENT", buyPrice: 0.99 }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // a hedge
+    expect(evaluateRisk({ ...base, action: "BUY_UP" }, DEFAULT_LIMITS)).toEqual({ result: "APPROVED" }); // completes a set: the observer passes no price
   });
 });
 
