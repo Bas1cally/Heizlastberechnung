@@ -11,3 +11,4 @@ data/
 logs/
 reports/*.txt
 reports/*.gz
+.share/

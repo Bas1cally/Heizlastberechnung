@@ -38,7 +38,8 @@
     "director:probe": "tsx scripts/director-probe.ts",
     "tft": "tsx scripts/tft.ts",
     "tft:report": "tsx scripts/tft-report.ts",
-    "cards": "tsx scripts/cards.ts"
+    "cards": "tsx scripts/cards.ts",
+    "share": "tsx scripts/share.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",
