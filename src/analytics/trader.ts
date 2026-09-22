@@ -50,6 +50,7 @@ export function analyzeTrader(
   rows: readonly ActivityRow[],
   window: (slug: string) => { openedAtMs: number; closesAtMs: number } | undefined,
   resolved: (slug: string) => string | undefined,
+  nowMs: number = Date.now(),
 ): TraderReport {
   const bySlug = new Map<string, ActivityRow[]>();
   const other = new Set<string>();
@@ -89,8 +90,15 @@ export function analyzeTrader(
     });
   }
   perMarket.sort((a, b) => a.openedAtMs - b.openedAtMs);
-  // A market counts as settled once something came back (redeem or merge) or it is resolved and nothing can come back.
-  const settled = perMarket.filter((m) => m.redeemedUsd > 0 || m.mergedUsd > 0 || (m.outcome && m.buys.every((b) => b.won === false)));
+  // A market counts as settled once something came back (redeem or merge), or
+  // it is resolved with every buy on the losing side, or it closed more than
+  // two hours ago with nothing ever coming back: a lost tail is never redeemed
+  // and never merged, so it leaves no trace but its purchase. Counting only
+  // markets with a redemption or merge (the first version of this rule, with
+  // outcomes known only for markets we had recorded) dropped ~500 lost tails
+  // and turned an eight-day net of about -670 USD into "+3,992".
+  const SETTLED_AFTER_MS = 2 * 3_600_000;
+  const settled = perMarket.filter((m) => m.redeemedUsd > 0 || m.mergedUsd > 0 || (m.outcome && m.buys.every((b) => b.won === false)) || m.closesAtMs + SETTLED_AFTER_MS < nowMs);
   const netCashUsd = settled.reduce((s, m) => s + m.netUsd, 0);
   const allBuys = perMarket.flatMap((m) => m.buys);
   const bucketise = (label: string, xs: TraderBuy[]): Bucket => {

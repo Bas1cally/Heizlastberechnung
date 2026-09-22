@@ -135,7 +135,8 @@ The set costs exactly 1.00, so the hedge is a free exit and the tail is a
 free option on a reversal between step 1 and step 2. What it costs: tails
 that could not be hedged because the leader's ask side had emptied (-10 USD
 each). Net over 1,581 settled markets: +3,992 USD, +2.52 per market on
-about 1,000 USD of working capital.
+about 1,000 USD of working capital. **Wrong: see the correction of
+22 Sep below; the true eight-day net is about -672 USD.**
 
 The brief's description (accumulate the winner at 0.98-0.995, then add a
 cheap complement, merge, retain excess winner) had the order reversed and
@@ -242,6 +243,40 @@ Morning of 22 Sep, after 92 markets overnight (Jev -848 USD, copy -101 and
 - One Chainlink socket per stream per process: the tape fans its ticks out
   to the observer (three runners had twelve subscriptions; one runner's
   streams went silent for whole markets while the others were fine).
+
+## Correction: the reference trader is not profitable (2026-09-22, 06:50Z)
+
+The "+3,992 USD over 1,580 settled markets" above was wrong. A market
+counted as settled only when something came back (a merge or a
+redemption) or when its outcome was known and every buy lost; outcomes
+were known only for the markets we had recorded ourselves. A lost tail is
+never redeemed and never merged, so about 500 of them, -4,314 USD, were
+treated as "not settled yet" and left out. Recomputed from his raw
+activity, per day (net = redemptions + merges - buys; maker rebates of
+424 USD over the period not included):
+
+| day | markets | unhedged tails | jackpots | net USD |
+| --- | --- | --- | --- | --- |
+| 09-14 | 157 | 15 | 3 | +775 |
+| 09-15 | 288 | 55 | 0 | -997 |
+| 09-16 | 297 | 59 | 0 | -710 |
+| 09-17 | 287 | 68 | 2 | +719 |
+| 09-18 | 288 | 88 | 2 | +611 |
+| 09-19 | 263 | 66 | 0 | -3,409 |
+| 09-20 | 288 | 67 | 1 | -6 |
+| 09-21 | 288 | 84 | 2 | +585 |
+| 09-22 (part) | 76 | 17 | 2 | +1,759 |
+| total | 2,232 | 519 | 12 | **-672** |
+
+By what he did in a market: tail hedged and merged, 1,652 markets, +1.74
+each (+2,881); tail never hedged, 515 markets, -8.38 each (-4,314); tail
+and hedge but no merge (the lead reversed after the hedge filled), 40
+markets, -62 each (-2,463); the reversal jackpots, +3,185. He buys a
+lottery ticket at 0.01 in every market and gets its price back in three
+of four; the tickets he keeps pay off about once in a hundred markets;
+over eight days that is a loss the size of his rebates. There is no edge
+here to copy, and none for Jev to add to. The copy runs measure a
+lottery.
 
 ## The directional question, closed (2026-09-22)
 

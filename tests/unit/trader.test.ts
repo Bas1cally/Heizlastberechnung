@@ -40,4 +40,15 @@ describe("analyzeTrader", () => {
     expect(r.perMarket[0]!.buys[0]!.won).toBe(true);
     expect(r.netCashUsd).toBeCloseTo(2, 9);
   });
+
+  it("counts a tail that never came back as lost once the market has been closed for two hours, never before", () => {
+    const tail = row({ price: 0.01, shares: 1000, amount: 10, outcome: "Up" });
+    const closesAt = parseSlug(slug)!.closesAtMs;
+    const early = analyzeTrader([tail], (s) => { const p = parseSlug(s); return p ? { openedAtMs: p.openedAtMs, closesAtMs: p.closesAtMs } : undefined; }, () => undefined, closesAt + 10 * 60_000);
+    expect(early.settledMarkets).toBe(0);
+    const late = analyzeTrader([tail], (s) => { const p = parseSlug(s); return p ? { openedAtMs: p.openedAtMs, closesAtMs: p.closesAtMs } : undefined; }, () => undefined, closesAt + 3 * 3_600_000);
+    expect(late.settledMarkets).toBe(1);
+    expect(late.netCashUsd).toBeCloseTo(-10, 9);
+    expect(late.losses).toBe(1);
+  });
 });
