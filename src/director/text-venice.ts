@@ -19,7 +19,50 @@ export interface VeniceTextOptions {
 }
 
 /** OpenAI-style response_format. No `strict`: review_fix has optional fields, and the answer is validated with zod anyway. */
-const toSchema = (name: string, schema: z.ZodType) => { const { $schema: _drop, ...json } = z.toJSONSchema(schema, { target: "draft-7" }) as Record<string, unknown>; void _drop; return { type: "json_schema", json_schema: { name, schema: json } }; };
+export const toSchema = (name: string, schema: z.ZodType) => { const { $schema: _drop, ...json } = z.toJSONSchema(schema, { target: "draft-7" }) as Record<string, unknown>; void _drop; return { type: "json_schema", json_schema: { name, schema: json } }; };
+
+export type ChatContent = string | ({ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } })[];
+export interface ChatJsonOptions<T> {
+  readonly apiKey: string; readonly model: string; readonly purpose: string;
+  readonly system: string; readonly user: ChatContent; readonly schema: z.ZodType<T>;
+  readonly maxTokens: number; readonly temperature?: number;
+  /** Sent as `reasoning_effort`; dropped once on a 400. */
+  readonly reasoningEffort?: string | undefined;
+  /** Extra top-level fields (e.g. venice_parameters); dropped together with reasoning_effort on a 400. */
+  readonly extra?: Record<string, unknown> | undefined;
+  readonly fetch?: FetchLike | undefined; readonly base?: string | undefined;
+}
+
+/**
+ * One chat completion on Venice with a JSON-schema answer, validated with zod. Shared by the
+ * director's text calls and the TFT advisor. Returns tokens from `usage` so the caller can book them.
+ */
+export async function chatJson<T>(o: ChatJsonOptions<T>): Promise<ClaudeResult<T>> {
+  const fetchImpl = o.fetch ?? ((url, init) => fetch(url, init) as unknown as ReturnType<FetchLike>);
+  const base = o.base ?? ENDPOINTS.base;
+  const body: Record<string, unknown> = { model: o.model, messages: [{ role: "system", content: o.system }, { role: "user", content: o.user }], max_completion_tokens: o.maxTokens, temperature: o.temperature ?? 0.2, response_format: toSchema(o.purpose, o.schema), ...(o.extra ?? {}) };
+  if (o.reasoningEffort) body["reasoning_effort"] = o.reasoningEffort;
+  const post = async (b: Record<string, unknown>) => {
+    const r = await fetchImpl(`${base}${ENDPOINTS.chat}`, { method: "POST", headers: { Authorization: `Bearer ${o.apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify(b) });
+    const text = await r.text();
+    let json: unknown; try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
+    return { status: r.status, json };
+  };
+  let r = await post(body);
+  if (r.status === 400 && (body["reasoning_effort"] || o.extra)) { delete body["reasoning_effort"]; for (const k of Object.keys(o.extra ?? {})) delete body[k]; r = await post(body); }
+  if (r.status < 200 || r.status >= 300) throw new Error(`${o.purpose}: Venice ${r.status}: ${JSON.stringify(r.json).slice(0, 400)}`);
+  const j = r.json as { choices?: { message?: { content?: unknown }; finish_reason?: string }[]; usage?: { prompt_tokens?: number; completion_tokens?: number }; model?: string };
+  const choice = j.choices?.[0];
+  const content = choice?.message?.content;
+  const text = typeof content === "string" ? content : Array.isArray(content) ? content.map((c) => (c as { text?: string }).text ?? "").join("") : "";
+  let parsed: unknown;
+  try { parsed = JSON.parse(stripFences(text)); } catch { throw new Error(`${o.purpose}: no parsable JSON (finish_reason ${choice?.finish_reason ?? "?"}): ${text.slice(0, 200)}`); }
+  const value = o.schema.safeParse(parsed);
+  if (!value.success) throw new Error(`${o.purpose}: answer does not match the schema: ${value.error.issues.map((i) => `${i.path.join(".")} ${i.message}`).join("; ")}`);
+  const usage = { input_tokens: j.usage?.prompt_tokens ?? 0, output_tokens: j.usage?.completion_tokens ?? 0, model: j.model ?? o.model };
+  return { value: value.data, usage, request: body, response: value.data };
+}
+
 
 export class VeniceTextCalls implements TextCalls {
   readonly provider = "venice" as const;
@@ -32,29 +75,8 @@ export class VeniceTextCalls implements TextCalls {
     this.base = o.base ?? ENDPOINTS.base;
   }
 
-  private async complete<T>(purpose: string, system: string, user: string, schema: z.ZodType<T>, maxTokens: number, temperature: number): Promise<ClaudeResult<T>> {
-    const body: Record<string, unknown> = { model: this.model, messages: [{ role: "system", content: system }, { role: "user", content: user }], max_completion_tokens: maxTokens, temperature, response_format: toSchema(purpose, schema) };
-    if (this.o.reasoningEffort) body["reasoning_effort"] = this.o.reasoningEffort;
-    let r = await this.post(body);
-    if (r.status === 400 && body["reasoning_effort"]) { delete body["reasoning_effort"]; r = await this.post(body); }
-    if (r.status < 200 || r.status >= 300) throw new Error(`${purpose}: Venice ${r.status}: ${JSON.stringify(r.json).slice(0, 400)}`);
-    const j = r.json as { choices?: { message?: { content?: unknown; refusal?: unknown }; finish_reason?: string }[]; usage?: { prompt_tokens?: number; completion_tokens?: number }; model?: string };
-    const choice = j.choices?.[0];
-    const content = choice?.message?.content;
-    const text = typeof content === "string" ? content : Array.isArray(content) ? content.map((c) => (c as { text?: string }).text ?? "").join("") : "";
-    let parsed: unknown;
-    try { parsed = JSON.parse(stripFences(text)); } catch { throw new Error(`${purpose}: no parsable JSON (finish_reason ${choice?.finish_reason ?? "?"}): ${text.slice(0, 200)}`); }
-    const value = schema.safeParse(parsed);
-    if (!value.success) throw new Error(`${purpose}: answer does not match the schema: ${value.error.issues.map((i) => `${i.path.join(".")} ${i.message}`).join("; ")}`);
-    const usage = { input_tokens: j.usage?.prompt_tokens ?? 0, output_tokens: j.usage?.completion_tokens ?? 0, model: j.model ?? this.model };
-    return { value: value.data, usage, request: body, response: value.data };
-  }
-
-  private async post(body: Record<string, unknown>): Promise<{ status: number; json: unknown }> {
-    const r = await this.fetchImpl(`${this.base}${ENDPOINTS.chat}`, { method: "POST", headers: { Authorization: `Bearer ${this.o.apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    const text = await r.text();
-    let json: unknown; try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
-    return { status: r.status, json };
+  private complete<T>(purpose: string, system: string, user: string, schema: z.ZodType<T>, maxTokens: number, temperature: number): Promise<ClaudeResult<T>> {
+    return chatJson({ apiKey: this.o.apiKey, model: this.model, purpose, system, user, schema, maxTokens, temperature, reasoningEffort: this.o.reasoningEffort, fetch: this.fetchImpl, base: this.base });
   }
 
   draft(i: DraftInput): Promise<ClaudeResult<Draft>> {

@@ -98,6 +98,7 @@ money is spent.
 ```bash
 pnpm director            # http://127.0.0.1:8787
 pnpm director:probe      # records what the Venice API really answers
+pnpm tft                 # TFT advisor: screenshot -> Venice vision -> Jev -> overlay (docs/TFT.md)
 ```
 
 ## Documentation

@@ -35,7 +35,8 @@
     "kill": "tsx scripts/control.ts kill",
     "resume": "tsx scripts/control.ts resume",
     "director": "tsx scripts/director.ts",
-    "director:probe": "tsx scripts/director-probe.ts"
+    "director:probe": "tsx scripts/director-probe.ts",
+    "tft": "tsx scripts/tft.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",
