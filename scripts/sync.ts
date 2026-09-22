@@ -14,8 +14,8 @@
  *   pnpm sync -- --every 15  # every 15 minutes, forever (the bots start this themselves)
  *   pnpm sync -- --no-push   # build the tree and the commit, push nothing
  */
-import { execFileSync, spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync, spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { cpSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 import { join } from "node:path";
 import { loadEnvFile } from "../src/app/env.js";
@@ -32,6 +32,25 @@ const SYNC_DIR = ".sync";
 const logFile = fileSink("logs/sync.log");
 const log = (msg: string, extra: Record<string, unknown> = {}) => { const line = JSON.stringify({ ts: new Date().toISOString(), msg, ...extra }); logFile(line); process.stdout.write(line + "\n"); };
 const git = (args: string[], cwd = SYNC_DIR) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+// The consistency scan (scripts/scan.ts) runs from here, detached, so it needs
+// no window of its own: started when no report exists or the last one is older
+// than SCAN_EVERY_MIN (default 180; 0 disables), never two at once. Its output
+// goes to logs/scan.log; the reports it writes are picked up by the next sync.
+const scanEveryMin = Number(process.env["SCAN_EVERY_MIN"] ?? 180);
+let scanChild: ChildProcess | undefined;
+function maybeStartScan(): void {
+  if (!(scanEveryMin > 0) || scanChild) return;
+  const last = existsSync("reports/consistency.json") ? statSync("reports/consistency.json").mtimeMs : 0;
+  if (Date.now() - last < scanEveryMin * 60_000) return;
+  mkdirSync("logs", { recursive: true });
+  const out = openSync("logs/scan.log", "a");
+  scanChild = spawn(process.execPath, ["node_modules/tsx/dist/cli.mjs", "scripts/scan.ts"], { stdio: ["ignore", out, out], env: process.env });
+  const started = Date.now();
+  log("scan started", { pid: scanChild.pid });
+  scanChild.on("exit", (code) => { log("scan finished", { code, tookMin: Math.round((Date.now() - started) / 60_000) }); scanChild = undefined; });
+  scanChild.on("error", (err) => { log("scan failed to start", { err: err.message }); scanChild = undefined; });
+}
+
 const tsx = (script: string, args: string[] = []) => {
   const r = spawnSync(process.execPath, ["node_modules/tsx/dist/cli.mjs", script, ...args], { encoding: "utf8", env: process.env, maxBuffer: 64 * 1024 * 1024 });
   return { ok: r.status === 0, out: `${r.stdout ?? ""}${r.stderr ? "\n[stderr]\n" + r.stderr : ""}` };
@@ -80,6 +99,7 @@ async function once(): Promise<void> {
     const r = tsx("scripts/trader.ts", [w, "--max-pages", "20"]);
     if (!r.ok) log("trader refresh failed", { wallet: w, tail: r.out.slice(-300) });
   }
+  maybeStartScan();
   const summary = tsx("scripts/summary.ts");
   writeFileSync(join(SYNC_DIR, "reports", "summary.txt"), summary.out);
   if (existsSync("reports")) for (const f of readdirSync("reports")) if (/\.(json|csv|txt)$/.test(f)) cpSync(join("reports", f), join(SYNC_DIR, "reports", f));
