@@ -37,12 +37,15 @@ const veniceKey = env("VENICE_API_KEY");
 if (!veniceKey) { console.error("VENICE_API_KEY is not set"); process.exit(1); }
 const dataDir = env("TFT_DATA") ?? "data/tft";
 mkdirSync(join(dataDir, "shots"), { recursive: true });
-const visionModel = env("TFT_VISION_MODEL") ?? "qwen-3-8-flash";
+// Vision: Gemma 4 31B reads images, takes reasoning_effort "none" (Qwen 3.8 Flash ignores it and
+// burns the token budget thinking), 0.12 / 0.36 USD per million tokens.
+const visionModel = env("TFT_VISION_MODEL") ?? "google-gemma-4-31b-it";
 // Used for a few cycles after a 429 from the main vision model.
 const visionFallback = env("TFT_VISION_FALLBACK") ?? "z-ai-glm-5-3-flash";
 let fallbackUntil = 0;
 const metaModel = env("TFT_META_MODEL") ?? "qwen-3-8-flash";
-const adviceModel = env("TFT_ADVICE_MODEL") ?? "qwen-3-8-flash";
+// Fallback advice without Jev: DeepSeek V4 Flash, text only, reasoning effort honoured, 0.14 / 0.28 USD per million.
+const adviceModel = env("TFT_ADVICE_MODEL") ?? "deepseek-v4-flash";
 const intervalMs = Number(opt("interval") ?? env("TFT_INTERVAL_S") ?? 8) * 1000;
 const port = Number(env("TFT_PORT") ?? 8788);
 const width = Number(env("TFT_CAPTURE_WIDTH") ?? 1600);
@@ -84,7 +87,7 @@ if (measureDir) {
 let meta: Meta | undefined;
 let lastFingerprint = "";
 let metaError: string | undefined;
-const status = () => ({ ...(veniceError ? { error: veniceError } : {}), capture: backend, vision: visionModel, advisor: jev && !jevDown ? "jev" : `text:${adviceModel}`, ...(jevDown ? { jev_error: jevDown.slice(0, 80) } : {}), meta: meta ? `${meta.patch || "?"} (${meta.comps.length} comps)` : metaError ? `Fehler: ${metaError.slice(0, 80)}` : "wird geladen …", interval_s: intervalMs / 1000 });
+const status = () => ({ ...(veniceError ? { error: veniceError } : {}), capture: backend, vision: visionModel, advisor: jev && !jevDown ? "jev" : `text:${adviceModel}`, ...(jevDown ? { jev: /402|credits/i.test(jevDown) ? "kein Guthaben, Rat über Textmodell" : jevDown.slice(0, 80) } : {}), meta: meta ? `${meta.patch || "?"} (${meta.comps.length} comps)` : metaError ? `Fehler: ${metaError.slice(0, 80)}` : "wird geladen …", interval_s: intervalMs / 1000 });
 startTftServer({ store, meta: () => meta, status, log: (m, f) => log.info(m, f) }, port);
 
 // ---- meta ----

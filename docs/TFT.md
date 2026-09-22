@@ -56,17 +56,20 @@ pnpm tft -- --measure C:\Users\Emanuel\Pictures\tft
 Das liest jede Datei einmal und schreibt `reports\tft-measure.json`. Shop-
 und Board-Namen mit dem Bild vergleichen. Unter 90 Prozent richtiger Namen
 lohnt der Rest nicht; dann Modell wechseln (`TFT_VISION_MODEL`, Kandidaten
-aus der Modellliste mit `supportsVision`: `qwen-3-8-flash`, `kimi-k2-6`,
-`z-ai-glm-5-3-flash`, `gemini-3-8-flash`) oder Zuschnitt auf Shop und Board.
+aus der Modellliste mit `supportsVision` und abschaltbarem Denken:
+`google-gemma-4-31b-it`, `z-ai-glm-5-3-flash`, `mistral-small-3-2-24b-instruct`).
+Qwen 3.8 Flash denkt immer mit und lief dadurch ins Token-Limit.
+Der Client darf deutsch sein: das Lesemodell schreibt englische Namen, damit
+sie zur Meta passen oder Zuschnitt auf Shop und Board.
 
 ## Was es kostet
 
 | Aufruf | Modell (Standard) | ungefähr |
 | --- | --- | --- |
-| Bild lesen, alle 8 s | qwen-3-8-flash | 0,03 Cent |
+| Bild lesen, alle 8 s | google-gemma-4-31b-it | 0,03 Cent |
 | Meta, einmal täglich | qwen-3-8-flash mit Web-Suche | unter 1 Cent |
 | Rat pro Board-Änderung | Jev | 0 (Guthaben) |
-| Rat ohne Jev | qwen-3-8-flash | 0,05 Cent |
+| Rat ohne Jev | deepseek-v4-flash | 0,05 Cent |
 
 Ein Spiel liegt damit bei wenigen Cent. Die Kopfzeile der Browser-Seite
 zählt Lesungen, Ratschläge und Tokens.

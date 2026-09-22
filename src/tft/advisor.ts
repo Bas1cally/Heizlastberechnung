@@ -76,7 +76,7 @@ export async function adviseAugmentWithText(read: BoardRead, meta: Meta, o: Text
   const q = buildAugmentQuestions(read, meta);
   const r = await chatJson({
     apiKey: o.apiKey, model: o.model, purpose: "tft_augment", system: "You coach one Teamfight Tactics augment choice. augment_key must be one of the option keys listed, comp_key one of the comp keys. Keep reason to one short sentence. Output only the JSON.",
-    user: JSON.stringify({ state: buildState(read, meta), augment_options: q.augment.criteria, question: q.augment.instructions }), schema: TextAugmentSchema, maxTokens: 1500, temperature: 0.1, reasoningEffort: "low", fetch: o.fetch, base: o.base, timeoutMs: 60_000,
+    user: JSON.stringify({ state: buildState(read, meta), augment_options: q.augment.criteria, question: q.augment.instructions }), schema: TextAugmentSchema, maxTokens: 3000, temperature: 0.1, reasoningEffort: "low", fetch: o.fetch, base: o.base, timeoutMs: 60_000,
   });
   const idx = read.augment_options.findIndex((n, i) => augmentKey(n, i) === r.value.augment_key);
   const pick = idx >= 0 ? read.augment_options[idx]! : r.value.augment_key;
@@ -138,7 +138,7 @@ export async function adviseWithText(read: BoardRead, meta: Meta, o: TextAdvisor
   const q = buildQuestions(meta);
   const r = await chatJson({
     apiKey: o.apiKey, model: o.model, purpose: "tft_advice", system: "You coach one Teamfight Tactics turn. Answer only from the state given; comp_key must be one of the comp keys listed. Keep reason to one short sentence (at most 25 words). Output only the JSON.",
-    user: JSON.stringify({ state: buildState(read, meta), questions: { comp: q.comp.instructions, action: q.action.instructions, on_track: q.on_track.instructions, urgency: q.urgency.instructions } }), schema: TextAdviceSchema, maxTokens: 1500, temperature: 0.1, reasoningEffort: "low", fetch: o.fetch, base: o.base, timeoutMs: 60_000,
+    user: JSON.stringify({ state: buildState(read, meta), questions: { comp: q.comp.instructions, action: q.action.instructions, on_track: q.on_track.instructions, urgency: q.urgency.instructions } }), schema: TextAdviceSchema, maxTokens: 3000, temperature: 0.1, reasoningEffort: "low", fetch: o.fetch, base: o.base, timeoutMs: 60_000,
   });
   const comp = meta.comps.find((c) => compKey(c.name) === r.value.comp_key);
   const advice: Advice = { comp: comp?.name ?? r.value.comp_key, compKey: r.value.comp_key, action: r.value.action, buy: unitsToBuy(read, comp), urgency: r.value.urgency, onTrack: r.value.on_track, confidence: 0.5, reasons: [r.value.reason], source: "text", model: r.usage.model, latencyMs: Math.round(now() - t0) };
