@@ -13,7 +13,7 @@ import { BoardReadSchema, type BoardRead } from "./types.js";
  */
 const SYSTEM = "You read screenshots of Teamfight Tactics (TFT). The game client may run in German or another language: always write champion, item and augment names as their official ENGLISH names (e.g. German \"Kiesel\" -> its English champion name), so they match English meta sites. Report exactly what is visible: champion names, star levels from the stars above units, items from their icons, gold, level, HP and the stage indicator. Shop slots read left to right; an empty or sold slot is an empty string. When augment cards are offered (three large cards in the middle of the planning board, each with an augment name and effect text), set phase to augment_choice and list the card names left to right in augment_options. The loading screen shows player tacticians (Little Legends, often named Chibi-...), never augments: that is phase loading with empty augment_options. If the screen is not a TFT planning phase, set phase accordingly and leave lists empty. Never invent units that are not clearly visible; lower confidence when text is small or blurred. Output only the JSON.";
 
-export interface VisionOptions { readonly apiKey: string; readonly model: string; readonly fetch?: FetchLike | undefined; readonly base?: string | undefined; readonly reasoningEffort?: string | undefined }
+export interface VisionOptions { readonly apiKey: string; readonly model: string; readonly fetch?: FetchLike | undefined; readonly base?: string | undefined; readonly reasoningEffort?: string | undefined; readonly timeoutMs?: number | undefined }
 
 const MIME: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp" };
 
@@ -25,7 +25,7 @@ export function imagePart(path: string): { type: "image_url"; image_url: { url: 
 export async function readBoard(imagePath: string, o: VisionOptions, hint = ""): Promise<ClaudeResult<BoardRead>> {
   const user: ChatContent = [{ type: "text", text: `Read this TFT screenshot.${hint ? ` Context: ${hint}` : ""}` }, imagePart(imagePath)];
   try {
-    const r = await chatJson({ apiKey: o.apiKey, model: o.model, purpose: "tft_read", system: SYSTEM, user, schema: BoardReadSchema, maxTokens: 2000, temperature: 0, reasoningEffort: o.reasoningEffort ?? "none", fetch: o.fetch, base: o.base, timeoutMs: 60_000 });
+    const r = await chatJson({ apiKey: o.apiKey, model: o.model, purpose: "tft_read", system: SYSTEM, user, schema: BoardReadSchema, maxTokens: 2000, temperature: 0, reasoningEffort: o.reasoningEffort ?? "none", fetch: o.fetch, base: o.base, timeoutMs: o.timeoutMs ?? 25_000 });
     // Augment names only count on the augment screen; anywhere else they are misreadings (tacticians on the loading screen).
     if (r.value.phase !== "augment_choice" && r.value.augment_options.length) r.value.augment_options = [];
     return r;

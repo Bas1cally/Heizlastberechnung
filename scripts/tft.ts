@@ -37,9 +37,10 @@ const veniceKey = env("VENICE_API_KEY");
 if (!veniceKey) { console.error("VENICE_API_KEY is not set"); process.exit(1); }
 const dataDir = env("TFT_DATA") ?? "data/tft";
 mkdirSync(join(dataDir, "shots"), { recursive: true });
-// Vision: Gemma 4 31B reads images, takes reasoning_effort "none" (Qwen 3.8 Flash ignores it and
-// burns the token budget thinking), 0.12 / 0.36 USD per million tokens.
-const visionModel = env("TFT_VISION_MODEL") ?? "google-gemma-4-31b-it";
+// Vision: Qwen3 VL 235B, no reasoning step, trained for text in images, 0.21 / 1.90 USD per million.
+// Tried before: Qwen 3.8 Flash thinks regardless of reasoning_effort and hit the token limit;
+// Gemma 4 31B took 11 s and then timed out. `pnpm tft -- --bench-vision` compares candidates on one screenshot.
+const visionModel = env("TFT_VISION_MODEL") ?? "qwen3-vl-235b-a22b";
 // Used for a few cycles after a 429 from the main vision model.
 const visionFallback = env("TFT_VISION_FALLBACK") ?? "z-ai-glm-5-3-flash";
 let fallbackUntil = 0;
@@ -64,6 +65,33 @@ const jevAugment = jevClient ? createJevAugmentAsk(jevClient) : undefined;
 let jevDown: string | undefined;
 // A 402 from Venice pauses everything for a minute instead of knocking every 8 s.
 let venicePausedUntil = 0; let veniceError: string | undefined;
+
+// ---- bench-vision: the same screenshot through several vision models, time and result side by side ----
+if (flag("bench-vision")) {
+  const given = opt("bench-vision");
+  const shotsDir = join(dataDir, "shots");
+  const latest = () => { const fs = readdirSync(shotsDir).filter((f) => f.endsWith(".jpg")).sort(); return fs.length ? join(shotsDir, fs[fs.length - 1]!) : undefined; };
+  const img = given && !given.startsWith("--") ? given : latest();
+  if (!img || !existsSync(img)) { console.error("Kein Screenshot. Erst tft.cmd in einer Planungsphase laufen lassen oder einen Pfad angeben: pnpm tft -- --bench-vision C:\\pfad\\bild.jpg"); process.exit(1); }
+  const candidates = (env("TFT_VISION_CANDIDATES") ?? "qwen3-vl-235b-a22b,z-ai-glm-5-3-flash,google-gemma-4-31b-it,mistral-small-3-2-24b-instruct,qwen-3-8-flash,openai-gpt-54-mini").split(",").map((x) => x.trim()).filter(Boolean);
+  console.log(`Bild: ${img}\n`);
+  const results = await Promise.all(candidates.map(async (model) => {
+    const t0 = performance.now();
+    try { const r = await readBoard(img, { apiKey: veniceKey, model, timeoutMs: 60_000 }); return { model, ms: Math.round(performance.now() - t0), tokens: r.usage.input_tokens + r.usage.output_tokens, read: r.value }; }
+    catch (err) { return { model, ms: Math.round(performance.now() - t0), error: err instanceof Error ? err.message.slice(0, 160) : String(err) }; }
+  }));
+  for (const r of results.sort((a, b) => a.ms - b.ms)) {
+    if ("error" in r) { console.log(`${r.model.padEnd(34)} ${String(r.ms).padStart(6)} ms  FEHLER ${r.error}`); continue; }
+    const v = r.read;
+    console.log(`${r.model.padEnd(34)} ${String(r.ms).padStart(6)} ms  ${v.phase} ${v.stage || "?"} · ${v.gold} Gold · Lvl ${v.level} · HP ${v.hp} · conf ${v.confidence}`);
+    console.log(`${"".padEnd(34)}           Shop: ${v.shop.map((x) => x || "–").join(", ")}`);
+    console.log(`${"".padEnd(34)}           Board: ${v.board.map((u) => u.name + (u.stars > 1 ? "*" + u.stars : "")).join(", ") || "–"} · Bank: ${v.bench.map((u) => u.name).join(", ") || "–"}${v.augment_options.length ? ` · Augments: ${v.augment_options.join(", ")}` : ""}`);
+  }
+  mkdirSync("reports", { recursive: true });
+  writeFileSync("reports/tft-vision-bench.json", JSON.stringify({ image: img, at: new Date().toISOString(), results }, null, 2));
+  console.log("\nDas Bild daneben öffnen und vergleichen. Schnellstes Modell mit richtigem Shop in die .env: TFT_VISION_MODEL=<name>");
+  process.exit(0);
+}
 
 // ---- measure mode: recognition rate on hand-labelled screenshots ----
 const measureDir = opt("measure");
@@ -114,7 +142,7 @@ async function cycle(imagePath?: string): Promise<void> {
   let r;
   try { r = await readBoard(shot, { apiKey: veniceKey!, model }, meta ? `TFT ${meta.set} patch ${meta.patch}. Champion names in this set include: ${[...new Set(meta.comps.flatMap((c) => [...c.core_units, ...c.carries]))].join(", ")}.` : ""); }
   catch (err) {
-    if (err instanceof Error && / 429:/.test(err.message) && model === visionModel) { fallbackUntil = Date.now() + 120_000; log.warn("vision model overloaded; using the fallback for 2 min", { model: visionFallback }); r = await readBoard(shot, { apiKey: veniceKey!, model: visionFallback }, ""); }
+    if (err instanceof Error && / 429:|no answer within/.test(err.message) && model === visionModel) { fallbackUntil = Date.now() + 120_000; log.warn("vision model overloaded or too slow; using the fallback for 2 min", { model: visionFallback, err: err.message.slice(0, 120) }); r = await readBoard(shot, { apiKey: veniceKey!, model: visionFallback }, ""); }
     else throw err;
   }
   const fp = fingerprint(r.value);

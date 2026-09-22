@@ -50,6 +50,15 @@ Statistik in der Beschreibung jeder Option. Das Overlay zeigt dann
 „Augment: …“, darunter die Comp, die daraus folgt. Ohne Jev entscheidet das
 Textmodell über dieselben Optionen.
 
+## Welches Bildmodell?
+
+Doppelklick auf `tft-vision-test.cmd` (oder `pnpm tft -- --bench-vision`)
+schickt den letzten Screenshot an sechs Bildmodelle gleichzeitig und
+zeigt Zeit, Shop, Board und Gold nebeneinander. Das schnellste Modell mit
+richtigem Shop kommt als `TFT_VISION_MODEL=` in die `.env`. Bisher
+gesehen: Qwen 3.8 Flash denkt immer mit und lief ins Token-Limit, Gemma 4
+31B brauchte 11 s und lief dann ins Zeitlimit.
+
 ## Bevor es sinnvoll wird: die Erkennung messen
 
 Zehn Screenshots aus echten Planungsphasen in einen Ordner legen (Win+Shift+S
@@ -71,7 +80,7 @@ sie zur Meta passen oder Zuschnitt auf Shop und Board.
 
 | Aufruf | Modell (Standard) | ungefähr |
 | --- | --- | --- |
-| Bild lesen, alle 8 s | google-gemma-4-31b-it | 0,03 Cent |
+| Bild lesen, alle 8 s | qwen3-vl-235b-a22b | 0,05 Cent |
 | Meta, einmal täglich | qwen-3-8-flash mit Web-Suche | unter 1 Cent |
 | Rat pro Board-Änderung | Jev | 0 (Guthaben) |
 | Rat ohne Jev | deepseek-v4-flash | 0,05 Cent |
