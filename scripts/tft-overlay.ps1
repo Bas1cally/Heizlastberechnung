@@ -1,5 +1,6 @@
 # TFT overlay: a small always-on-top window that shows the advisor's three lines.
-# Polls http://127.0.0.1:8788/api/advice every 2 seconds. Drag it with the mouse, close with Esc.
+# Polls http://127.0.0.1:8788/api/advice every 2 seconds. Drag it with the mouse; right-click closes it.
+# Re-asserts "always on top" on every tick: the game taking the foreground can otherwise push it back.
 #   powershell -ExecutionPolicy Bypass -File scripts\tft-overlay.ps1
 param([string]$Url = "http://127.0.0.1:8788/api/advice")
 Add-Type -AssemblyName System.Windows.Forms
@@ -24,11 +25,14 @@ $down = { param($s, $e) $script:drag = New-Object System.Drawing.Point($e.X, $e.
 $move = { param($s, $e) if ($script:drag) { $form.Location = New-Object System.Drawing.Point(($form.Left + $e.X - $script:drag.X), ($form.Top + $e.Y - $script:drag.Y)) } }
 $up = { $script:drag = $null }
 foreach ($c in @($form) + $labels) { $c.Add_MouseDown($down); $c.Add_MouseMove($move); $c.Add_MouseUp($up) }
-$form.KeyPreview = $true; $form.Add_KeyDown({ param($s, $e) if ($e.KeyCode -eq "Escape") { $form.Close() } })
+$close = { param($s, $e) if ($e.Button -eq [System.Windows.Forms.MouseButtons]::Right) { $form.Close() } }
+foreach ($c in @($form) + $labels) { $c.Add_MouseClick($close) }
 $timer = New-Object System.Windows.Forms.Timer; $timer.Interval = 2000
 $timer.Add_Tick({
   try { $j = Invoke-RestMethod -Uri $Url -TimeoutSec 2; $labels[0].Text = $j.line1; $labels[1].Text = $j.line2; $labels[2].Text = $j.line3 }
   catch { $labels[2].Text = "kein Kontakt zu pnpm tft" }
+  if (-not $form.TopMost) { $form.TopMost = $true }
+  $form.TopMost = $false; $form.TopMost = $true
 })
 $timer.Start()
 [void]$form.ShowDialog()

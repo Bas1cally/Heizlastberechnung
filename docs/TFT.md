@@ -15,7 +15,7 @@ git pull
 pnpm tft
 ```
 
-Fenster 2, das Overlay (immer im Vordergrund, per Maus verschiebbar, Esc schließt):
+Fenster 2, das Overlay (immer im Vordergrund, per Maus verschiebbar, Rechtsklick schließt):
 ```powershell
 cd C:\Users\Emanuel\Heizlastberechnung
 powershell -ExecutionPolicy Bypass -File scripts\tft-overlay.ps1
