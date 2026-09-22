@@ -125,10 +125,35 @@ const GUIDE_PROMPT: Record<Item["kind"], string> = {
   call: "Write a compact reference for deciding fold or call heads-up when all remaining cards will be dealt without further betting: how to estimate the win probability against a random hand, and how to compare it with the pot odds (call when win probability > bet / (pot including the bet + bet)). Plain text, at most 300 words.",
 };
 
-/** One text-model call per test: its knowledge as a guide Jev reads with every decision. */
+const BJ_ROWS = ["hard 5-8", "hard 9", "hard 10", "hard 11", "hard 12", "hard 13", "hard 14", "hard 15", "hard 16", "hard 17+", "soft A2", "soft A3", "soft A4", "soft A5", "soft A6", "soft A7", "soft A8", "soft A9", "pair 22", "pair 33", "pair 44", "pair 55", "pair 66", "pair 77", "pair 88", "pair 99", "pair TT", "pair AA"] as const;
+const BjTableSchema = z.object({ rows: z.array(z.object({ hand: z.string(), vs_2: z.string(), vs_3: z.string(), vs_4: z.string(), vs_5: z.string(), vs_6: z.string(), vs_7: z.string(), vs_8: z.string(), vs_9: z.string(), vs_10: z.string(), vs_A: z.string() })) });
+const UPS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "A"] as const;
+const normHand = (h: string) => h.toLowerCase().replace(/\s+/g, " ").replace(/,/g, "").trim();
+
+/** The blackjack guide as data: every one of the 28 rows with an action against every upcard, rendered as text for Jev. */
+async function blackjackGuide(o: { apiKey: string; model: string; fetch?: FetchLike | undefined }): Promise<{ guide: string; tokens: number }> {
+  const ask = (note: string) => chatJson({ apiKey: o.apiKey, model: o.model, purpose: "cards_guide_blackjack", system: "You write exact reference tables. Output only the JSON.", user: `Basic strategy for: ${RULES}. Return one row for EACH of these player hands, spelled exactly like this: ${BJ_ROWS.join("; ")}. For each row give the action against dealer upcards 2..10 and A, using H (hit), S (stand), D (double, else hit), Ds (double, else stand), P (split).${note}`, schema: BjTableSchema, maxTokens: 8000, temperature: 0, reasoningEffort: "low", fetch: o.fetch, timeoutMs: 240_000 });
+  let r = await ask("");
+  let tokens = r.usage.input_tokens + r.usage.output_tokens;
+  const missing = (rows: { hand: string }[]) => BJ_ROWS.filter((h) => !rows.some((x) => normHand(x.hand) === normHand(h)));
+  if (missing(r.value.rows).length) { r = await ask(` Your previous answer missed these rows: ${missing(r.value.rows).join("; ")}. Return all 28 rows.`); tokens += r.usage.input_tokens + r.usage.output_tokens; }
+  const rows = BJ_ROWS.map((h) => r.value.rows.find((x) => normHand(x.hand) === normHand(h))).filter((x): x is NonNullable<typeof x> => !!x);
+  if (rows.length < 24) throw new Error(`blackjack guide incomplete: ${rows.length} of 28 rows`);
+  const guide = ["Basic strategy (H hit, S stand, D double else hit, Ds double else stand, P split). Row = player hand, columns = dealer upcard.", ...rows.map((x) => `${x.hand}: ${UPS.map((u) => `${u} ${(x as unknown as Record<string, string>)[`vs_${u}`]}`).join(", ")}`)].join("\n");
+  return { guide, tokens };
+}
+
+const MIN_GUIDE: Record<Item["kind"], number> = { blackjack: 800, equity: 800, call: 500 };
+
+/** One text-model call per test (two if the first answer is too thin): its knowledge as a guide Jev reads with every decision. */
 export async function makeGuide(test: Item["kind"], o: { apiKey: string; model: string; fetch?: FetchLike | undefined }): Promise<{ guide: string; tokens: number }> {
-  const r = await chatJson({ apiKey: o.apiKey, model: o.model, purpose: `cards_guide_${test}`, system: "You write short, exact reference material. Output only the JSON.", user: GUIDE_PROMPT[test], schema: z.object({ guide: z.string().min(50) }), maxTokens: 6000, temperature: 0, reasoningEffort: "low", fetch: o.fetch, timeoutMs: 240_000 });
-  return { guide: r.value.guide, tokens: r.usage.input_tokens + r.usage.output_tokens };
+  if (test === "blackjack") return blackjackGuide(o);
+  const ask = (note: string) => chatJson({ apiKey: o.apiKey, model: o.model, purpose: `cards_guide_${test}`, system: "You write short, exact reference material. Output only the JSON.", user: GUIDE_PROMPT[test] + note, schema: z.object({ guide: z.string().min(50) }), maxTokens: 8000, temperature: 0, reasoningEffort: "low", fetch: o.fetch, timeoutMs: 240_000 });
+  let r = await ask("");
+  let tokens = r.usage.input_tokens + r.usage.output_tokens;
+  if (r.value.guide.length < MIN_GUIDE[test]) { r = await ask(` Your previous answer had only ${r.value.guide.length} characters; write the full reference, at least ${MIN_GUIDE[test]} characters.`); tokens += r.usage.input_tokens + r.usage.output_tokens; }
+  if (r.value.guide.length < MIN_GUIDE[test] / 2) throw new Error(`guide too short: ${r.value.guide.length} characters`);
+  return { guide: r.value.guide, tokens };
 }
 
 /** One line per asker for the overview at the end of a test. */
