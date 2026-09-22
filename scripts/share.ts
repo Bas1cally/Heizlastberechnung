@@ -57,4 +57,4 @@ const m = remote.match(/^(?:https:\/\/(?:[^@]+@)?github\.com\/|git@github\.com:)
 const url = token && m ? `https://x-access-token:${token}@github.com/${m[1]}.git` : "origin";
 try { git(["push", "-q", "--force", url, "share:share"]); }
 catch (err) { const msg = (err instanceof Error ? err.message : String(err)).replace(/x-access-token:[^@]+@/g, "x-access-token:[redacted]@"); say(`Push fehlgeschlagen: ${msg.slice(0, 400)}`); process.exit(1); }
-say(`Geteilt (Branch share):\n${files.map((f) => `  ${f}`).join("\n") || "  (nichts gefunden)"}\n\nSag Claude einfach: "geteilt".`);
+say(`Geteilt (Branch share):\n${files.map((f) => `  ${f}`).join("\n") || "  (nichts gefunden)"}\n\nSag Claude einfach: geteilt.`);
