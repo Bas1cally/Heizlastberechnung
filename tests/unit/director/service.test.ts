@@ -26,7 +26,7 @@ function veniceScript(opts: { consentOnFirstQuote?: boolean } = {}) {
 }
 const fakeText = (): TextCalls => ({
   provider: "anthropic", model: "claude-test",
-  draft: async () => ({ value: { shot_size: "medium close-up", camera_move: "slow push-in", lens_note: "", lighting: "soft window light", composition: "centered", action_physical_en: "Mara lifts the cup with her right hand and drinks.", action_physical_de: "Mara hebt die Tasse und trinkt.", engine_recommendation: "seedance-2-0-reference-to-video", duration_s_recommendation: 5, references_needed: [] }, usage: { input_tokens: 900, output_tokens: 120, model: "claude-test" }, request: {}, response: {} }),
+  draft: async () => ({ value: { shot_size: "medium close-up", camera_move: "slow push-in", lens_note: "", lighting: "soft window light", composition: "centered", action_physical_en: "Mara lifts the cup with her right hand and drinks.", action_physical_de: "Mara hebt die Tasse und trinkt.", engine_recommendation: "seedance-2-0-reference-to-video-basic", duration_s_recommendation: 5, references_needed: [] }, usage: { input_tokens: 900, output_tokens: 120, model: "claude-test" }, request: {}, response: {} }),
   reviewFix: async () => ({ value: { camera_move: "dolly in" }, usage: { input_tokens: 700, output_tokens: 20, model: "claude-test" }, request: {}, response: {} }),
   translate: async (t: string) => ({ value: ({ "Gedeckte Farben.": "Muted colours.", "rote Haare": "red hair" } as Record<string, string>)[t] ?? `translated ${t.length}`, usage: { input_tokens: 50, output_tokens: 10, model: "claude-test" }, request: {}, response: {} }),
 });

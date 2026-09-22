@@ -31,11 +31,11 @@ const raw = async (path: string, init?: { method?: string; body?: string }) => {
 out["models_video"] = await raw(`${ENDPOINTS.models}?type=video`);
 out["models_text_ids"] = (((await raw(`${ENDPOINTS.models}?type=text`)).body as { data?: { id: string }[] })?.data ?? []).map((m) => m.id);
 const client = new VeniceClient({ apiKey: key });
-const t2v = { model: "seedance-2-0-text-to-video", prompt: "Wide shot. Slow dolly in. A paper boat drifts across a puddle and bumps the kerb. Soft overcast light.", duration: "5s", aspect_ratio: "16:9", resolution: "480p" };
+const t2v = { model: "seedance-2-0-text-to-video-basic", prompt: "Wide shot. Slow dolly in. A paper boat drifts across a puddle and bumps the kerb. Soft overcast light.", duration: "5s", aspect_ratio: "16:9", resolution: "480p" };
 out["quote_t2v_body"] = client.wireBody(t2v);
 out["quote_t2v"] = await raw(ENDPOINTS.quote, { method: "POST", body: JSON.stringify(client.wireBody(t2v)) });
 if (image) {
-  const r2v = { ...t2v, model: "seedance-2-0-reference-to-video", prompt: `Refer to <Subject 1> in <Image 1> to generate a clip. ${t2v.prompt}`, reference_images: [{ slot: "Image 1", role: "identity", path: image }] };
+  const r2v = { ...t2v, model: "seedance-2-0-reference-to-video-basic", prompt: `Refer to <Subject 1> in <Image 1> to generate a clip. ${t2v.prompt}`, reference_images: [{ slot: "Image 1", role: "identity", path: image }] };
   const body = client.wireBody(r2v);
   out["quote_r2v_body_keys"] = Object.keys(body);
   out["quote_r2v"] = await raw(ENDPOINTS.quote, { method: "POST", body: JSON.stringify(body) });

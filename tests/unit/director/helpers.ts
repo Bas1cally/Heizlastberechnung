@@ -24,7 +24,7 @@ export function pngFile(dir: string, name = "mara.png"): string {
 
 export const shotOf = (over: Partial<Shot> = {}): Shot => ({
   id: 1, project_id: 1, seq: 1, beat_de: "Mara hebt die Tasse.", shot_size: "medium close-up", camera_move: "slow push-in", lens_note: "", lighting: "soft window light", composition: "centered",
-  action_physical_de: "Mara hebt die Tasse und trinkt.", action_physical_en: "Mara lifts the cup with her right hand and drinks.", duration_s: 5, engine: "seedance-2-0-reference-to-video", resolution: "480p", aspect_ratio: "16:9",
+  action_physical_de: "Mara hebt die Tasse und trinkt.", action_physical_en: "Mara lifts the cup with her right hand and drinks.", duration_s: 5, engine: "seedance-2-0-reference-to-video-basic", resolution: "480p", aspect_ratio: "16:9",
   workflow: "r2v_reference", transition_in: "hard_cut", prompt_final: "", negative_prompt: "", seed: null, status: "draft", prev_shot_id: null, resolution_reason: "", review_note: "", ...over,
 });
 export const mara: Character = { id: 1, project_id: 1, name: "Mara", fixed_attributes_de: "rote Haare", fixed_attributes_en: "red hair, green eyes, scar on left brow", variable_attributes: "", likeness_cap: null, notes: "" };

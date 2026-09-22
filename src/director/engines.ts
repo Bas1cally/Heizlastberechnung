@@ -3,8 +3,11 @@ import type { Workflow } from "./types.js";
 
 /**
  * What an engine accepts (spec §1, §4): cached in `director/engines.json`
- * from Venice's GET /models on first start, with the documented Seedance
- * 2.0 ids as the built-in floor. Field names of Venice's model entries
+ * from Venice's GET /models?type=video on each start, with the Seedance
+ * 2.0 ids as the built-in floor. Live ids (probe 2026-09-22) carry a
+ * `-basic` suffix: seedance-2-0-{text,image,reference}-to-video-basic;
+ * the list also has seedance-2-5, -fast and -mini variants, wan, kling,
+ * veo, sora, ltx, pixverse and topaz-video-upscale (the upscale hook). Field names of Venice's model entries
  * are normalised best-effort in `normalizeVeniceModel`; whatever is not
  * recognised keeps the defaults below and is flagged in `source`.
  */
@@ -22,9 +25,9 @@ export interface EngineSpec {
 const SEEDANCE_COMMON = { resolutions: ["480p", "720p", "1080p"], durationsS: [5, 10], aspectRatios: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"] } as const;
 
 export const DOCUMENTED_ENGINES: readonly EngineSpec[] = [
-  { id: "seedance-2-0-text-to-video", name: "Seedance 2.0 T2V", workflows: ["t2v"], ...SEEDANCE_COMMON, inputs: { images: 0, videos: 0, audio: 0 }, source: "documented" },
-  { id: "seedance-2-0-image-to-video", name: "Seedance 2.0 I2V", workflows: ["i2v"], ...SEEDANCE_COMMON, inputs: { images: 2, videos: 0, audio: 0 }, source: "documented" },
-  { id: "seedance-2-0-reference-to-video", name: "Seedance 2.0 R2V", workflows: ["r2v_reference", "r2v_edit", "r2v_extend", "r2v_stitch"], ...SEEDANCE_COMMON, inputs: { images: 9, videos: 3, audio: 3 }, source: "documented" },
+  { id: "seedance-2-0-text-to-video-basic", name: "Seedance 2.0 T2V", workflows: ["t2v"], ...SEEDANCE_COMMON, inputs: { images: 0, videos: 0, audio: 0 }, source: "documented" },
+  { id: "seedance-2-0-image-to-video-basic", name: "Seedance 2.0 I2V", workflows: ["i2v"], ...SEEDANCE_COMMON, inputs: { images: 2, videos: 0, audio: 0 }, source: "documented" },
+  { id: "seedance-2-0-reference-to-video-basic", name: "Seedance 2.0 R2V", workflows: ["r2v_reference", "r2v_edit", "r2v_extend", "r2v_stitch"], ...SEEDANCE_COMMON, inputs: { images: 9, videos: 3, audio: 3 }, source: "documented" },
 ];
 
 const num = (x: unknown): number | undefined => { const n = Number(x); return Number.isFinite(n) ? n : undefined; };
@@ -52,10 +55,14 @@ export function normalizeVeniceModel(raw: Record<string, unknown>): EngineSpec |
   };
 }
 
+/** "seedance-2-0", "kling-v3", "wan-3-0": the id up to the workflow words, for grouping in the UI. */
+export const engineFamily = (id: string): string => id.replace(/-(text|image|reference|video|first-last-frame)-to-video.*$/, "").replace(/-(basic|private)$/, "").replace(/-(multi-angle|motion-control|transition|text)$/, "");
+
 export class EngineRegistry {
   private readonly byId = new Map<string, EngineSpec>();
   constructor(specs: readonly EngineSpec[] = DOCUMENTED_ENGINES) { for (const s of specs) this.byId.set(s.id, s); }
-  get(id: string): EngineSpec | undefined { return this.byId.get(id); }
+  /** Ids written before the probe (without `-basic`) still resolve. */
+  get(id: string): EngineSpec | undefined { return this.byId.get(id) ?? this.byId.get(`${id}-basic`); }
   all(): EngineSpec[] { return [...this.byId.values()]; }
   merge(specs: readonly EngineSpec[]): void { for (const s of specs) this.byId.set(s.id, s); }
   static load(path = "director/engines.json"): EngineRegistry {

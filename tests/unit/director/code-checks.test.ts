@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { codeChecks } from "../../../src/director/code-checks.js";
 import { engines, identityRef, mara, shotOf, vocabulary } from "./helpers.js";
 
-const r2v = engines.get("seedance-2-0-reference-to-video");
+const r2v = engines.get("seedance-2-0-reference-to-video-basic");
 const failing = (out: ReturnType<typeof codeChecks>) => out.filter((c) => !c.ok).map((c) => `${c.rule}:${c.severity}`);
 
 describe("code checks", () => {
@@ -15,7 +15,7 @@ describe("code checks", () => {
   });
   it("R2: a keyframe must sit in Image 1 with an identity in Image 2 under R2V", () => {
     const key = { ...identityRef("/refs/start.png"), slot: "Image 2", role: "keyframe" as const };
-    const bad = codeChecks({ shot: shotOf({ workflow: "i2v", engine: "seedance-2-0-image-to-video" }), references: [identityRef(), key], characters: [mara], engine: engines.get("seedance-2-0-image-to-video"), vocabulary, promptFinal: "" });
+    const bad = codeChecks({ shot: shotOf({ workflow: "i2v", engine: "seedance-2-0-image-to-video-basic" }), references: [identityRef(), key], characters: [mara], engine: engines.get("seedance-2-0-image-to-video-basic"), vocabulary, promptFinal: "" });
     expect(failing(bad)).toContain("R2:block");
     const good = codeChecks({ shot: shotOf(), references: [{ ...key, slot: "Image 1" }, { ...identityRef(), slot: "Image 2" }], characters: [mara], engine: r2v, vocabulary, promptFinal: "" });
     expect(failing(good)).not.toContain("R2:block");

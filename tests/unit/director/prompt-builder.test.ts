@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { buildPrompt, stripMetaStatements } from "../../../src/director/prompt-builder.js";
 import { engines, identityRef, mara, shotOf } from "./helpers.js";
 
-const r2v = engines.get("seedance-2-0-reference-to-video");
-const t2v = engines.get("seedance-2-0-text-to-video");
+const r2v = engines.get("seedance-2-0-reference-to-video-basic");
+const t2v = engines.get("seedance-2-0-text-to-video-basic");
 
 describe("prompt builder", () => {
   it("keeps the fixed order: binding, shot size, camera move, action, lighting, composition, style", () => {
@@ -15,7 +15,7 @@ describe("prompt builder", () => {
     const idx = order.map((s) => p.indexOf(s));
     expect(idx.every((i) => i >= 0)).toBe(true);
     expect([...idx].sort((a, b) => a - b)).toEqual(idx);
-    expect(res.request).toMatchObject({ model: "seedance-2-0-reference-to-video", duration: "5s", aspect_ratio: "16:9", resolution: "480p" });
+    expect(res.request).toMatchObject({ model: "seedance-2-0-reference-to-video-basic", duration: "5s", aspect_ratio: "16:9", resolution: "480p" });
     expect(res.request.reference_images).toEqual([{ slot: "Image 1", role: "identity", path: "/refs/mara.png" }]);
   });
 
@@ -44,7 +44,7 @@ describe("prompt builder", () => {
 
   it("strips sentences about the prompt's own correctness and never adds engine or duration", () => {
     expect(stripMetaStatements("She opens the door. This prompt follows the rules. Rain falls.")).toBe("She opens the door. Rain falls.");
-    const res = buildPrompt({ shot: shotOf({ workflow: "t2v", engine: "seedance-2-0-text-to-video", action_physical_en: "A cat jumps onto the table. This shot is correct." }), references: [], characters: [], engine: t2v, styleGuideEn: "According to the rules this is fine. Warm tones." });
+    const res = buildPrompt({ shot: shotOf({ workflow: "t2v", engine: "seedance-2-0-text-to-video-basic", action_physical_en: "A cat jumps onto the table. This shot is correct." }), references: [], characters: [], engine: t2v, styleGuideEn: "According to the rules this is fine. Warm tones." });
     expect(res.ok).toBe(true);
     if (!res.ok) return;
     expect(res.prompt).not.toMatch(/correct|according to the rules/i);

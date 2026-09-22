@@ -13,7 +13,7 @@ function fakeFetch(handler: (c: Call) => { status: number; body: unknown }): { f
   };
   return { fetch, calls };
 }
-const req = { model: "seedance-2-0-reference-to-video", prompt: "Refer to Mara in Image 1 to generate the shot.", duration: "5s", aspect_ratio: "16:9", resolution: "480p" };
+const req = { model: "seedance-2-0-reference-to-video-basic", prompt: "Refer to Mara in Image 1 to generate the shot.", duration: "5s", aspect_ratio: "16:9", resolution: "480p" };
 
 describe("venice client", () => {
   it("quote: posts the exact body with the bearer key, parses the USD, keeps the raw answer", async () => {

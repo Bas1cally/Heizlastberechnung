@@ -8,13 +8,13 @@ function fakeClient(parsed: unknown) {
   const client = { messages: { parse: async (req: Record<string, unknown>) => { requests.push(req); return { parsed_output: parsed, usage: { input_tokens: 812, output_tokens: 140 }, model: "claude-test", stop_reason: "end_turn" }; } } };
   return { client: client as never, requests };
 }
-const draft = { shot_size: "medium close-up", camera_move: "slow push-in", lens_note: "", lighting: "soft window light", composition: "centered", action_physical_en: "Mara lifts the cup.", action_physical_de: "Mara hebt die Tasse.", engine_recommendation: "seedance-2-0-reference-to-video", duration_s_recommendation: 5, references_needed: [{ character: "Mara", role: "identity" }] };
+const draft = { shot_size: "medium close-up", camera_move: "slow push-in", lens_note: "", lighting: "soft window light", composition: "centered", action_physical_en: "Mara lifts the cup.", action_physical_de: "Mara hebt die Tasse.", engine_recommendation: "seedance-2-0-reference-to-video-basic", duration_s_recommendation: 5, references_needed: [{ character: "Mara", role: "identity" }] };
 
 describe("claude calls", () => {
   it("draft: one user message, no history, structured output, token counts returned", async () => {
     const { client, requests } = fakeClient(draft);
     const c = new ClaudeCalls({ model: "claude-opus-5", client });
-    const r = await c.draft({ styleGuideEn: "Muted.", characters: [{ name: "Mara", fixed_attributes_en: "red hair", variable_attributes: "" }], previous: undefined, beatDe: "Mara hebt die Tasse.", engine: "seedance-2-0-reference-to-video", workflow: "r2v_reference", vocabulary });
+    const r = await c.draft({ styleGuideEn: "Muted.", characters: [{ name: "Mara", fixed_attributes_en: "red hair", variable_attributes: "" }], previous: undefined, beatDe: "Mara hebt die Tasse.", engine: "seedance-2-0-reference-to-video-basic", workflow: "r2v_reference", vocabulary });
     expect(r.value.shot_size).toBe("medium close-up");
     expect(r.usage).toEqual({ input_tokens: 812, output_tokens: 140, model: "claude-test" });
     const req = requests[0]!;

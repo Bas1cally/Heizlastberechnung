@@ -3,7 +3,7 @@ import { VeniceTextCalls, veniceTextPricing } from "../../../src/director/text-v
 import type { FetchLike } from "../../../src/director/venice.js";
 import { vocabulary } from "./helpers.js";
 
-const draft = { shot_size: "medium close-up", camera_move: "slow push-in", lens_note: "", lighting: "soft window light", composition: "centered", action_physical_en: "Mara lifts the cup.", action_physical_de: "Mara hebt die Tasse.", engine_recommendation: "seedance-2-0-reference-to-video", duration_s_recommendation: 5, references_needed: [] };
+const draft = { shot_size: "medium close-up", camera_move: "slow push-in", lens_note: "", lighting: "soft window light", composition: "centered", action_physical_en: "Mara lifts the cup.", action_physical_de: "Mara hebt die Tasse.", engine_recommendation: "seedance-2-0-reference-to-video-basic", duration_s_recommendation: 5, references_needed: [] };
 
 function fakeChat(reply: (body: Record<string, unknown>, n: number) => { status: number; body: unknown }) {
   const bodies: Record<string, unknown>[] = [];

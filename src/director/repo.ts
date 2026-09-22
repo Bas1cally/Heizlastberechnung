@@ -10,7 +10,7 @@ export class DirectorRepo {
   // ---- project / bible ----
   createProject(p: Partial<Project> & { name: string }): Project {
     this.db.run(`INSERT INTO project (name, aspect_ratio, default_resolution, default_engine, style_guide_de, style_guide_en, created_at) VALUES (?,?,?,?,?,?,?)`,
-      [p.name, p.aspect_ratio ?? "16:9", p.default_resolution ?? "480p", p.default_engine ?? "seedance-2-0-reference-to-video", p.style_guide_de ?? "", p.style_guide_en ?? "", this.now()]);
+      [p.name, p.aspect_ratio ?? "16:9", p.default_resolution ?? "480p", p.default_engine ?? "seedance-2-0-reference-to-video-basic", p.style_guide_de ?? "", p.style_guide_en ?? "", this.now()]);
     const project = this.db.get<Project>(`SELECT * FROM project ORDER BY id DESC LIMIT 1`)!;
     this.seedRules(project.id);
     return project;
