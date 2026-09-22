@@ -21,7 +21,7 @@ import { teeSink } from "../src/observability/file-sink.js";
 import { captureScreen, ffmpegAvailable, primaryMonitor, type CaptureBackend, type CaptureSource } from "../src/tft/capture.js";
 import { fingerprint, readBoard } from "../src/tft/vision.js";
 import { ensureMeta } from "../src/tft/meta.js";
-import { adviseWithJev, adviseWithText, createJevAsk } from "../src/tft/advisor.js";
+import { adviseAugmentWithJev, adviseAugmentWithText, adviseWithJev, adviseWithText, createJevAsk, createJevAugmentAsk } from "../src/tft/advisor.js";
 import { TftStore } from "../src/tft/store.js";
 import { startTftServer } from "../src/tft/server.js";
 import type { Meta } from "../src/tft/types.js";
@@ -55,7 +55,9 @@ const primary = backend === "ffmpeg" ? await primaryMonitor() : undefined;
 const sources: CaptureSource[] = [{ kind: "window", title: windowTitle }, ...(primary ? [{ kind: "region" as const, x: 0, y: 0, w: primary.w, h: primary.h }] : []), { kind: "desktop" }];
 log.info("capture backend", { backend, windowTitle, primary: primary ? `${primary.w}x${primary.h}` : "unknown", hint: backend === "powershell" ? "ffmpeg not found; if Defender blocks the script: winget install Gyan.FFmpeg, then restart" : "" });
 const typesafeKey = env("TYPESAFE_API_KEY");
-const jev = typesafeKey ? createJevAsk(new TypeSafeClient({ apiKey: typesafeKey, timeout: 15_000, retry: { maxRetries: 0 }, logLevel: "off" })) : undefined;
+const jevClient = typesafeKey ? new TypeSafeClient({ apiKey: typesafeKey, timeout: 15_000, retry: { maxRetries: 0 }, logLevel: "off" }) : undefined;
+const jev = jevClient ? createJevAsk(jevClient) : undefined;
+const jevAugment = jevClient ? createJevAugmentAsk(jevClient) : undefined;
 let jevDown: string | undefined;
 // A 402 from Venice pauses everything for a minute instead of knocking every 8 s.
 let venicePausedUntil = 0; let veniceError: string | undefined;
@@ -90,7 +92,7 @@ async function loadMeta(force: boolean): Promise<void> {
   try {
     const m = await ensureMeta({ apiKey: veniceKey!, model: metaModel, cachePath: join(dataDir, "meta.json") }, force);
     meta = m.meta; metaError = undefined;
-    log.info("meta", { fromCache: m.fromCache, set: meta.set, patch: meta.patch, comps: meta.comps.map((c) => `${c.name} ${c.tier}`) });
+    log.info("meta", { fromCache: m.fromCache, set: meta.set, patch: meta.patch, comps: meta.comps.map((c) => `${c.name} ${c.tier}`), augments: meta.augments.length });
     lastFingerprint = "";
   } catch (err) { metaError = err instanceof Error ? err.message : String(err); log.error("meta fetch failed; advice is off until it works, retry in 2 min", { err: metaError }); setTimeout(() => void loadMeta(force), 120_000); }
   if (!metaError) return;
@@ -114,20 +116,22 @@ async function cycle(imagePath?: string): Promise<void> {
   }
   const fp = fingerprint(r.value);
   const reading = store.addReading(shot, r.value, fp, r.usage.model, Math.round(performance.now() - t0), r.usage);
-  log.info("read", { id: reading.id, phase: r.value.phase, stage: r.value.stage, gold: r.value.gold, lvl: r.value.level, hp: r.value.hp, shop: r.value.shop, board: r.value.board.map((u) => `${u.name}${u.stars > 1 ? "*" + u.stars : ""}`), bench: r.value.bench.map((u) => u.name), ms: reading.latency_ms, conf: r.value.confidence });
-  if (!meta || r.value.phase === "not_tft" || r.value.phase === "loading" || r.value.phase === "unknown" || (r.value.board.length === 0 && r.value.shop.every((s) => !s))) return;
-  // Stage 1 is PvE with no gold to spend; advice starts at 2-1.
-  if (/^1-/.test(r.value.stage)) return;
+  log.info("read", { id: reading.id, phase: r.value.phase, stage: r.value.stage, gold: r.value.gold, lvl: r.value.level, hp: r.value.hp, ...(r.value.augment_options.length ? { augment_options: r.value.augment_options } : {}), shop: r.value.shop, board: r.value.board.map((u) => `${u.name}${u.stars > 1 ? "*" + u.stars : ""}`), bench: r.value.bench.map((u) => u.name), ms: reading.latency_ms, conf: r.value.confidence });
+  if (!meta || r.value.phase === "not_tft" || r.value.phase === "loading" || r.value.phase === "unknown") return;
+  const augmentChoice = r.value.phase === "augment_choice" && r.value.augment_options.length >= 2;
+  if (!augmentChoice && r.value.board.length === 0 && r.value.shop.every((s) => !s)) return;
+  // Stage 1 is PvE with no gold to spend; turn advice starts at 2-1. Augment choices count at any stage.
+  if (!augmentChoice && /^1-/.test(r.value.stage)) return;
   if (fp === lastFingerprint) return;
   lastFingerprint = fp;
   let result;
-  if (jev && !jevDown) {
-    try { result = await adviseWithJev(r.value, meta, jev); }
+  if (jev && jevAugment && !jevDown) {
+    try { result = augmentChoice ? await adviseAugmentWithJev(r.value, meta, jevAugment) : await adviseWithJev(r.value, meta, jev); }
     catch (err) { jevDown = err instanceof Error ? err.message : String(err); log.warn("jev failed; falling back to the text model", { err: jevDown }); }
   }
-  if (!result) result = await adviseWithText(r.value, meta, { apiKey: veniceKey!, model: adviceModel });
+  if (!result) result = augmentChoice ? await adviseAugmentWithText(r.value, meta, { apiKey: veniceKey!, model: adviceModel }) : await adviseWithText(r.value, meta, { apiKey: veniceKey!, model: adviceModel });
   store.addAdvice(reading.id, result.advice, result.usage);
-  log.info("advice", { comp: result.advice.comp, action: result.advice.action, buy: result.advice.buy, source: result.advice.source, ms: result.advice.latencyMs, reasons: result.advice.reasons });
+  log.info("advice", { ...(result.advice.augment ? { augment: result.advice.augment.pick, options: result.advice.augment.options } : {}), comp: result.advice.comp, action: result.advice.action, buy: result.advice.buy, source: result.advice.source, ms: result.advice.latencyMs, reasons: result.advice.reasons });
 }
 
 const image = opt("image");

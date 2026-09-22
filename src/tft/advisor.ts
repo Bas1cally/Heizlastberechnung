@@ -2,7 +2,7 @@ import { choice, noul, score, type ChoiceResponse, type NoulResponse, type Score
 import { z } from "zod";
 import { chatJson } from "../director/text-venice.js";
 import type { FetchLike } from "../director/venice.js";
-import { ACTIONS, type Action, type Advice, type BoardRead, type Comp, type Meta } from "./types.js";
+import { ACTIONS, type Action, type Advice, type AugmentStat, type BoardRead, type Comp, type Meta } from "./types.js";
 
 /**
  * The judgment: given what is on screen and what the meta says, which comp
@@ -20,6 +20,70 @@ export function buildState(read: BoardRead, meta: Meta): Record<string, unknown>
     comps: meta.comps.map((c) => ({ key: compKey(c.name), name: c.name, tier: c.tier, core_units: c.core_units, carries: c.carries, key_items: c.key_items, playstyle: c.playstyle, when_to_play: c.when_to_play })),
     patch: meta.patch,
   };
+}
+
+/** The statistic for an offered augment, matched loosely by name (the reader's spelling is not always the site's). */
+export function augmentStat(name: string, stats: readonly AugmentStat[]): AugmentStat | undefined {
+  const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const n = norm(name);
+  return stats.find((a) => norm(a.name) === n) ?? stats.find((a) => norm(a.name).includes(n) || n.includes(norm(a.name)));
+}
+
+export const augmentKey = (name: string, i: number): string => `opt${i + 1}_${compKey(name)}`;
+
+/** The augment question: one choice over the cards on screen, each described with the patch statistic when known. */
+export function buildAugmentQuestions(read: BoardRead, meta: Meta) {
+  const criteria: Record<string, string> = {};
+  read.augment_options.forEach((name, i) => {
+    const st = augmentStat(name, meta.augments);
+    criteria[augmentKey(name, i)] = `${name}${st ? ` (avg placement ${st.avg_place ?? "?"}${st.tier ? `, tier ${st.tier}` : ""}${st.note ? `; ${st.note}` : ""})` : " (no statistic this patch)"}`;
+  });
+  return {
+    augment: choice("Which offered augment gives the best expected placement from this exact position? Weigh the patch statistic against the fit with the units, items and comps the board is heading for; a strong generic augment beats a comp-specific one when the comp is not yet set.", criteria),
+    comp: buildQuestions(meta).comp,
+  };
+}
+export type AugmentQuestions = ReturnType<typeof buildAugmentQuestions>;
+export type AugmentAnswers = { augment: ChoiceResponse; comp: ChoiceResponse };
+
+export function augmentAdviceFrom(answers: AugmentAnswers, read: BoardRead, meta: Meta, model: string, latencyMs: number): Advice {
+  const key = String(answers.augment.choice);
+  const idx = read.augment_options.findIndex((n, i) => augmentKey(n, i) === key);
+  const pick = idx >= 0 ? read.augment_options[idx]! : key;
+  const compK = String(answers.comp.choice);
+  const comp = meta.comps.find((c) => compKey(c.name) === compK);
+  const probs = Object.entries(answers.augment.probabilities as Record<string, number>).sort((a, b) => b[1] - a[1]).map(([k, p]) => { const i = read.augment_options.findIndex((n, j) => augmentKey(n, j) === k); return `${i >= 0 ? read.augment_options[i] : k} ${(p * 100).toFixed(0)}%`; });
+  const st = augmentStat(pick, meta.augments);
+  return {
+    augment: { pick, options: read.augment_options, why: `${probs.join(", ")}${st?.avg_place ? ` · Ø Platz ${st.avg_place}` : ""}` },
+    comp: comp?.name ?? compK, compKey: compK, action: "SAVE", buy: [], urgency: "low", onTrack: 0, confidence: answers.augment.confidence,
+    reasons: [`augment ${pick} (${(answers.augment.confidence * 100).toFixed(0)}%)`, `then ${comp?.name ?? compK}`], source: "jev", model, latencyMs,
+  };
+}
+
+export type JevAugmentAsk = (state: Record<string, unknown>, questions: AugmentQuestions) => Promise<{ answers: AugmentAnswers; model: string; usage: { input_tokens: number; output_tokens: number } }>;
+
+export async function adviseAugmentWithJev(read: BoardRead, meta: Meta, ask: JevAugmentAsk, now: () => number = () => performance.now()): Promise<{ advice: Advice; usage: { input_tokens: number; output_tokens: number } }> {
+  const t0 = now();
+  const r = await ask({ ...buildState(read, meta), augment_options: read.augment_options.map((n, i) => ({ key: augmentKey(n, i), name: n, stat: augmentStat(n, meta.augments) ?? null })) }, buildAugmentQuestions(read, meta));
+  return { advice: augmentAdviceFrom(r.answers, read, meta, r.model, Math.round(now() - t0)), usage: r.usage };
+}
+
+const TextAugmentSchema = z.object({ augment_key: z.string(), comp_key: z.string(), reason: z.string().describe("at most 25 words") });
+
+export async function adviseAugmentWithText(read: BoardRead, meta: Meta, o: TextAdvisorOptions, now: () => number = () => performance.now()): Promise<{ advice: Advice; usage: { input_tokens: number; output_tokens: number } }> {
+  const t0 = now();
+  const q = buildAugmentQuestions(read, meta);
+  const r = await chatJson({
+    apiKey: o.apiKey, model: o.model, purpose: "tft_augment", system: "You coach one Teamfight Tactics augment choice. augment_key must be one of the option keys listed, comp_key one of the comp keys. Keep reason to one short sentence. Output only the JSON.",
+    user: JSON.stringify({ state: buildState(read, meta), augment_options: q.augment.criteria, question: q.augment.instructions }), schema: TextAugmentSchema, maxTokens: 1500, temperature: 0.1, reasoningEffort: "low", fetch: o.fetch, base: o.base, timeoutMs: 60_000,
+  });
+  const idx = read.augment_options.findIndex((n, i) => augmentKey(n, i) === r.value.augment_key);
+  const pick = idx >= 0 ? read.augment_options[idx]! : r.value.augment_key;
+  const comp = meta.comps.find((c) => compKey(c.name) === r.value.comp_key);
+  const st = augmentStat(pick, meta.augments);
+  const advice: Advice = { augment: { pick, options: read.augment_options, why: `${r.value.reason}${st?.avg_place ? ` · Ø Platz ${st.avg_place}` : ""}` }, comp: comp?.name ?? r.value.comp_key, compKey: r.value.comp_key, action: "SAVE", buy: [], urgency: "low", onTrack: 0, confidence: 0.5, reasons: [r.value.reason], source: "text", model: r.usage.model, latencyMs: Math.round(now() - t0) };
+  return { advice, usage: r.usage };
 }
 
 export function buildQuestions(meta: Meta) {
@@ -57,8 +121,13 @@ export function adviceFrom(answers: Answers, read: BoardRead, meta: Meta, model:
 
 export type JevAsk = (state: Record<string, unknown>, questions: Questions) => Promise<{ answers: Answers; model: string; usage: { input_tokens: number; output_tokens: number } }>;
 
-export function createJevAsk(client: { systemOne(req: { state: unknown; questions: Questions }, opts?: unknown): Promise<{ answers: unknown; model: string; usage: { input_tokens: number; output_tokens: number } }> }): JevAsk {
+export interface JevClientLike { systemOne(req: { state: unknown; questions: unknown }, opts?: unknown): Promise<{ answers: unknown; model: string; usage: { input_tokens: number; output_tokens: number } }> }
+
+export function createJevAsk(client: JevClientLike): JevAsk {
   return async (state, questions) => { const r = await client.systemOne({ state, questions }); return { answers: r.answers as Answers, model: r.model, usage: r.usage }; };
+}
+export function createJevAugmentAsk(client: JevClientLike): JevAugmentAsk {
+  return async (state, questions) => { const r = await client.systemOne({ state, questions }); return { answers: r.answers as AugmentAnswers, model: r.model, usage: r.usage }; };
 }
 
 const TextAdviceSchema = z.object({ comp_key: z.string(), action: z.enum(["ROLL", "LEVEL", "SAVE", "BUY"]), on_track: z.number().min(0).max(1), urgency: z.enum(["low", "medium", "high"]), reason: z.string().describe("at most 25 words") });

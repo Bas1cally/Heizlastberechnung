@@ -33,6 +33,15 @@ Windows Defender blockierte den Bildschirm-Screenshot als Inline-PowerShell
 das Skript `scripts\tft-capture.ps1` als Datei. Welcher Weg läuft, steht
 beim Start als `capture backend` im Log.
 
+## Augment-Wahl
+
+Zeigt das Spiel Augment-Karten, liest das Modell die drei Namen
+(`augment_options`), die Meta liefert die 30 Augments mit der besten
+Durchschnittsplatzierung des Patches, und Jev wählt eine Karte, mit der
+Statistik in der Beschreibung jeder Option. Das Overlay zeigt dann
+„Augment: …“, darunter die Comp, die daraus folgt. Ohne Jev entscheidet das
+Textmodell über dieselben Optionen.
+
 ## Bevor es sinnvoll wird: die Erkennung messen
 
 Zehn Screenshots aus echten Planungsphasen in einen Ordner legen (Win+Shift+S

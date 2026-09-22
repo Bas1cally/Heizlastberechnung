@@ -2,7 +2,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { adviceFrom, adviseWithJev, adviseWithText, buildQuestions, buildState, compKey, unitsToBuy, type Answers } from "../../../src/tft/advisor.js";
+import { adviceFrom, adviseAugmentWithJev, adviseAugmentWithText, adviseWithJev, adviseWithText, augmentStat, buildAugmentQuestions, buildQuestions, buildState, compKey, unitsToBuy, type Answers, type AugmentAnswers } from "../../../src/tft/advisor.js";
 import { ffmpegArgs } from "../../../src/tft/capture.js";
 import { ensureMeta, loadCachedMeta } from "../../../src/tft/meta.js";
 import { createTftApi, overlayText } from "../../../src/tft/server.js";
@@ -12,7 +12,7 @@ import { fingerprint, readBoard } from "../../../src/tft/vision.js";
 import { openDatabase } from "../../../src/persistence/database.js";
 import type { FetchLike } from "../../../src/director/venice.js";
 
-const meta: Meta = { set: "Set 16", patch: "16.3", sources: ["a"], comps: [
+const meta: Meta = { set: "Set 16", patch: "16.3", sources: ["a"], augments: [{ name: "Pandora's Items", avg_place: 4.1, tier: "A", note: "flexible items" }, { name: "Cybernetic Uplink", avg_place: 4.6, tier: "B", note: "" }], comps: [
   { name: "Star Guardian Reroll", tier: "S", core_units: ["Syndra", "Ahri", "Neeko"], carries: ["Syndra"], key_items: ["Shojin"], augments: [], playstyle: "slow roll at 6", when_to_play: "early Syndra 2" },
   { name: "Duelist Yasuo", tier: "A", core_units: ["Yasuo", "Yone", "Kai'Sa"], carries: ["Yone"], key_items: ["Titan's"], augments: [], playstyle: "fast 8", when_to_play: "" },
 ] };
@@ -124,5 +124,41 @@ describe("tft store and server", () => {
     expect(a.line3).toContain("Druck high");
     expect(a.totals).toEqual({ readings: 1, advices: 1, readTokens: 1600, adviceTokens: 908 });
     expect(overlayText(undefined, { ...read, phase: "not_tft" }).line2).toBe("Kein TFT im Bild");
+  });
+});
+
+describe("tft augment choice", () => {
+  const offered: BoardRead = { ...read, phase: "augment_choice", augment_options: ["Pandora's Items", "Cybernetic Uplink", "Fresh Idea"] };
+  it("builds one choice over the offered cards with the patch statistic, and Jev's pick becomes overlay text", async () => {
+    const q = buildAugmentQuestions(offered, meta);
+    expect(Object.keys(q.augment.criteria)).toEqual(["opt1_pandora_s_items", "opt2_cybernetic_uplink", "opt3_fresh_idea"]);
+    expect(q.augment.criteria["opt1_pandora_s_items"]).toContain("avg placement 4.1");
+    expect(q.augment.criteria["opt3_fresh_idea"]).toContain("no statistic");
+    expect(augmentStat("pandoras items", meta.augments)?.avg_place).toBe(4.1);
+    const answers: AugmentAnswers = {
+      augment: { type: "choice", choice: "opt1_pandora_s_items", confidence: 0.77, probabilities: { opt1_pandora_s_items: 0.77, opt2_cybernetic_uplink: 0.15, opt3_fresh_idea: 0.08 } } as never,
+      comp: { type: "choice", choice: "star_guardian_reroll", confidence: 0.8, probabilities: { star_guardian_reroll: 0.8, duelist_yasuo: 0.2 } } as never,
+    };
+    const r = await adviseAugmentWithJev(offered, meta, async () => ({ answers, model: "jev", usage: { input_tokens: 700, output_tokens: 4 } }));
+    expect(r.advice.augment).toMatchObject({ pick: "Pandora's Items", options: offered.augment_options });
+    expect(r.advice.augment?.why).toContain("Pandora's Items 77%");
+    expect(r.advice.comp).toBe("Star Guardian Reroll");
+    expect(overlayText(r.advice, offered).line1).toBe("Augment: Pandora's Items");
+    expect(overlayText(r.advice, offered).line2).toBe("dann Star Guardian Reroll");
+    expect(fingerprint(offered)).not.toBe(fingerprint(read));
+  });
+  it("the text fallback picks by option key", async () => {
+    const { fetch } = fakeChat(() => completion({ augment_key: "opt2_cybernetic_uplink", comp_key: "duelist_yasuo", reason: "tempo" }));
+    const r = await adviseAugmentWithText(offered, meta, { apiKey: "k", model: "m", fetch });
+    expect(r.advice.augment?.pick).toBe("Cybernetic Uplink");
+    expect(r.advice.augment?.why).toContain("Ø Platz 4.6");
+    expect(r.advice.comp).toBe("Duelist Yasuo");
+  });
+  it("a cached meta without augment statistics is refetched", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "tft-")); const cache = join(dir, "meta.json");
+    writeFileSync(cache, JSON.stringify({ fetchedAt: 5, meta: { ...meta, augments: [] } }));
+    expect(loadCachedMeta(cache, 1e12, 10)).toBeUndefined();
+    writeFileSync(cache, JSON.stringify({ fetchedAt: 5, meta }));
+    expect(loadCachedMeta(cache, 1e12, 10)?.meta.augments).toHaveLength(2);
   });
 });

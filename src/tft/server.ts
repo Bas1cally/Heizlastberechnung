@@ -12,6 +12,7 @@ export interface TftServerDeps { readonly store: TftStore; readonly meta: () => 
 
 export function overlayText(advice: Advice | undefined, read: BoardRead | undefined): { line1: string; line2: string; line3: string } {
   if (!advice) return { line1: read ? `Stage ${read.stage || "?"} · ${read.gold} Gold · Lvl ${read.level}` : "TFT-Berater: warte auf den ersten Screenshot", line2: read?.phase === "not_tft" ? "Kein TFT im Bild" : read ? "noch kein Rat" : "", line3: "" };
+  if (advice.augment) return { line1: `Augment: ${advice.augment.pick}`, line2: `dann ${advice.comp}`, line3: `${advice.augment.why} · ${advice.source} ${advice.latencyMs} ms` };
   const act = { ROLL: "Rollen", LEVEL: "Leveln", SAVE: "Sparen", BUY: "Kaufen" }[advice.action];
   return { line1: `${advice.comp}${advice.confidence ? ` (${Math.round(advice.confidence * 100)}%)` : ""}`, line2: `${act}${advice.buy.length ? `: ${advice.buy.join(", ")}` : ""}`, line3: `Kurs ${Math.round(advice.onTrack * 100)}% · Druck ${advice.urgency} · ${advice.source} ${advice.latencyMs} ms` };
 }

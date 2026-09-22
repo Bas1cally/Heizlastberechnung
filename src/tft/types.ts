@@ -13,7 +13,8 @@ export const BoardReadSchema = z.object({
   shop: z.array(z.string()).default([]).describe("the five shop champions left to right; empty strings for sold slots"),
   board: z.array(UnitSchema).default([]),
   bench: z.array(UnitSchema).default([]),
-  augments: z.array(z.string()).default([]),
+  augments: z.array(z.string()).default([]).describe("augments already taken, shown at the left edge"),
+  augment_options: z.array(z.string()).default([]).describe("the augment cards currently offered to choose from (usually three), empty when no choice is open"),
   item_bench: z.array(z.string()).default([]),
   phase: z.enum(["planning", "combat", "carousel", "augment_choice", "loading", "not_tft", "unknown"]).default("unknown"),
   confidence: z.number().min(0).max(1).default(0.5).describe("how sure the reader is about the names it wrote"),
@@ -30,7 +31,9 @@ export const CompSchema = z.object({
   playstyle: z.string().default("").describe("one sentence: tempo, fast 8, reroll, when to level"),
   when_to_play: z.string().default("").describe("one sentence: what early units, items or augments signal this comp"),
 });
-export const MetaSchema = z.object({ set: z.string().default(""), patch: z.string().default(""), comps: z.array(CompSchema).min(1), sources: z.array(z.string()).default([]) });
+export const AugmentStatSchema = z.object({ name: z.string(), avg_place: z.number().optional().describe("average placement when picked, lower is better"), tier: z.string().default(""), note: z.string().default("").describe("one clause: what it is good with") });
+export const MetaSchema = z.object({ set: z.string().default(""), patch: z.string().default(""), comps: z.array(CompSchema).min(1), augments: z.array(AugmentStatSchema).default([]), sources: z.array(z.string()).default([]) });
+export type AugmentStat = z.infer<typeof AugmentStatSchema>;
 export type Comp = z.infer<typeof CompSchema>;
 export type Meta = z.infer<typeof MetaSchema>;
 
@@ -38,6 +41,8 @@ export const ACTIONS = { ROLL: "Spend gold rerolling the shop now for the units 
 export type Action = keyof typeof ACTIONS;
 
 export interface Advice {
+  /** An augment pick when the screen showed augment cards; otherwise the turn's comp and action. */
+  readonly augment?: { pick: string; options: string[]; why: string } | undefined;
   readonly comp: string;
   readonly compKey: string;
   readonly action: Action;

@@ -11,7 +11,7 @@ import { BoardReadSchema, type BoardRead } from "./types.js";
  * fields rather than guesses; `confidence` is the reader's own estimate and
  * is measured against hand-labelled screenshots (pnpm tft -- --measure).
  */
-const SYSTEM = "You read screenshots of Teamfight Tactics (TFT). Report exactly what is visible: champion names as printed in the game, star levels from the stars above units, items from their icons, gold, level, HP and the stage indicator. Shop slots read left to right; an empty or sold slot is an empty string. If the screen is not a TFT planning phase, set phase accordingly and leave lists empty. Never invent units that are not clearly visible; lower confidence when text is small or blurred. Output only the JSON.";
+const SYSTEM = "You read screenshots of Teamfight Tactics (TFT). Report exactly what is visible: champion names as printed in the game, star levels from the stars above units, items from their icons, gold, level, HP and the stage indicator. Shop slots read left to right; an empty or sold slot is an empty string. When augment cards are offered (large cards in the middle of the screen with a name each), set phase to augment_choice and list the card names left to right in augment_options. If the screen is not a TFT planning phase, set phase accordingly and leave lists empty. Never invent units that are not clearly visible; lower confidence when text is small or blurred. Output only the JSON.";
 
 export interface VisionOptions { readonly apiKey: string; readonly model: string; readonly fetch?: FetchLike | undefined; readonly base?: string | undefined; readonly reasoningEffort?: string | undefined }
 
@@ -35,5 +35,5 @@ export async function readBoard(imagePath: string, o: VisionOptions, hint = ""):
 
 /** What changed between two readings, for deciding whether to ask the advisor again. */
 export function fingerprint(r: BoardRead): string {
-  return [r.stage, r.gold, r.level, r.hp, r.shop.join("|"), r.board.map((u) => `${u.name}${u.stars}`).sort().join("|"), r.bench.map((u) => `${u.name}${u.stars}`).sort().join("|"), r.augments.join("|")].join("#");
+  return [r.stage, r.gold, r.level, r.hp, r.phase === "augment_choice" ? `A:${r.augment_options.join("|")}` : "", r.shop.join("|"), r.board.map((u) => `${u.name}${u.stars}`).sort().join("|"), r.bench.map((u) => `${u.name}${u.stars}`).sort().join("|"), r.augments.join("|")].join("#");
 }
