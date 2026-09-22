@@ -1,0 +1,306 @@
+{
+  "generatedAt": "2026-09-22T08:46:44.733Z",
+  "observations": 47399,
+  "resolvedMarkets": 236,
+  "note": "naive EV: buy Jev's favoured side at the executable ask, hold to settlement; no fees, fills or slippage. Upper bound.",
+  "byDistanceBps": [
+    {
+      "bucket": "0-1bps",
+      "n": 9845,
+      "accuracy": 0.5897409852717115,
+      "executable": 9726,
+      "meanAsk": 0.5631658441291396,
+      "meanJevEdge": 0.3060927878585902,
+      "meanPnl": 0.021555521283158248,
+      "winRate": 0.5847213654122969
+    },
+    {
+      "bucket": "1-2.5bps",
+      "n": 10301,
+      "accuracy": 0.6568294340355305,
+      "executable": 10045,
+      "meanAsk": 0.6268492782478844,
+      "meanJevEdge": 0.27954935504978135,
+      "meanPnl": 0.021234345445495236,
+      "winRate": 0.6480836236933798
+    },
+    {
+      "bucket": "2.5-5bps",
+      "n": 10940,
+      "accuracy": 0.7302559414990859,
+      "executable": 10291,
+      "meanAsk": 0.7010009717228607,
+      "meanJevEdge": 0.23382995329009046,
+      "meanPnl": 0.012243610922164902,
+      "winRate": 0.7132445826450297
+    },
+    {
+      "bucket": "5-10bps",
+      "n": 9496,
+      "accuracy": 0.845513900589722,
+      "executable": 8032,
+      "meanAsk": 0.805151269920304,
+      "meanJevEdge": 0.15757486137438576,
+      "meanPnl": 0.012204307768924297,
+      "winRate": 0.817355577689243
+    },
+    {
+      "bucket": "10-20bps",
+      "n": 5282,
+      "accuracy": 0.903067020068156,
+      "executable": 3389,
+      "meanAsk": 0.8408211861906103,
+      "meanJevEdge": 0.12893925259097722,
+      "meanPnl": 0.00810179994098564,
+      "winRate": 0.8489229861316022
+    },
+    {
+      "bucket": "20-50bps",
+      "n": 1528,
+      "accuracy": 0.9404450261780105,
+      "executable": 619,
+      "meanAsk": 0.8942132471728604,
+      "meanJevEdge": 0.08710240934679125,
+      "meanPnl": -0.04122455573505654,
+      "winRate": 0.8529886914378029
+    },
+    {
+      "bucket": "50bps+",
+      "n": 7,
+      "accuracy": 1,
+      "executable": 3,
+      "meanAsk": 0.9899999999999999,
+      "meanJevEdge": -0.0016310892172960816,
+      "meanPnl": 0.010000000000000009,
+      "winRate": 1
+    }
+  ],
+  "byVolatility": [
+    {
+      "bucket": "<2bps",
+      "n": 47286,
+      "accuracy": 0.7343188258681217,
+      "executable": 42016,
+      "meanAsk": 0.6852555931073939,
+      "meanJevEdge": 0.23649146689723677,
+      "meanPnl": 0.015739265993906737,
+      "winRate": 0.7009948591012948
+    },
+    {
+      "bucket": "2-5bps",
+      "n": 112,
+      "accuracy": 0.7142857142857143,
+      "executable": 88,
+      "meanAsk": 0.7776136363636362,
+      "meanJevEdge": 0.13088994386156358,
+      "meanPnl": -0.14125000000000001,
+      "winRate": 0.6363636363636364
+    },
+    {
+      "bucket": "5-10bps",
+      "n": 1,
+      "accuracy": 1,
+      "executable": 1,
+      "meanAsk": 0.93,
+      "meanJevEdge": 0.059898989898989896,
+      "meanPnl": 0.06999999999999995,
+      "winRate": 1
+    },
+    {
+      "bucket": "10-20bps",
+      "n": 0,
+      "accuracy": null,
+      "executable": 0,
+      "meanAsk": null,
+      "meanJevEdge": null,
+      "meanPnl": null,
+      "winRate": null
+    },
+    {
+      "bucket": "20-50bps",
+      "n": 0,
+      "accuracy": null,
+      "executable": 0,
+      "meanAsk": null,
+      "meanJevEdge": null,
+      "meanPnl": null,
+      "winRate": null
+    },
+    {
+      "bucket": "50bps+",
+      "n": 0,
+      "accuracy": null,
+      "executable": 0,
+      "meanAsk": null,
+      "meanJevEdge": null,
+      "meanPnl": null,
+      "winRate": null
+    }
+  ],
+  "byJevConfidence": [
+    {
+      "bucket": "<0.5",
+      "n": 37948,
+      "accuracy": 0.7509750184462949,
+      "executable": 33062,
+      "meanAsk": 0.7024892625975481,
+      "meanJevEdge": 0.22060145797949127,
+      "meanPnl": 0.01168410864436497,
+      "winRate": 0.7141733712419092
+    },
+    {
+      "bucket": "0.5-0.7",
+      "n": 8426,
+      "accuracy": 0.6697127937336814,
+      "executable": 8018,
+      "meanAsk": 0.6251071339486204,
+      "meanJevEdge": 0.2959522297134214,
+      "meanPnl": 0.027798827637815122,
+      "winRate": 0.6529059615864305
+    },
+    {
+      "bucket": "0.7-0.9",
+      "n": 1025,
+      "accuracy": 0.646829268292683,
+      "executable": 1025,
+      "meanAsk": 0.6080487804878035,
+      "meanJevEdge": 0.2746666396525512,
+      "meanPnl": 0.03878048780487798,
+      "winRate": 0.646829268292683
+    },
+    {
+      "bucket": "0.9-0.99",
+      "n": 0,
+      "accuracy": null,
+      "executable": 0,
+      "meanAsk": null,
+      "meanJevEdge": null,
+      "meanPnl": null,
+      "winRate": null
+    },
+    {
+      "bucket": "0.99+",
+      "n": 0,
+      "accuracy": null,
+      "executable": 0,
+      "meanAsk": null,
+      "meanJevEdge": null,
+      "meanPnl": null,
+      "winRate": null
+    }
+  ],
+  "byAction": [
+    {
+      "bucket": "ABSTAIN",
+      "n": 6490,
+      "accuracy": 0.6117103235747303,
+      "executable": 6447,
+      "meanAsk": 0.5996680626648095,
+      "meanJevEdge": 0.2966891714764083,
+      "meanPnl": 0.00945245850783297,
+      "winRate": 0.6091205211726385
+    },
+    {
+      "bucket": "ADD_COMPLEMENT",
+      "n": 12082,
+      "accuracy": 0.7383711306075154,
+      "executable": 11592,
+      "meanAsk": 0.7111803830227617,
+      "meanJevEdge": 0.17780129060201832,
+      "meanPnl": 0.016131556245686737,
+      "winRate": 0.727311939268461
+    },
+    {
+      "bucket": "BUY_DOWN",
+      "n": 2189,
+      "accuracy": 0.7277295568752855,
+      "executable": 2041,
+      "meanAsk": 0.6524620284174392,
+      "meanJevEdge": 0.26087068468068625,
+      "meanPnl": 0.05552425281724685,
+      "winRate": 0.7079862812346889
+    },
+    {
+      "bucket": "BUY_UP",
+      "n": 4084,
+      "accuracy": 0.6789911851126347,
+      "executable": 4000,
+      "meanAsk": 0.6750002499999992,
+      "meanJevEdge": 0.2606137206172703,
+      "meanPnl": -0.0027502499999999624,
+      "winRate": 0.67225
+    },
+    {
+      "bucket": "HOLD",
+      "n": 22554,
+      "accuracy": 0.777999467943602,
+      "executable": 18025,
+      "meanAsk": 0.7056488210818193,
+      "meanJevEdge": 0.24406569143603948,
+      "meanPnl": 0.01657031900138703,
+      "winRate": 0.7222191400832177
+    }
+  ],
+  "byPairCost": [
+    {
+      "bucket": "<0.98",
+      "n": 5480,
+      "accuracy": 0.9660583941605839,
+      "executable": 186,
+      "meanAsk": 0.008951612903225813,
+      "meanJevEdge": 0.9191643417829177,
+      "meanPnl": -0.008951612903225813,
+      "winRate": 0
+    },
+    {
+      "bucket": "0.98-0.99",
+      "n": 0,
+      "accuracy": null,
+      "executable": 0,
+      "meanAsk": null,
+      "meanJevEdge": null,
+      "meanPnl": null,
+      "winRate": null
+    },
+    {
+      "bucket": "0.99-1.00",
+      "n": 0,
+      "accuracy": null,
+      "executable": 0,
+      "meanAsk": null,
+      "meanJevEdge": null,
+      "meanPnl": null,
+      "winRate": null
+    },
+    {
+      "bucket": "1.00-1.01",
+      "n": 120,
+      "accuracy": 0.75,
+      "executable": 120,
+      "meanAsk": 0.7486333333333334,
+      "meanJevEdge": 0.213092701879265,
+      "meanPnl": 0.0013666666666666753,
+      "winRate": 0.75
+    },
+    {
+      "bucket": "1.01-1.03",
+      "n": 40151,
+      "accuracy": 0.7063584966750517,
+      "executable": 40151,
+      "meanAsk": 0.6910699110856556,
+      "meanJevEdge": 0.23160432494917213,
+      "meanPnl": 0.015288585589399637,
+      "winRate": 0.7063584966750517
+    },
+    {
+      "bucket": "1.03+",
+      "n": 1648,
+      "accuracy": 0.6425970873786407,
+      "executable": 1648,
+      "meanAsk": 0.6203944174757283,
+      "meanJevEdge": 0.27446768469213917,
+      "meanPnl": 0.02220266990291265,
+      "winRate": 0.6425970873786407
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "syncedAt": "2026-09-22T08:47:00.858Z",
+  "database": "data/bot.sqlite",
+  "exportTables": {
+    "markets": 237,
+    "trader_activity": 43834,
+    "jev_requests": 47399,
+    "jev_answers": 47399,
+    "jev_cache": 47399,
+    "orders": 1126,
+    "fills": 959,
+    "inventory_snapshots": 959,
+    "merges": 225,
+    "redemptions": 211,
+    "latency_measurements": 47399,
+    "shadow_orders": 0,
+    "pnl_snapshots": 211,
+    "control": 3,
+    "errors": 4996,
+    "ticks": 127750,
+    "trades": 202021,
+    "orderbook_snapshots": 13543
+  },
+  "summaryOk": true,
+  "tookMs": 158602,
+  "node": "v24.18.0"
+}

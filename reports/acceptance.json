@@ -1,0 +1,71 @@
+{
+  "generatedAt": "2026-09-22T08:45:20.290Z",
+  "overall": "INSUFFICIENT",
+  "criteria": [
+    {
+      "name": "24 h unattended runtime",
+      "status": "INSUFFICIENT",
+      "detail": "recorded span 19.9 h, longest continuous stretch 14.4 h, 6 outage(s) over 60 s totalling 40.8 min, largest gap 607 s",
+      "numbers": {
+        "spanHours": 19.910090277777776,
+        "longestContinuousHours": 14.411916111111111,
+        "outages": 6,
+        "downtimeMinutes": 40.796866666666666,
+        "maxGapSeconds": 606.949
+      }
+    },
+    {
+      "name": "websocket reconnection",
+      "status": "PASS",
+      "detail": "31 stream error(s), data resumed within 2 min after 31 of them",
+      "numbers": {
+        "streamErrors": 31,
+        "recovered": 31
+      }
+    },
+    {
+      "name": "stale-state protection",
+      "status": "PASS",
+      "detail": "10892 decision(s) rejected for staleness, 0 approved despite it; 10468 of 18355 buy decision(s) were stale at validation",
+      "numbers": {
+        "staleRejections": 10892,
+        "staleApproved": 0,
+        "buys": 18355,
+        "staleBuys": 10468,
+        "staleBuyShare": 0.5703078180332335
+      }
+    },
+    {
+      "name": "every Jev decision stored",
+      "status": "PASS",
+      "detail": "47399 request(s), 47399 answer(s), 47399 latency row(s), 4601 failed call(s) recorded as errors",
+      "numbers": {
+        "requests": 47399,
+        "answers": 47399,
+        "latencyRows": 47399,
+        "jevErrors": 4601,
+        "errorRate": 0.08848076923076922
+      }
+    },
+    {
+      "name": "latency statistics generated",
+      "status": "PASS",
+      "detail": "47399 samples: Jev p50 285 ms, p95 533 ms, p99 694 ms, max 2367 ms",
+      "numbers": {
+        "samples": 47399,
+        "p50": 285.4804999999469,
+        "p95": 532.529499999946,
+        "p99": 693.6535999999614,
+        "max": 2366.5813999999955
+      }
+    },
+    {
+      "name": "no order submitted",
+      "status": "PASS",
+      "detail": "no order outside simulation modes",
+      "numbers": {
+        "nonSimulatedOrders": 0
+      }
+    }
+  ]
+}

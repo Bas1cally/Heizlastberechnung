@@ -1,0 +1,47 @@
+{
+  "generatedAt": "2026-09-22T08:46:44.732Z",
+  "mode": "backtest",
+  "usdPerMToken": 0,
+  "metrics": {
+    "mode": "backtest",
+    "settledMarkets": 22,
+    "netPnl": 0,
+    "grossPnl": 0,
+    "fees": 0,
+    "gas": 0,
+    "mergePnl": 0,
+    "settlementPnl": 0,
+    "deployedCapitalUsd": 0,
+    "returnOnDeployedCapital": null,
+    "pnlPerMarket": 0,
+    "pnlPerFill": null,
+    "jevCalls": 0,
+    "pnlPerJevCall": null,
+    "maxDrawdown": 0,
+    "worstCaseExposureUsd": 0,
+    "unpairedExposure": {
+      "totalMs": 0,
+      "meanPerMarketMs": 0,
+      "maxMs": 0,
+      "shareOfMarketTime": 0
+    },
+    "orders": 0,
+    "fills": 0,
+    "partials": 0,
+    "noFills": 0,
+    "cancelled": 0,
+    "fillRatio": null,
+    "cancelRatio": null,
+    "makerFills": 0,
+    "takerFills": 0,
+    "makerTakerRatio": null,
+    "jevTokens": {
+      "input": 0,
+      "output": 0
+    },
+    "jevCostUsd": 0,
+    "usdPerMillionTokens": 0,
+    "netPnlAfterJevCost": 0
+  },
+  "realizedPnlByTime": []
+}

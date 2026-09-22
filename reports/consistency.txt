@@ -1,0 +1,14 @@
+Consistency scan 2026-09-22T07:37:04.923Z
+markets 20000, candidate pairs 6000, judged 0
+relations: A_IMPLIES_B 0, B_IMPLIES_A 0, EQUIVALENT 0, EXCLUSIVE 0, UNRELATED 0, UNSURE 0
+constrained pairs 0, broken at mid (> 0.5 cent) 0, executable after spreads (> 0.5 cent) 0
+
+fees:
+  btc-updown-5m markets seen: 289, feesEnabled: true
+  all markets with feesEnabled=true: 19278 of 20000
+
+EXECUTABLE after spreads:
+  none
+
+BROKEN at mid (top by executable):
+  none

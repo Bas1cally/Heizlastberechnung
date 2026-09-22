@@ -1,0 +1,104 @@
+{
+  "generatedAt": "2026-09-22T08:46:44.734Z",
+  "observations": 47399,
+  "candidateStates": 726,
+  "candidateShare": 0.01531677883499652,
+  "winnerAccuracy": 0.9958677685950413,
+  "meanWinnerAsk": 0.9900247933884369,
+  "meanComplementAsk": 0.0196969696969694,
+  "meanPairCost": 1.0097217630853925,
+  "pairBelowParStates": 0,
+  "pairBelowParShare": 0,
+  "meanLockedPairPnlPerShare": null,
+  "naiveWinnerPnlPerShare": 0.005842975206611422,
+  "byTime": [
+    {
+      "bucket": "300-120s",
+      "n": 147,
+      "accuracy": 0.9795918367346939,
+      "executable": 147,
+      "meanAsk": 0.989999999999999,
+      "meanJevEdge": -0.001561723513184198,
+      "meanPnl": -0.010408163265306114,
+      "winRate": 0.9795918367346939
+    },
+    {
+      "bucket": "120-60s",
+      "n": 388,
+      "accuracy": 1,
+      "executable": 388,
+      "meanAsk": 0.9900463917525826,
+      "meanJevEdge": -0.01719560025305846,
+      "meanPnl": 0.009953608247422589,
+      "winRate": 1
+    },
+    {
+      "bucket": "60-30s",
+      "n": 151,
+      "accuracy": 1,
+      "executable": 151,
+      "meanAsk": 0.9899999999999993,
+      "meanJevEdge": -0.02602743834022357,
+      "meanPnl": 0.010000000000000009,
+      "winRate": 1
+    },
+    {
+      "bucket": "30-15s",
+      "n": 23,
+      "accuracy": 1,
+      "executable": 23,
+      "meanAsk": 0.9899999999999997,
+      "meanJevEdge": -0.07931900129144695,
+      "meanPnl": 0.010000000000000009,
+      "winRate": 1
+    },
+    {
+      "bucket": "15-10s",
+      "n": 8,
+      "accuracy": 1,
+      "executable": 8,
+      "meanAsk": 0.9900000000000001,
+      "meanJevEdge": -0.056127360816241506,
+      "meanPnl": 0.010000000000000009,
+      "winRate": 1
+    },
+    {
+      "bucket": "10-5s",
+      "n": 4,
+      "accuracy": 1,
+      "executable": 4,
+      "meanAsk": 0.99,
+      "meanJevEdge": -0.1531227858216076,
+      "meanPnl": 0.010000000000000009,
+      "winRate": 1
+    },
+    {
+      "bucket": "5-2s",
+      "n": 5,
+      "accuracy": 1,
+      "executable": 5,
+      "meanAsk": 0.99,
+      "meanJevEdge": -0.029344286810962794,
+      "meanPnl": 0.010000000000000009,
+      "winRate": 1
+    },
+    {
+      "bucket": "<2s",
+      "n": 0,
+      "accuracy": null,
+      "executable": 0,
+      "meanAsk": null,
+      "meanJevEdge": null,
+      "meanPnl": null,
+      "winRate": null
+    }
+  ],
+  "actionMixInCandidates": {
+    "BUY_DOWN": 50,
+    "HOLD": 277,
+    "ABSTAIN": 4,
+    "ADD_COMPLEMENT": 346,
+    "BUY_UP": 49
+  },
+  "definition": "candidate = favoured side asks 0.98-0.995 and the complement asks <= 0.02 at decision time"
+}

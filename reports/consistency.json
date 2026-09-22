@@ -1,0 +1,12 @@
+{
+ "markets": 20000,
+ "candidates": 6000,
+ "judged": 0,
+ "generatedAt": "2026-09-22T07:37:04.923Z",
+ "feeNotes": [
+  "btc-updown-5m markets seen: 289, feesEnabled: true",
+  "all markets with feesEnabled=true: 19278 of 20000"
+ ],
+ "failed": 6000,
+ "pairs": []
+}

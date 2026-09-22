@@ -1,0 +1,40 @@
+{
+  "generatedAt": "2026-09-21T15:16:36.828Z",
+  "model": "jev-latest",
+  "requests": 300,
+  "success": 300,
+  "successRate": 1,
+  "errors": {},
+  "wallMs": 21809,
+  "requestsPerSecond": 13.76,
+  "latencyMs": {
+    "count": 300,
+    "p50": 278.58240000000114,
+    "p75": 295.866399999999,
+    "p90": 315.27020000000016,
+    "p95": 337.8822,
+    "p99": 686.1335,
+    "max": 751.6672000000001,
+    "mean": 288.37380933333316
+  },
+  "stability": {
+    "repeats": 10,
+    "actionDistribution": {
+      "HOLD": 10
+    },
+    "pUpVariance": 0,
+    "confidenceVariance": 0.001276666666666668,
+    "pUpSamples": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}

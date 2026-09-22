@@ -1,0 +1,111 @@
+{
+  "generatedAt": "2026-09-22T08:46:25.870Z",
+  "mode": "paper",
+  "usdPerMToken": 0,
+  "metrics": {
+    "mode": "paper",
+    "settledMarkets": 211,
+    "netPnl": -222.87891527000005,
+    "grossPnl": -222.87891527000005,
+    "fees": 0,
+    "gas": 0,
+    "mergePnl": 489.0878,
+    "settlementPnl": -711.96671527,
+    "deployedCapitalUsd": 29507.05540327,
+    "returnOnDeployedCapital": -0.0075534109460919105,
+    "pnlPerMarket": -1.0562981766350714,
+    "pnlPerFill": -0.2324076280187696,
+    "jevCalls": 42554,
+    "pnlPerJevCall": -0.005237554995300091,
+    "maxDrawdown": 1040.90334527,
+    "worstCaseExposureUsd": 277,
+    "unpairedExposure": {
+      "totalMs": 34090184,
+      "meanPerMarketMs": 161564.85308056872,
+      "maxMs": 297709,
+      "shareOfMarketTime": 0.5385495102685623
+    },
+    "orders": 1126,
+    "fills": 699,
+    "partials": 81,
+    "noFills": 340,
+    "cancelled": 6,
+    "fillRatio": 0.6927175843694494,
+    "cancelRatio": 0.0053285968028419185,
+    "makerFills": 951,
+    "takerFills": 8,
+    "makerTakerRatio": 118.875,
+    "jevTokens": {
+      "input": 108590937,
+      "output": 15052764
+    },
+    "jevCostUsd": 0,
+    "usdPerMillionTokens": 0,
+    "netPnlAfterJevCost": -222.87891527000005
+  },
+  "realizedPnlByTime": [
+    {
+      "bucket": "300-120s",
+      "fills": 811,
+      "shares": 57687.70716100006,
+      "costUsd": 26576.470247269994,
+      "pnl": -62.49375927000025,
+      "pnlPerShare": -0.001083311546697237,
+      "winRate": 0.4623921085080148
+    },
+    {
+      "bucket": "120-60s",
+      "fills": 94,
+      "shares": 5942.29665,
+      "costUsd": 2301.9208659999995,
+      "pnl": 155.079134,
+      "pnlPerShare": 0.026097507939123167,
+      "winRate": 0.32978723404255317
+    },
+    {
+      "bucket": "60-30s",
+      "fills": 41,
+      "shares": 2309.87,
+      "costUsd": 606.2492900000001,
+      "pnl": -157.24929000000003,
+      "pnlPerShare": -0.06807711689402436,
+      "winRate": 0.17073170731707318
+    },
+    {
+      "bucket": "30-15s",
+      "fills": 9,
+      "shares": 571,
+      "costUsd": 19.333000000000002,
+      "pnl": -19.333000000000002,
+      "pnlPerShare": -0.03385814360770578,
+      "winRate": 0
+    },
+    {
+      "bucket": "15-10s",
+      "fills": 2,
+      "shares": 122,
+      "costUsd": 1.242,
+      "pnl": -1.242,
+      "pnlPerShare": -0.010180327868852458,
+      "winRate": 0
+    },
+    {
+      "bucket": "10-5s",
+      "fills": 1,
+      "shares": 84,
+      "costUsd": 0.84,
+      "pnl": -0.84,
+      "pnlPerShare": -0.01,
+      "winRate": 0
+    },
+    {
+      "bucket": "5-2s",
+      "fills": 1,
+      "shares": 100,
+      "costUsd": 1,
+      "pnl": -1,
+      "pnlPerShare": -0.01,
+      "winRate": 0
+    }
+  ]
+}

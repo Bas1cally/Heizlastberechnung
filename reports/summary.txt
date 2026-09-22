@@ -1,0 +1,6093 @@
+# jev-btc-5m summary 2026-09-22T08:44:28.020Z
+
+## resolve (official outcomes)
+
+resolve: 3 closed market(s) without an official outcome
+  3 resolved by the API; 3 of 3 agree with the market's own final price
+  btc-updown-5m-1790065500  DOWN  (market DOWN @ 0.010, Jev -)
+  btc-updown-5m-1790065800  UP  (market UP @ 0.990, Jev -)
+  btc-updown-5m-1790066100  UP  (market UP @ 0.999, Jev -)
+
+written: 3 official outcome(s) into data/bot.sqlite
+
+## report
+
+{
+  "database": "data/bot.sqlite",
+  "markets": 236,
+  "perMarket": [
+    {
+      "slug": "btc-updown-5m-1789995000",
+      "decisions": 210,
+      "resolved": "Down",
+      "finalDistanceBps": 3.68,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0.98,
+        "DOWN": 0,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1789995300",
+      "decisions": 179,
+      "resolved": "Up",
+      "finalDistanceBps": -0.28,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.99,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1789995600",
+      "decisions": 206,
+      "resolved": "Down",
+      "finalDistanceBps": -7.89,
+      "finalSecondsRemaining": 9.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.9,
+        "UNRESOLVED": 0.09,
+        "action": "BUY_DOWN"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1789996200",
+      "decisions": 148,
+      "resolved": "Down",
+      "finalDistanceBps": -8.48,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.98,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1789996500",
+      "decisions": 239,
+      "resolved": "Down",
+      "finalDistanceBps": -10.17,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.99,
+        "UNRESOLVED": 0.01,
+        "action": "ABSTAIN"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1789996800",
+      "decisions": 232,
+      "resolved": "Down",
+      "finalDistanceBps": -16.82,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.99,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1789997100",
+      "decisions": 225,
+      "resolved": "Down",
+      "finalDistanceBps": -10.27,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.99,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1789997400",
+      "decisions": 271,
+      "resolved": "Up",
+      "finalDistanceBps": 30.37,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0.98,
+        "DOWN": 0,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1789997700",
+      "decisions": 265,
+      "resolved": "Down",
+      "finalDistanceBps": -17.52,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.99,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1789998000",
+      "decisions": 252,
+      "resolved": "Up",
+      "finalDistanceBps": 10.91,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0.98,
+        "DOWN": 0,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1789998300",
+      "decisions": 222,
+      "resolved": "Up",
+      "finalDistanceBps": 47.16,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0.96,
+        "DOWN": 0,
+        "UNRESOLVED": 0.04,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1789998600",
+      "decisions": 241,
+      "resolved": "Up",
+      "finalDistanceBps": -15.66,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.99,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1789998900",
+      "decisions": 176,
+      "resolved": "Down",
+      "finalDistanceBps": 6.78,
+      "finalSecondsRemaining": 64.9,
+      "jevFinal": {
+        "UP": 0.79,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.2,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1789999500",
+      "decisions": 74,
+      "resolved": "Down",
+      "finalDistanceBps": 10.45,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0.96,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1789999800",
+      "decisions": 222,
+      "resolved": "Up",
+      "finalDistanceBps": -1.51,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.99,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790000100",
+      "decisions": 140,
+      "resolved": "Up",
+      "finalDistanceBps": 21.01,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0.98,
+        "DOWN": 0,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790000400",
+      "decisions": 180,
+      "resolved": "Up",
+      "finalDistanceBps": 32.43,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0.97,
+        "DOWN": 0,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790000700",
+      "decisions": 40,
+      "resolved": "Up",
+      "finalDistanceBps": 6.14,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0.98,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790001000",
+      "decisions": 230,
+      "resolved": "Up",
+      "finalDistanceBps": 34.43,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0.99,
+        "DOWN": 0,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790001300",
+      "decisions": 250,
+      "resolved": "Down",
+      "finalDistanceBps": -35.54,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 1,
+        "UNRESOLVED": 0,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790001600",
+      "decisions": 220,
+      "resolved": "Down",
+      "finalDistanceBps": 14.28,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0.99,
+        "DOWN": 0,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790001900",
+      "decisions": 140,
+      "resolved": "Up",
+      "finalDistanceBps": 24.91,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0.99,
+        "DOWN": 0,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790002200",
+      "decisions": 254,
+      "resolved": "Up",
+      "finalDistanceBps": 5.35,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0.99,
+        "DOWN": 0,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790002500",
+      "decisions": 215,
+      "resolved": "Down",
+      "finalDistanceBps": -23.91,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.98,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790003100",
+      "decisions": 101,
+      "resolved": "Up",
+      "finalDistanceBps": 24.39,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0.98,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790003400",
+      "decisions": 286,
+      "resolved": "Up",
+      "finalDistanceBps": 0.91,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0.97,
+        "DOWN": 0.02,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790003700",
+      "decisions": 237,
+      "resolved": "Down",
+      "finalDistanceBps": -8.43,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.99,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790004000",
+      "decisions": 254,
+      "resolved": "Down",
+      "finalDistanceBps": -29.46,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.99,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790004300",
+      "decisions": 214,
+      "resolved": "Down",
+      "finalDistanceBps": -3.56,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.98,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790004600",
+      "decisions": 254,
+      "resolved": "Up",
+      "finalDistanceBps": 6.18,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.97,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790004900",
+      "decisions": 253,
+      "resolved": "Up",
+      "finalDistanceBps": 6.64,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.98,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790005200",
+      "decisions": 263,
+      "resolved": "Up",
+      "finalDistanceBps": 11.15,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.97,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790005500",
+      "decisions": 242,
+      "resolved": "Up",
+      "finalDistanceBps": 5.51,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.96,
+        "DOWN": 0.02,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790005800",
+      "decisions": 267,
+      "resolved": "Down",
+      "finalDistanceBps": -8.89,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.99,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790006100",
+      "decisions": 255,
+      "resolved": "Down",
+      "finalDistanceBps": -8.27,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.99,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790006400",
+      "decisions": 256,
+      "resolved": "Down",
+      "finalDistanceBps": -9.14,
+      "finalSecondsRemaining": 1.1,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 1,
+        "UNRESOLVED": 0,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790006700",
+      "decisions": 219,
+      "resolved": "Down",
+      "finalDistanceBps": -14.4,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.02,
+        "DOWN": 0.97,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790007000",
+      "decisions": 281,
+      "resolved": "Down",
+      "finalDistanceBps": -0.68,
+      "finalSecondsRemaining": 0.2,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.98,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790007300",
+      "decisions": 256,
+      "resolved": "Up",
+      "finalDistanceBps": -4.72,
+      "finalSecondsRemaining": 0.1,
+      "jevFinal": {
+        "UP": 0.02,
+        "DOWN": 0.97,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790007600",
+      "decisions": 265,
+      "resolved": "Up",
+      "finalDistanceBps": 4.42,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.98,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790007900",
+      "decisions": 261,
+      "resolved": "Up",
+      "finalDistanceBps": 5.49,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.89,
+        "DOWN": 0.04,
+        "UNRESOLVED": 0.07,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790008200",
+      "decisions": 268,
+      "resolved": "Down",
+      "finalDistanceBps": -8.79,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790008500",
+      "decisions": 244,
+      "resolved": "Down",
+      "finalDistanceBps": -12.91,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.99,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790008800",
+      "decisions": 218,
+      "resolved": "Up",
+      "finalDistanceBps": 22.26,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.9,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.09,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790009100",
+      "decisions": 206,
+      "resolved": "Up",
+      "finalDistanceBps": 16.32,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.92,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.07,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790009400",
+      "decisions": 239,
+      "resolved": "Down",
+      "finalDistanceBps": -3.31,
+      "finalSecondsRemaining": 1.6,
+      "jevFinal": {
+        "UP": 0.06,
+        "DOWN": 0.87,
+        "UNRESOLVED": 0.07,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790009700",
+      "decisions": 14,
+      "resolved": "Up",
+      "finalDistanceBps": 3.84,
+      "finalSecondsRemaining": 274.5,
+      "jevFinal": {
+        "UP": 0.86,
+        "DOWN": 0.12,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790010000",
+      "decisions": 198,
+      "resolved": "Down",
+      "finalDistanceBps": -5.25,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.04,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790010300",
+      "decisions": 196,
+      "resolved": "Up",
+      "finalDistanceBps": 18.84,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.77,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.22,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790010600",
+      "decisions": 222,
+      "resolved": "Down",
+      "finalDistanceBps": -12.14,
+      "finalSecondsRemaining": 0.8,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.97,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790010900",
+      "decisions": 205,
+      "resolved": "Down",
+      "finalDistanceBps": -21.86,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.95,
+        "UNRESOLVED": 0.05,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790011200",
+      "decisions": 238,
+      "resolved": "Up",
+      "finalDistanceBps": 13,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.8,
+        "DOWN": 0.03,
+        "UNRESOLVED": 0.17,
+        "action": "ABSTAIN"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790011500",
+      "decisions": 264,
+      "resolved": "Up",
+      "finalDistanceBps": 1.07,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.6799999999999999,
+        "DOWN": 0.08,
+        "UNRESOLVED": 0.24,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790011800",
+      "decisions": 269,
+      "resolved": "Down",
+      "finalDistanceBps": -1.36,
+      "finalSecondsRemaining": 1.6,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.04,
+        "action": "ABSTAIN"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790012100",
+      "decisions": 254,
+      "resolved": "Up",
+      "finalDistanceBps": 3.79,
+      "finalSecondsRemaining": 0.3,
+      "jevFinal": {
+        "UP": 0.78,
+        "DOWN": 0.03,
+        "UNRESOLVED": 0.19,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790012400",
+      "decisions": 257,
+      "resolved": "Down",
+      "finalDistanceBps": -2.43,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.94,
+        "UNRESOLVED": 0.06,
+        "action": "ABSTAIN"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790012700",
+      "decisions": 197,
+      "resolved": "Down",
+      "finalDistanceBps": -9.19,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.92,
+        "UNRESOLVED": 0.07,
+        "action": "BUY_UP"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790013000",
+      "decisions": 219,
+      "resolved": "Down",
+      "finalDistanceBps": -13.78,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.94,
+        "UNRESOLVED": 0.06,
+        "action": "BUY_DOWN"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790013300",
+      "decisions": 188,
+      "resolved": "Up",
+      "finalDistanceBps": 18.48,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.83,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.16,
+        "action": "ABSTAIN"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790013600",
+      "decisions": 243,
+      "resolved": "Up",
+      "finalDistanceBps": 5.49,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.79,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.2,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790013900",
+      "decisions": 155,
+      "resolved": "Up",
+      "finalDistanceBps": 0.22,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.79,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.2,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790014200",
+      "decisions": 189,
+      "resolved": "Up",
+      "finalDistanceBps": 1.25,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.73,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.26,
+        "action": "ABSTAIN"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790014500",
+      "decisions": 0,
+      "resolved": "Up",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790014800",
+      "decisions": 211,
+      "resolved": "Down",
+      "finalDistanceBps": -7.73,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.97,
+        "UNRESOLVED": 0.03,
+        "action": "BUY_UP"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790015100",
+      "decisions": 196,
+      "resolved": "Down",
+      "finalDistanceBps": -8.39,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.92,
+        "UNRESOLVED": 0.07,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790015400",
+      "decisions": 249,
+      "resolved": "Down",
+      "finalDistanceBps": -0.85,
+      "finalSecondsRemaining": 0.8,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.94,
+        "UNRESOLVED": 0.06,
+        "action": "BUY_UP"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790015700",
+      "decisions": 249,
+      "resolved": "Up",
+      "finalDistanceBps": 3.18,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.75,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.24,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790016000",
+      "decisions": 235,
+      "resolved": "Up",
+      "finalDistanceBps": 3.42,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.76,
+        "DOWN": 0.02,
+        "UNRESOLVED": 0.22,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790016300",
+      "decisions": 255,
+      "resolved": "Up",
+      "finalDistanceBps": 1.37,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.73,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.26,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790016600",
+      "decisions": 230,
+      "resolved": "Up",
+      "finalDistanceBps": 8.87,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.79,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.2,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790016900",
+      "decisions": 259,
+      "resolved": "Up",
+      "finalDistanceBps": 0.55,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.79,
+        "DOWN": 0.02,
+        "UNRESOLVED": 0.19,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790017200",
+      "decisions": 201,
+      "resolved": "Down",
+      "finalDistanceBps": -4.47,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.04,
+        "action": "BUY_UP"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790017500",
+      "decisions": 252,
+      "resolved": "Up",
+      "finalDistanceBps": 1.9,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.72,
+        "DOWN": 0.02,
+        "UNRESOLVED": 0.26,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790017800",
+      "decisions": 243,
+      "resolved": "Up",
+      "finalDistanceBps": 2.56,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.76,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.23,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790018100",
+      "decisions": 192,
+      "resolved": "Up",
+      "finalDistanceBps": 23.69,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.82,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.17,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790018400",
+      "decisions": 266,
+      "resolved": "Down",
+      "finalDistanceBps": -2.7,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.94,
+        "UNRESOLVED": 0.06,
+        "action": "BUY_UP"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790018700",
+      "decisions": 237,
+      "resolved": "Up",
+      "finalDistanceBps": 9.72,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.77,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.22,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790019000",
+      "decisions": 253,
+      "resolved": "Up",
+      "finalDistanceBps": 46.8,
+      "finalSecondsRemaining": 0.9,
+      "jevFinal": {
+        "UP": 0.81,
+        "DOWN": 0.02,
+        "UNRESOLVED": 0.17,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790019300",
+      "decisions": 219,
+      "resolved": "Down",
+      "finalDistanceBps": -21.57,
+      "finalSecondsRemaining": 0.1,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.95,
+        "UNRESOLVED": 0.05,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790019600",
+      "decisions": 220,
+      "resolved": "Down",
+      "finalDistanceBps": -6.41,
+      "finalSecondsRemaining": 0.6,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.94,
+        "UNRESOLVED": 0.05,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790019900",
+      "decisions": 286,
+      "resolved": "Down",
+      "finalDistanceBps": -4.02,
+      "finalSecondsRemaining": 0.1,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.93,
+        "UNRESOLVED": 0.07,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790020200",
+      "decisions": 265,
+      "resolved": "Down",
+      "finalDistanceBps": -2.2,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.93,
+        "UNRESOLVED": 0.07,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790020500",
+      "decisions": 184,
+      "resolved": "Up",
+      "finalDistanceBps": 9.75,
+      "finalSecondsRemaining": 0.9,
+      "jevFinal": {
+        "UP": 0.79,
+        "DOWN": 0.07,
+        "UNRESOLVED": 0.14,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790020800",
+      "decisions": 278,
+      "resolved": "Up",
+      "finalDistanceBps": 9.3,
+      "finalSecondsRemaining": 1.8,
+      "jevFinal": {
+        "UP": 0.77,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.22,
+        "action": "ABSTAIN"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790021100",
+      "decisions": 216,
+      "resolved": "Up",
+      "finalDistanceBps": 8.71,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.81,
+        "DOWN": 0.02,
+        "UNRESOLVED": 0.17,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790021400",
+      "decisions": 265,
+      "resolved": "Up",
+      "finalDistanceBps": 5.36,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.77,
+        "DOWN": 0.03,
+        "UNRESOLVED": 0.2,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790021700",
+      "decisions": 264,
+      "resolved": "Up",
+      "finalDistanceBps": 22.4,
+      "finalSecondsRemaining": 0.8,
+      "jevFinal": {
+        "UP": 0.79,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.2,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790022000",
+      "decisions": 275,
+      "resolved": "Up",
+      "finalDistanceBps": 2.49,
+      "finalSecondsRemaining": 1.8,
+      "jevFinal": {
+        "UP": 0.77,
+        "DOWN": 0.02,
+        "UNRESOLVED": 0.21,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790022300",
+      "decisions": 225,
+      "resolved": "Up",
+      "finalDistanceBps": -1.92,
+      "finalSecondsRemaining": 0.4,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.92,
+        "UNRESOLVED": 0.08,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790022600",
+      "decisions": 242,
+      "resolved": "Down",
+      "finalDistanceBps": -30.85,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.93,
+        "UNRESOLVED": 0.06,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790022900",
+      "decisions": 264,
+      "resolved": "Down",
+      "finalDistanceBps": -3.43,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.04,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790023200",
+      "decisions": 251,
+      "resolved": "Down",
+      "finalDistanceBps": -6.79,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.92,
+        "UNRESOLVED": 0.07,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790023500",
+      "decisions": 250,
+      "resolved": "Down",
+      "finalDistanceBps": -4.91,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.04,
+        "action": "BUY_UP"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790023800",
+      "decisions": 199,
+      "resolved": "Up",
+      "finalDistanceBps": 9.9,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.81,
+        "DOWN": 0.14,
+        "UNRESOLVED": 0.05,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790024100",
+      "decisions": 273,
+      "resolved": "Up",
+      "finalDistanceBps": -0.13,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.02,
+        "DOWN": 0.88,
+        "UNRESOLVED": 0.1,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790024400",
+      "decisions": 193,
+      "resolved": "Down",
+      "finalDistanceBps": -19.44,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.04,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790024700",
+      "decisions": 190,
+      "resolved": "Down",
+      "finalDistanceBps": -17.41,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.91,
+        "UNRESOLVED": 0.09,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790025000",
+      "decisions": 213,
+      "resolved": "Down",
+      "finalDistanceBps": -5.66,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.98,
+        "UNRESOLVED": 0.01,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790025300",
+      "decisions": 234,
+      "resolved": "Up",
+      "finalDistanceBps": 5.53,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.76,
+        "DOWN": 0.18,
+        "UNRESOLVED": 0.06,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790025600",
+      "decisions": 259,
+      "resolved": "Up",
+      "finalDistanceBps": 0.07,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.7,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.29,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790025900",
+      "decisions": 228,
+      "resolved": "Down",
+      "finalDistanceBps": -1.7,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.9400000000000001,
+        "UNRESOLVED": 0.06,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790026200",
+      "decisions": 154,
+      "resolved": "Up",
+      "finalDistanceBps": 17.81,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.79,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.2,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790026500",
+      "decisions": 239,
+      "resolved": "Up",
+      "finalDistanceBps": 1.22,
+      "finalSecondsRemaining": 1.8,
+      "jevFinal": {
+        "UP": 0.77,
+        "DOWN": 0.06,
+        "UNRESOLVED": 0.17,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790026800",
+      "decisions": 216,
+      "resolved": "Down",
+      "finalDistanceBps": -1.5,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.94,
+        "UNRESOLVED": 0.06,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790027100",
+      "decisions": 147,
+      "resolved": "Down",
+      "finalDistanceBps": -12.29,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.97,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790027400",
+      "decisions": 149,
+      "resolved": "Down",
+      "finalDistanceBps": -10.06,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.9400000000000001,
+        "UNRESOLVED": 0.06,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790027700",
+      "decisions": 210,
+      "resolved": "Up",
+      "finalDistanceBps": 1.56,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.75,
+        "DOWN": 0.04,
+        "UNRESOLVED": 0.21,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790028000",
+      "decisions": 227,
+      "resolved": "Up",
+      "finalDistanceBps": 7.82,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.9,
+        "DOWN": 0.03,
+        "UNRESOLVED": 0.07,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790028300",
+      "decisions": 176,
+      "resolved": "Down",
+      "finalDistanceBps": -11.38,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.05,
+        "DOWN": 0.92,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790028600",
+      "decisions": 236,
+      "resolved": "Up",
+      "finalDistanceBps": 6.15,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.88,
+        "DOWN": 0.07,
+        "UNRESOLVED": 0.05,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790028900",
+      "decisions": 206,
+      "resolved": "Up",
+      "finalDistanceBps": 8.64,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.86,
+        "DOWN": 0.1,
+        "UNRESOLVED": 0.04,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790029200",
+      "decisions": 181,
+      "resolved": "Down",
+      "finalDistanceBps": -17.65,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.97,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790029500",
+      "decisions": 214,
+      "resolved": "Down",
+      "finalDistanceBps": -19.25,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.03,
+        "DOWN": 0.94,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790029800",
+      "decisions": 255,
+      "resolved": "Up",
+      "finalDistanceBps": 12.71,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.9,
+        "DOWN": 0.04,
+        "UNRESOLVED": 0.06,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790030100",
+      "decisions": 269,
+      "resolved": "Up",
+      "finalDistanceBps": 0.71,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.75,
+        "DOWN": 0.02,
+        "UNRESOLVED": 0.23,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790030400",
+      "decisions": 201,
+      "resolved": "Down",
+      "finalDistanceBps": -10.09,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.02,
+        "DOWN": 0.95,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790030700",
+      "decisions": 185,
+      "resolved": "Down",
+      "finalDistanceBps": -11.29,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790031000",
+      "decisions": 216,
+      "resolved": "Up",
+      "finalDistanceBps": 5.29,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.93,
+        "DOWN": 0.03,
+        "UNRESOLVED": 0.04,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790031300",
+      "decisions": 215,
+      "resolved": "Up",
+      "finalDistanceBps": 7.92,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.88,
+        "DOWN": 0.07,
+        "UNRESOLVED": 0.05,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790031600",
+      "decisions": 196,
+      "resolved": "Up",
+      "finalDistanceBps": 13.93,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.9,
+        "DOWN": 0.02,
+        "UNRESOLVED": 0.08,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790031900",
+      "decisions": 283,
+      "resolved": "Up",
+      "finalDistanceBps": 0.25,
+      "finalSecondsRemaining": 0,
+      "jevFinal": {
+        "UP": 0.83,
+        "DOWN": 0,
+        "UNRESOLVED": 0.17,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790032200",
+      "decisions": 174,
+      "resolved": "Up",
+      "finalDistanceBps": 13,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.88,
+        "DOWN": 0.03,
+        "UNRESOLVED": 0.09,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790032500",
+      "decisions": 201,
+      "resolved": "Down",
+      "finalDistanceBps": -10.45,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.02,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790032800",
+      "decisions": 229,
+      "resolved": "Down",
+      "finalDistanceBps": -4.64,
+      "finalSecondsRemaining": 0.2,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.94,
+        "UNRESOLVED": 0.05,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790033100",
+      "decisions": 199,
+      "resolved": "Down",
+      "finalDistanceBps": -4.4,
+      "finalSecondsRemaining": 14.9,
+      "jevFinal": {
+        "UP": 0.03,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790033400",
+      "decisions": 155,
+      "resolved": "Down",
+      "finalDistanceBps": -8.07,
+      "finalSecondsRemaining": 1,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.97,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790033700",
+      "decisions": 275,
+      "resolved": "Down",
+      "finalDistanceBps": -0.15,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.9,
+        "UNRESOLVED": 0.09,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790034000",
+      "decisions": 162,
+      "resolved": "Up",
+      "finalDistanceBps": 6.27,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.74,
+        "DOWN": 0.22,
+        "UNRESOLVED": 0.04,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790034300",
+      "decisions": 263,
+      "resolved": "Up",
+      "finalDistanceBps": 0.27,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.73,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.26,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790034600",
+      "decisions": 208,
+      "resolved": "Up",
+      "finalDistanceBps": 5.07,
+      "finalSecondsRemaining": 1.3,
+      "jevFinal": {
+        "UP": 0.9,
+        "DOWN": 0.04,
+        "UNRESOLVED": 0.06,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790034900",
+      "decisions": 188,
+      "resolved": "Up",
+      "finalDistanceBps": 10.18,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.84,
+        "DOWN": 0.09,
+        "UNRESOLVED": 0.07,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790035200",
+      "decisions": 181,
+      "resolved": "Down",
+      "finalDistanceBps": -23.64,
+      "finalSecondsRemaining": 1.7,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.95,
+        "UNRESOLVED": 0.05,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790035500",
+      "decisions": 241,
+      "resolved": "Down",
+      "finalDistanceBps": -9.04,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.02,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790035800",
+      "decisions": 221,
+      "resolved": "Up",
+      "finalDistanceBps": 12.62,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.9,
+        "DOWN": 0.02,
+        "UNRESOLVED": 0.08,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790036100",
+      "decisions": 259,
+      "resolved": "Down",
+      "finalDistanceBps": -1.55,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.91,
+        "UNRESOLVED": 0.08,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790036400",
+      "decisions": 252,
+      "resolved": "Down",
+      "finalDistanceBps": -7.31,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.98,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790036700",
+      "decisions": 255,
+      "resolved": "Up",
+      "finalDistanceBps": 4.63,
+      "finalSecondsRemaining": 0.8,
+      "jevFinal": {
+        "UP": 0.81,
+        "DOWN": 0.04,
+        "UNRESOLVED": 0.15,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790037000",
+      "decisions": 207,
+      "resolved": "Up",
+      "finalDistanceBps": 7.52,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.95,
+        "DOWN": 0.02,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790037300",
+      "decisions": 186,
+      "resolved": "Down",
+      "finalDistanceBps": -18.59,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.05,
+        "DOWN": 0.93,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790037600",
+      "decisions": 270,
+      "resolved": "Up",
+      "finalDistanceBps": 0.53,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.8,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.19,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790037900",
+      "decisions": 249,
+      "resolved": "Down",
+      "finalDistanceBps": -8.78,
+      "finalSecondsRemaining": 0.1,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.97,
+        "UNRESOLVED": 0.02,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790038200",
+      "decisions": 191,
+      "resolved": "Down",
+      "finalDistanceBps": -15.62,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.03,
+        "DOWN": 0.9299999999999999,
+        "UNRESOLVED": 0.04,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790038500",
+      "decisions": 190,
+      "resolved": "Down",
+      "finalDistanceBps": -27.4,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.93,
+        "UNRESOLVED": 0.06,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790038800",
+      "decisions": 238,
+      "resolved": "Down",
+      "finalDistanceBps": -21.52,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.94,
+        "UNRESOLVED": 0.06,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790039100",
+      "decisions": 241,
+      "resolved": "Up",
+      "finalDistanceBps": 20.11,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.77,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.22,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790039400",
+      "decisions": 237,
+      "resolved": "Down",
+      "finalDistanceBps": -12.94,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.04,
+        "DOWN": 0.93,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790039700",
+      "decisions": 261,
+      "resolved": "Down",
+      "finalDistanceBps": -28.87,
+      "finalSecondsRemaining": 1.1,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.93,
+        "UNRESOLVED": 0.06,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790040000",
+      "decisions": 224,
+      "resolved": "Up",
+      "finalDistanceBps": 14.73,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.92,
+        "DOWN": 0.02,
+        "UNRESOLVED": 0.06,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790040300",
+      "decisions": 245,
+      "resolved": "Up",
+      "finalDistanceBps": 10.59,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.92,
+        "DOWN": 0.02,
+        "UNRESOLVED": 0.06,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790040600",
+      "decisions": 231,
+      "resolved": "Up",
+      "finalDistanceBps": 8.88,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.92,
+        "DOWN": 0.04,
+        "UNRESOLVED": 0.04,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790040900",
+      "decisions": 225,
+      "resolved": "Down",
+      "finalDistanceBps": -18.97,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.03,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790041200",
+      "decisions": 261,
+      "resolved": "Up",
+      "finalDistanceBps": 2.71,
+      "finalSecondsRemaining": 0.2,
+      "jevFinal": {
+        "UP": 0.82,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.17,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790041500",
+      "decisions": 245,
+      "resolved": "Down",
+      "finalDistanceBps": -8.03,
+      "finalSecondsRemaining": 1.2,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.98,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790041800",
+      "decisions": 249,
+      "resolved": "Up",
+      "finalDistanceBps": 2.98,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.67,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.32,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790042100",
+      "decisions": 226,
+      "resolved": "Down",
+      "finalDistanceBps": -8.77,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.05,
+        "DOWN": 0.93,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790042400",
+      "decisions": 254,
+      "resolved": "Down",
+      "finalDistanceBps": -3.64,
+      "finalSecondsRemaining": 1.7,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.93,
+        "UNRESOLVED": 0.07,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790042700",
+      "decisions": 215,
+      "resolved": "Up",
+      "finalDistanceBps": 3.48,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.82,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.17,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790043000",
+      "decisions": 270,
+      "resolved": "Up",
+      "finalDistanceBps": 4.68,
+      "finalSecondsRemaining": 0.7,
+      "jevFinal": {
+        "UP": 0.81,
+        "DOWN": 0.03,
+        "UNRESOLVED": 0.16,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790043300",
+      "decisions": 288,
+      "resolved": "Down",
+      "finalDistanceBps": -0.11,
+      "finalSecondsRemaining": 0.6,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.94,
+        "UNRESOLVED": 0.06,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790043600",
+      "decisions": 254,
+      "resolved": "Up",
+      "finalDistanceBps": 6.59,
+      "finalSecondsRemaining": 1,
+      "jevFinal": {
+        "UP": 0.85,
+        "DOWN": 0.12,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790043900",
+      "decisions": 213,
+      "resolved": "Up",
+      "finalDistanceBps": 11.97,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.91,
+        "DOWN": 0.02,
+        "UNRESOLVED": 0.07,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790044200",
+      "decisions": 200,
+      "resolved": "Down",
+      "finalDistanceBps": -5.49,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.07,
+        "DOWN": 0.91,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790044500",
+      "decisions": 178,
+      "resolved": "Up",
+      "finalDistanceBps": 8.47,
+      "finalSecondsRemaining": 1,
+      "jevFinal": {
+        "UP": 0.92,
+        "DOWN": 0.03,
+        "UNRESOLVED": 0.05,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790044800",
+      "decisions": 231,
+      "resolved": "Up",
+      "finalDistanceBps": 3.51,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.92,
+        "DOWN": 0.03,
+        "UNRESOLVED": 0.05,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790045100",
+      "decisions": 228,
+      "resolved": "Up",
+      "finalDistanceBps": 5.02,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.79,
+        "DOWN": 0.16,
+        "UNRESOLVED": 0.05,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790045400",
+      "decisions": 157,
+      "resolved": "Down",
+      "finalDistanceBps": -20.89,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.97,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790045700",
+      "decisions": 231,
+      "resolved": "Up",
+      "finalDistanceBps": 7.99,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.85,
+        "DOWN": 0.12,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790046000",
+      "decisions": 259,
+      "resolved": "Down",
+      "finalDistanceBps": -2.98,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.02,
+        "DOWN": 0.95,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790046300",
+      "decisions": 228,
+      "resolved": "Down",
+      "finalDistanceBps": -11.82,
+      "finalSecondsRemaining": 1,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790046600",
+      "decisions": 232,
+      "resolved": "Down",
+      "finalDistanceBps": -9.34,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.98,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790046900",
+      "decisions": 268,
+      "resolved": "Down",
+      "finalDistanceBps": -3.04,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.02,
+        "DOWN": 0.95,
+        "UNRESOLVED": 0.03,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790047200",
+      "decisions": 214,
+      "resolved": "Down",
+      "finalDistanceBps": -10.38,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.02,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790047500",
+      "decisions": 158,
+      "resolved": "Up",
+      "finalDistanceBps": 22.95,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.92,
+        "DOWN": 0.04,
+        "UNRESOLVED": 0.04,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790047800",
+      "decisions": 208,
+      "resolved": "Down",
+      "finalDistanceBps": -8.95,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.98,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790048100",
+      "decisions": 234,
+      "resolved": "Down",
+      "finalDistanceBps": -4.98,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.97,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790048400",
+      "decisions": 243,
+      "resolved": "Down",
+      "finalDistanceBps": -0.83,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.93,
+        "UNRESOLVED": 0.06,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790048700",
+      "decisions": 223,
+      "resolved": "Up",
+      "finalDistanceBps": 4.45,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.91,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.08,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790049000",
+      "decisions": 223,
+      "resolved": "Down",
+      "finalDistanceBps": -2.87,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.97,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790049300",
+      "decisions": 131,
+      "resolved": "Up",
+      "finalDistanceBps": 17.17,
+      "finalSecondsRemaining": 0.8,
+      "jevFinal": {
+        "UP": 0.92,
+        "DOWN": 0.03,
+        "UNRESOLVED": 0.05,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790049600",
+      "decisions": 239,
+      "resolved": "Up",
+      "finalDistanceBps": 4.27,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.91,
+        "DOWN": 0.03,
+        "UNRESOLVED": 0.06,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790049900",
+      "decisions": 230,
+      "resolved": "Down",
+      "finalDistanceBps": -7.54,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.98,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790050200",
+      "decisions": 261,
+      "resolved": "Up",
+      "finalDistanceBps": 0.71,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.76,
+        "DOWN": 0.03,
+        "UNRESOLVED": 0.21,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790050500",
+      "decisions": 173,
+      "resolved": "Down",
+      "finalDistanceBps": -11.35,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.97,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790050800",
+      "decisions": 256,
+      "resolved": "Up",
+      "finalDistanceBps": 1.42,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.7,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.29,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790051100",
+      "decisions": 231,
+      "resolved": "Up",
+      "finalDistanceBps": 4.34,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.85,
+        "DOWN": 0.1,
+        "UNRESOLVED": 0.05,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790051400",
+      "decisions": 174,
+      "resolved": "Down",
+      "finalDistanceBps": -12.02,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.03,
+        "DOWN": 0.94,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790051700",
+      "decisions": 213,
+      "resolved": "Up",
+      "finalDistanceBps": 12.8,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.92,
+        "DOWN": 0.03,
+        "UNRESOLVED": 0.05,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790052000",
+      "decisions": 246,
+      "resolved": "Down",
+      "finalDistanceBps": -4.9,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.02,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.02,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790052300",
+      "decisions": 184,
+      "resolved": "Down",
+      "finalDistanceBps": -8.21,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.02,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790052600",
+      "decisions": 223,
+      "resolved": "Up",
+      "finalDistanceBps": 4.52,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.91,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.08,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790052900",
+      "decisions": 187,
+      "resolved": "Down",
+      "finalDistanceBps": -9.56,
+      "finalSecondsRemaining": 0.5,
+      "jevFinal": {
+        "UP": 0.04,
+        "DOWN": 0.95,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790053200",
+      "decisions": 248,
+      "resolved": "Down",
+      "finalDistanceBps": -2.6,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.03,
+        "DOWN": 0.94,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790053500",
+      "decisions": 192,
+      "resolved": "Up",
+      "finalDistanceBps": 9,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.89,
+        "DOWN": 0.04,
+        "UNRESOLVED": 0.07,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790053800",
+      "decisions": 183,
+      "resolved": "Down",
+      "finalDistanceBps": -9.48,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.03,
+        "DOWN": 0.94,
+        "UNRESOLVED": 0.03,
+        "action": "ADD_COMPLEMENT"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790054100",
+      "decisions": 212,
+      "resolved": "Down",
+      "finalDistanceBps": -18.18,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.02,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790054400",
+      "decisions": 217,
+      "resolved": "Up",
+      "finalDistanceBps": 9.33,
+      "finalSecondsRemaining": 0.9,
+      "jevFinal": {
+        "UP": 0.8099999999999999,
+        "DOWN": 0.16,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790054700",
+      "decisions": 182,
+      "resolved": "Down",
+      "finalDistanceBps": -13.86,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.02,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790055000",
+      "decisions": 254,
+      "resolved": "Down",
+      "finalDistanceBps": -1.76,
+      "finalSecondsRemaining": 0.1,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.92,
+        "UNRESOLVED": 0.07,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790055300",
+      "decisions": 217,
+      "resolved": "Up",
+      "finalDistanceBps": 15.65,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.91,
+        "DOWN": 0.01,
+        "UNRESOLVED": 0.08,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790055600",
+      "decisions": 192,
+      "resolved": "Up",
+      "finalDistanceBps": 9.76,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.8,
+        "DOWN": 0.09,
+        "UNRESOLVED": 0.11,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790055900",
+      "decisions": 155,
+      "resolved": "Up",
+      "finalDistanceBps": 15.67,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.79,
+        "DOWN": 0.04,
+        "UNRESOLVED": 0.17,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790056200",
+      "decisions": 277,
+      "resolved": "Down",
+      "finalDistanceBps": 0.42,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.83,
+        "DOWN": 0.06,
+        "UNRESOLVED": 0.11,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790056500",
+      "decisions": 219,
+      "resolved": "Down",
+      "finalDistanceBps": -16.02,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.03,
+        "DOWN": 0.94,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790056800",
+      "decisions": 248,
+      "resolved": "Down",
+      "finalDistanceBps": -5.2,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.03,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790057100",
+      "decisions": 240,
+      "resolved": "Up",
+      "finalDistanceBps": 2.59,
+      "finalSecondsRemaining": 1.7,
+      "jevFinal": {
+        "UP": 0.8,
+        "DOWN": 0.05,
+        "UNRESOLVED": 0.15,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790057400",
+      "decisions": 186,
+      "resolved": "Down",
+      "finalDistanceBps": -4.02,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.95,
+        "UNRESOLVED": 0.05,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790057700",
+      "decisions": 228,
+      "resolved": "Down",
+      "finalDistanceBps": -7.15,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.01,
+        "DOWN": 0.98,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790058000",
+      "decisions": 253,
+      "resolved": "Down",
+      "finalDistanceBps": -1.59,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.94,
+        "UNRESOLVED": 0.06,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790058300",
+      "decisions": 215,
+      "resolved": "Up",
+      "finalDistanceBps": 8.78,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.91,
+        "DOWN": 0.02,
+        "UNRESOLVED": 0.07,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790058600",
+      "decisions": 185,
+      "resolved": "Up",
+      "finalDistanceBps": 19.02,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.84,
+        "DOWN": 0.04,
+        "UNRESOLVED": 0.12,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790058900",
+      "decisions": 238,
+      "resolved": "Up",
+      "finalDistanceBps": 6.99,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.84,
+        "DOWN": 0.06,
+        "UNRESOLVED": 0.1,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790059200",
+      "decisions": 226,
+      "resolved": "Down",
+      "finalDistanceBps": -6.74,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.02,
+        "DOWN": 0.96,
+        "UNRESOLVED": 0.02,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790059500",
+      "decisions": 185,
+      "resolved": "Down",
+      "finalDistanceBps": -4.37,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0,
+        "DOWN": 0.95,
+        "UNRESOLVED": 0.05,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790059800",
+      "decisions": 243,
+      "resolved": "Up",
+      "finalDistanceBps": 1.69,
+      "finalSecondsRemaining": 1.9,
+      "jevFinal": {
+        "UP": 0.81,
+        "DOWN": 0.04,
+        "UNRESOLVED": 0.15,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790060100",
+      "decisions": 134,
+      "resolved": "Down",
+      "finalDistanceBps": -10.79,
+      "finalSecondsRemaining": 81.4,
+      "jevFinal": {
+        "UP": 0.02,
+        "DOWN": 0.97,
+        "UNRESOLVED": 0.01,
+        "action": "HOLD"
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790060400",
+      "decisions": 0,
+      "resolved": "Down",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790060700",
+      "decisions": 0,
+      "resolved": "Up",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790061000",
+      "decisions": 0,
+      "resolved": "Up",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790061300",
+      "decisions": 0,
+      "resolved": "Down",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790061600",
+      "decisions": 0,
+      "resolved": "Down",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790061900",
+      "decisions": 0,
+      "resolved": "Up",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790062200",
+      "decisions": 0,
+      "resolved": "Down",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790062500",
+      "decisions": 0,
+      "resolved": "Up",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790062800",
+      "decisions": 0,
+      "resolved": "Down",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790063100",
+      "decisions": 0,
+      "resolved": "Up",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790063400",
+      "decisions": 0,
+      "resolved": "Up",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790063700",
+      "decisions": 0,
+      "resolved": "Down",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790064000",
+      "decisions": 0,
+      "resolved": "Up",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790064300",
+      "decisions": 0,
+      "resolved": "Up",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790064600",
+      "decisions": 0,
+      "resolved": "Up",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790064900",
+      "decisions": 0,
+      "resolved": "Down",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790065200",
+      "decisions": 0,
+      "resolved": "Up",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790065500",
+      "decisions": 0,
+      "resolved": "Down",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790065800",
+      "decisions": 0,
+      "resolved": "Up",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790066100",
+      "decisions": 0,
+      "resolved": "Up",
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    },
+    {
+      "slug": "btc-updown-5m-1790066400",
+      "decisions": 0,
+      "resolved": null,
+      "finalDistanceBps": null,
+      "finalSecondsRemaining": null,
+      "jevFinal": {
+        "UP": null,
+        "DOWN": null,
+        "UNRESOLVED": null,
+        "action": null
+      }
+    }
+  ],
+  "decisions": 47399,
+  "span": {
+    "from": "2026-09-21T12:50:43.443Z",
+    "to": "2026-09-22T06:58:39.464Z",
+    "hours": 18.13
+  },
+  "tokens": {
+    "input": 117668943,
+    "output": 16809566,
+    "perDecision": 2837.2
+  },
+  "actions": {
+    "HOLD": 22554,
+    "ADD_COMPLEMENT": 12082,
+    "ABSTAIN": 6490,
+    "BUY_UP": 4084,
+    "BUY_DOWN": 2189
+  },
+  "risk": [
+    {
+      "result": "APPROVED",
+      "reason": null,
+      "n": 33278
+    },
+    {
+      "result": "REJECTED",
+      "reason": "STALE_DECISION",
+      "n": 10754
+    },
+    {
+      "result": "REJECTED",
+      "reason": "NO_MEASURED_EDGE",
+      "n": 1149
+    },
+    {
+      "result": "REJECTED",
+      "reason": "MARKET_EXPOSURE_EXCEEDED",
+      "n": 762
+    },
+    {
+      "result": "REJECTED",
+      "reason": "UNPAIRED_EXPOSURE_EXCEEDED",
+      "n": 649
+    },
+    {
+      "result": "REJECTED",
+      "reason": "TOO_MANY_OPEN_ORDERS",
+      "n": 286
+    },
+    {
+      "result": "REJECTED",
+      "reason": "KILL_SWITCH",
+      "n": 147
+    },
+    {
+      "result": "REJECTED",
+      "reason": "INSUFFICIENT_LIQUIDITY",
+      "n": 103
+    },
+    {
+      "result": "REJECTED",
+      "reason": "STALE_CHAINLINK",
+      "n": 96
+    },
+    {
+      "result": "REJECTED",
+      "reason": "LIVE_TRADING_DISABLED",
+      "n": 94
+    },
+    {
+      "result": "REJECTED",
+      "reason": "JEV_TOO_SLOW",
+      "n": 40
+    },
+    {
+      "result": "REJECTED",
+      "reason": "TOO_CLOSE_TO_CLOSE",
+      "n": 38
+    },
+    {
+      "result": "REJECTED",
+      "reason": "STALE_ORDERBOOK",
+      "n": 2
+    },
+    {
+      "result": "REJECTED",
+      "reason": "SPREAD_TOO_WIDE",
+      "n": 1
+    }
+  ],
+  "jevLatencyMs": {
+    "count": 47399,
+    "p50": 285.4804999999469,
+    "p75": 313.4306000005454,
+    "p90": 380.82990000001155,
+    "p95": 532.529499999946,
+    "p99": 693.6535999999614,
+    "max": 2366.5813999999955,
+    "mean": 313.3943824194604
+  },
+  "pipelineLatencyMs": {
+    "feed_to_state_ms": {
+      "count": 47399,
+      "p50": 0.00020000000949949026,
+      "p75": 0.00030000018887221813,
+      "p90": 0.0029999999969732016,
+      "p95": 0.005100000009406358,
+      "p99": 0.008800000010523945,
+      "max": 0.4135000000242144,
+      "mean": 0.0009514335754732004
+    },
+    "state_to_jev_ms": {
+      "count": 47399,
+      "p50": 87.61150000058115,
+      "p75": 338.27180000022054,
+      "p90": 654.9557999998797,
+      "p95": 816.9528999999166,
+      "p99": 967.449800000526,
+      "max": 1010.4946000000346,
+      "mean": 210.54343641638124
+    },
+    "jev_ms": {
+      "count": 47399,
+      "p50": 285.4804999999469,
+      "p75": 313.4306000005454,
+      "p90": 380.82990000001155,
+      "p95": 532.529499999946,
+      "p99": 693.6535999999614,
+      "max": 2366.5813999999955,
+      "mean": 313.3943824194604
+    }
+  },
+  "shadow": null,
+  "feeds": {
+    "chainlinkTicks": {
+      "count": 127545,
+      "last": "2026-09-22T08:44:48.108Z"
+    },
+    "orderbookSnapshots": [
+      {
+        "asset": "100450592849...",
+        "count": 588,
+        "last": "2026-09-21T18:40:02.855Z"
+      },
+      {
+        "asset": "101922601927...",
+        "count": 578,
+        "last": "2026-09-22T00:15:02.927Z"
+      },
+      {
+        "asset": "101923425472...",
+        "count": 560,
+        "last": "2026-09-22T06:55:02.867Z"
+      },
+      {
+        "asset": "102276576816...",
+        "count": 585,
+        "last": "2026-09-21T20:20:03.040Z"
+      },
+      {
+        "asset": "102483511536...",
+        "count": 586,
+        "last": "2026-09-21T20:50:02.990Z"
+      },
+      {
+        "asset": "102678037375...",
+        "count": 586,
+        "last": "2026-09-21T22:45:02.790Z"
+      },
+      {
+        "asset": "102725828082...",
+        "count": 586,
+        "last": "2026-09-21T16:40:02.748Z"
+      },
+      {
+        "asset": "102732790910...",
+        "count": 589,
+        "last": "2026-09-21T16:10:02.998Z"
+      },
+      {
+        "asset": "102924559928...",
+        "count": 583,
+        "last": "2026-09-21T20:15:02.585Z"
+      },
+      {
+        "asset": "103091088555...",
+        "count": 586,
+        "last": "2026-09-21T16:15:02.662Z"
+      },
+      {
+        "asset": "103452155678...",
+        "count": 583,
+        "last": "2026-09-21T17:30:02.303Z"
+      },
+      {
+        "asset": "103544739120...",
+        "count": 563,
+        "last": "2026-09-22T06:50:02.993Z"
+      },
+      {
+        "asset": "103605901377...",
+        "count": 575,
+        "last": "2026-09-22T04:45:02.499Z"
+      },
+      {
+        "asset": "103777269966...",
+        "count": 578,
+        "last": "2026-09-22T00:10:02.798Z"
+      },
+      {
+        "asset": "104117032858...",
+        "count": 579,
+        "last": "2026-09-22T03:20:02.688Z"
+      },
+      {
+        "asset": "104420550253...",
+        "count": 578,
+        "last": "2026-09-22T04:10:02.633Z"
+      },
+      {
+        "asset": "104918960350...",
+        "count": 573,
+        "last": "2026-09-22T01:20:02.829Z"
+      },
+      {
+        "asset": "104921984620...",
+        "count": 575,
+        "last": "2026-09-22T01:35:02.874Z"
+      },
+      {
+        "asset": "105331667090...",
+        "count": 580,
+        "last": "2026-09-21T14:40:14.473Z"
+      },
+      {
+        "asset": "105525517773...",
+        "count": 581,
+        "last": "2026-09-21T22:15:02.235Z"
+      },
+      {
+        "asset": "105582173905...",
+        "count": 580,
+        "last": "2026-09-22T01:50:02.864Z"
+      },
+      {
+        "asset": "105748674006...",
+        "count": 574,
+        "last": "2026-09-22T05:10:02.730Z"
+      },
+      {
+        "asset": "105796759428...",
+        "count": 585,
+        "last": "2026-09-21T23:00:03.128Z"
+      },
+      {
+        "asset": "106111153085...",
+        "count": 581,
+        "last": "2026-09-21T21:20:03.131Z"
+      },
+      {
+        "asset": "106477553332...",
+        "count": 582,
+        "last": "2026-09-21T17:10:02.696Z"
+      },
+      {
+        "asset": "106592828473...",
+        "count": 577,
+        "last": "2026-09-22T01:25:03.021Z"
+      },
+      {
+        "asset": "106683361231...",
+        "count": 585,
+        "last": "2026-09-21T18:35:02.000Z"
+      },
+      {
+        "asset": "106932397425...",
+        "count": 577,
+        "last": "2026-09-22T03:05:03.037Z"
+      },
+      {
+        "asset": "107078622660...",
+        "count": 588,
+        "last": "2026-09-21T15:45:02.914Z"
+      },
+      {
+        "asset": "107137645881...",
+        "count": 589,
+        "last": "2026-09-21T16:50:03.077Z"
+      },
+      {
+        "asset": "107975714546...",
+        "count": 575,
+        "last": "2026-09-21T14:45:14.778Z"
+      },
+      {
+        "asset": "108159829445...",
+        "count": 565,
+        "last": "2026-09-22T06:35:02.762Z"
+      },
+      {
+        "asset": "108401077101...",
+        "count": 557,
+        "last": "2026-09-22T08:30:03.074Z"
+      },
+      {
+        "asset": "108509891194...",
+        "count": 584,
+        "last": "2026-09-21T20:35:02.963Z"
+      },
+      {
+        "asset": "108531264875...",
+        "count": 576,
+        "last": "2026-09-22T01:15:02.856Z"
+      },
+      {
+        "asset": "108687460580...",
+        "count": 560,
+        "last": "2026-09-22T06:55:02.868Z"
+      },
+      {
+        "asset": "108754267836...",
+        "count": 580,
+        "last": "2026-09-21T14:20:14.942Z"
+      },
+      {
+        "asset": "108883511347...",
+        "count": 577,
+        "last": "2026-09-21T14:35:14.588Z"
+      },
+      {
+        "asset": "109312899392...",
+        "count": 586,
+        "last": "2026-09-21T21:25:02.756Z"
+      },
+      {
+        "asset": "109422412817...",
+        "count": 581,
+        "last": "2026-09-21T13:30:14.847Z"
+      },
+      {
+        "asset": "109945937498...",
+        "count": 560,
+        "last": "2026-09-22T08:20:02.493Z"
+      },
+      {
+        "asset": "110217025718...",
+        "count": 579,
+        "last": "2026-09-21T13:40:14.712Z"
+      },
+      {
+        "asset": "110283942495...",
+        "count": 571,
+        "last": "2026-09-22T05:50:02.558Z"
+      },
+      {
+        "asset": "110644907285...",
+        "count": 582,
+        "last": "2026-09-22T02:35:03.088Z"
+      },
+      {
+        "asset": "110681811863...",
+        "count": 562,
+        "last": "2026-09-22T06:40:02.926Z"
+      },
+      {
+        "asset": "110872082174...",
+        "count": 583,
+        "last": "2026-09-21T20:05:02.519Z"
+      },
+      {
+        "asset": "110991115360...",
+        "count": 587,
+        "last": "2026-09-21T16:35:02.769Z"
+      },
+      {
+        "asset": "111346481598...",
+        "count": 568,
+        "last": "2026-09-22T06:20:02.983Z"
+      },
+      {
+        "asset": "111629288426...",
+        "count": 569,
+        "last": "2026-09-22T02:55:02.800Z"
+      },
+      {
+        "asset": "111773344894...",
+        "count": 579,
+        "last": "2026-09-21T22:00:02.711Z"
+      },
+      {
+        "asset": "111878450448...",
+        "count": 559,
+        "last": "2026-09-22T08:15:02.276Z"
+      },
+      {
+        "asset": "112211808455...",
+        "count": 581,
+        "last": "2026-09-22T00:25:02.913Z"
+      },
+      {
+        "asset": "112490091842...",
+        "count": 561,
+        "last": "2026-09-22T08:00:02.707Z"
+      },
+      {
+        "asset": "112957289645...",
+        "count": 25,
+        "last": "2026-09-21T16:55:26.243Z"
+      },
+      {
+        "asset": "113035776222...",
+        "count": 560,
+        "last": "2026-09-22T08:20:02.493Z"
+      },
+      {
+        "asset": "113453259159...",
+        "count": 583,
+        "last": "2026-09-21T17:40:02.314Z"
+      },
+      {
+        "asset": "113513504590...",
+        "count": 585,
+        "last": "2026-09-21T18:50:02.841Z"
+      },
+      {
+        "asset": "113936715589...",
+        "count": 573,
+        "last": "2026-09-22T06:05:02.880Z"
+      },
+      {
+        "asset": "114074160634...",
+        "count": 448,
+        "last": "2026-09-21T17:05:02.889Z"
+      },
+      {
+        "asset": "114190769606...",
+        "count": 544,
+        "last": "2026-09-21T15:20:02.913Z"
+      },
+      {
+        "asset": "114223478156...",
+        "count": 558,
+        "last": "2026-09-21T20:30:03.049Z"
+      },
+      {
+        "asset": "114438509518...",
+        "count": 587,
+        "last": "2026-09-21T15:35:02.347Z"
+      },
+      {
+        "asset": "114647609829...",
+        "count": 574,
+        "last": "2026-09-22T01:55:02.737Z"
+      },
+      {
+        "asset": "114778929792...",
+        "count": 583,
+        "last": "2026-09-21T17:45:02.956Z"
+      },
+      {
+        "asset": "114986313833...",
+        "count": 570,
+        "last": "2026-09-22T06:45:02.859Z"
+      },
+      {
+        "asset": "115183894145...",
+        "count": 584,
+        "last": "2026-09-22T01:40:02.992Z"
+      },
+      {
+        "asset": "115483453605...",
+        "count": 584,
+        "last": "2026-09-21T18:30:02.994Z"
+      },
+      {
+        "asset": "118807401059...",
+        "count": 586,
+        "last": "2026-09-21T18:45:03.035Z"
+      },
+      {
+        "asset": "120828256900...",
+        "count": 588,
+        "last": "2026-09-21T15:45:02.914Z"
+      },
+      {
+        "asset": "125638493001...",
+        "count": 25,
+        "last": "2026-09-21T16:55:26.243Z"
+      },
+      {
+        "asset": "126195510823...",
+        "count": 569,
+        "last": "2026-09-22T06:15:02.843Z"
+      },
+      {
+        "asset": "126649154838...",
+        "count": 575,
+        "last": "2026-09-22T04:50:02.952Z"
+      },
+      {
+        "asset": "128390845451...",
+        "count": 566,
+        "last": "2026-09-22T07:00:02.969Z"
+      },
+      {
+        "asset": "133831503390...",
+        "count": 558,
+        "last": "2026-09-21T20:30:03.049Z"
+      },
+      {
+        "asset": "135040507341...",
+        "count": 577,
+        "last": "2026-09-22T00:00:02.935Z"
+      },
+      {
+        "asset": "135921679766...",
+        "count": 579,
+        "last": "2026-09-22T04:30:02.326Z"
+      },
+      {
+        "asset": "137315334317...",
+        "count": 580,
+        "last": "2026-09-21T22:25:02.960Z"
+      },
+      {
+        "asset": "139926664128...",
+        "count": 584,
+        "last": "2026-09-21T19:25:02.541Z"
+      },
+      {
+        "asset": "141456189487...",
+        "count": 587,
+        "last": "2026-09-21T16:15:02.662Z"
+      },
+      {
+        "asset": "142800590294...",
+        "count": 579,
+        "last": "2026-09-21T20:45:02.992Z"
+      },
+      {
+        "asset": "143378535514...",
+        "count": 586,
+        "last": "2026-09-21T19:35:02.662Z"
+      },
+      {
+        "asset": "144153850191...",
+        "count": 582,
+        "last": "2026-09-21T20:55:02.830Z"
+      },
+      {
+        "asset": "146422567799...",
+        "count": 583,
+        "last": "2026-09-21T13:00:14.759Z"
+      },
+      {
+        "asset": "155542685555...",
+        "count": 528,
+        "last": "2026-09-21T15:30:02.711Z"
+      },
+      {
+        "asset": "157578796700...",
+        "count": 579,
+        "last": "2026-09-21T13:55:14.931Z"
+      },
+      {
+        "asset": "159460821816...",
+        "count": 577,
+        "last": "2026-09-21T13:50:14.474Z"
+      },
+      {
+        "asset": "159898583592...",
+        "count": 578,
+        "last": "2026-09-21T14:15:14.715Z"
+      },
+      {
+        "asset": "159982352345...",
+        "count": 585,
+        "last": "2026-09-21T20:25:03.015Z"
+      },
+      {
+        "asset": "161402881814...",
+        "count": 580,
+        "last": "2026-09-22T04:35:02.666Z"
+      },
+      {
+        "asset": "161676932056...",
+        "count": 583,
+        "last": "2026-09-21T21:05:02.739Z"
+      },
+      {
+        "asset": "163519841509...",
+        "count": 583,
+        "last": "2026-09-22T02:20:02.833Z"
+      },
+      {
+        "asset": "168668365657...",
+        "count": 533,
+        "last": "2026-09-22T08:44:47.608Z"
+      },
+      {
+        "asset": "171705058262...",
+        "count": 578,
+        "last": "2026-09-22T00:10:02.798Z"
+      },
+      {
+        "asset": "175923313637...",
+        "count": 577,
+        "last": "2026-09-22T05:35:02.926Z"
+      },
+      {
+        "asset": "176786409148...",
+        "count": 587,
+        "last": "2026-09-21T15:55:02.937Z"
+      },
+      {
+        "asset": "177968833007...",
+        "count": 573,
+        "last": "2026-09-22T05:15:03.087Z"
+      },
+      {
+        "asset": "178152135498...",
+        "count": 589,
+        "last": "2026-09-21T15:50:03.038Z"
+      },
+      {
+        "asset": "178532164071...",
+        "count": 586,
+        "last": "2026-09-21T21:55:02.996Z"
+      },
+      {
+        "asset": "180548014888...",
+        "count": 573,
+        "last": "2026-09-21T17:25:02.783Z"
+      },
+      {
+        "asset": "180987524626...",
+        "count": 582,
+        "last": "2026-09-21T22:30:02.753Z"
+      },
+      {
+        "asset": "181340281907...",
+        "count": 583,
+        "last": "2026-09-21T22:35:02.799Z"
+      },
+      {
+        "asset": "181466984184...",
+        "count": 579,
+        "last": "2026-09-21T23:20:03.057Z"
+      },
+      {
+        "asset": "182277395988...",
+        "count": 561,
+        "last": "2026-09-22T08:10:02.859Z"
+      },
+      {
+        "asset": "184949194254...",
+        "count": 580,
+        "last": "2026-09-22T00:30:02.782Z"
+      },
+      {
+        "asset": "186661259254...",
+        "count": 586,
+        "last": "2026-09-21T20:10:03.057Z"
+      },
+      {
+        "asset": "187874709082...",
+        "count": 583,
+        "last": "2026-09-21T22:55:02.996Z"
+      },
+      {
+        "asset": "187888767828...",
+        "count": 544,
+        "last": "2026-09-21T15:20:02.913Z"
+      },
+      {
+        "asset": "189320098458...",
+        "count": 579,
+        "last": "2026-09-21T13:20:14.750Z"
+      },
+      {
+        "asset": "192093748604...",
+        "count": 575,
+        "last": "2026-09-22T01:45:02.486Z"
+      },
+      {
+        "asset": "195482790659...",
+        "count": 547,
+        "last": "2026-09-21T23:29:45.453Z"
+      },
+      {
+        "asset": "196024117899...",
+        "count": 577,
+        "last": "2026-09-22T00:35:02.935Z"
+      },
+      {
+        "asset": "196195486437...",
+        "count": 587,
+        "last": "2026-09-21T21:15:02.773Z"
+      },
+      {
+        "asset": "196664684765...",
+        "count": 583,
+        "last": "2026-09-21T17:40:02.314Z"
+      },
+      {
+        "asset": "197059197634...",
+        "count": 583,
+        "last": "2026-09-21T21:05:02.739Z"
+      },
+      {
+        "asset": "198701737678...",
+        "count": 562,
+        "last": "2026-09-22T07:40:02.737Z"
+      },
+      {
+        "asset": "204765955450...",
+        "count": 586,
+        "last": "2026-09-21T13:25:14.956Z"
+      },
+      {
+        "asset": "208346744101...",
+        "count": 582,
+        "last": "2026-09-21T17:35:02.677Z"
+      },
+      {
+        "asset": "209457358128...",
+        "count": 577,
+        "last": "2026-09-22T02:05:02.802Z"
+      },
+      {
+        "asset": "209710310148...",
+        "count": 584,
+        "last": "2026-09-22T01:40:02.992Z"
+      },
+      {
+        "asset": "210434015263...",
+        "count": 566,
+        "last": "2026-09-22T07:20:02.959Z"
+      },
+      {
+        "asset": "211797564958...",
+        "count": 580,
+        "last": "2026-09-22T00:05:02.551Z"
+      },
+      {
+        "asset": "213479855965...",
+        "count": 584,
+        "last": "2026-09-21T22:50:02.778Z"
+      },
+      {
+        "asset": "215641079440...",
+        "count": 582,
+        "last": "2026-09-21T21:30:03.069Z"
+      },
+      {
+        "asset": "218008252221...",
+        "count": 590,
+        "last": "2026-09-21T15:50:03.038Z"
+      },
+      {
+        "asset": "220046447289...",
+        "count": 577,
+        "last": "2026-09-22T04:20:02.687Z"
+      },
+      {
+        "asset": "220106258808...",
+        "count": 581,
+        "last": "2026-09-21T20:40:02.472Z"
+      },
+      {
+        "asset": "222748214786...",
+        "count": 575,
+        "last": "2026-09-21T15:00:13.166Z"
+      },
+      {
+        "asset": "228013959347...",
+        "count": 587,
+        "last": "2026-09-21T17:15:03.089Z"
+      },
+      {
+        "asset": "229338788576...",
+        "count": 572,
+        "last": "2026-09-22T03:25:02.773Z"
+      },
+      {
+        "asset": "230315617128...",
+        "count": 577,
+        "last": "2026-09-21T13:50:14.474Z"
+      },
+      {
+        "asset": "235275307070...",
+        "count": 580,
+        "last": "2026-09-21T13:35:14.624Z"
+      },
+      {
+        "asset": "237579318016...",
+        "count": 577,
+        "last": "2026-09-21T19:05:03.087Z"
+      },
+      {
+        "asset": "243837845318...",
+        "count": 582,
+        "last": "2026-09-21T22:40:02.434Z"
+      },
+      {
+        "asset": "245462187041...",
+        "count": 587,
+        "last": "2026-09-21T21:15:02.773Z"
+      },
+      {
+        "asset": "247956707978...",
+        "count": 583,
+        "last": "2026-09-21T22:20:02.962Z"
+      },
+      {
+        "asset": "249330616281...",
+        "count": 588,
+        "last": "2026-09-21T15:25:02.962Z"
+      },
+      {
+        "asset": "249911791759...",
+        "count": 579,
+        "last": "2026-09-22T02:10:02.412Z"
+      },
+      {
+        "asset": "250334093189...",
+        "count": 580,
+        "last": "2026-09-22T03:50:03.171Z"
+      },
+      {
+        "asset": "250969944342...",
+        "count": 573,
+        "last": "2026-09-22T01:05:03.009Z"
+      },
+      {
+        "asset": "250998884246...",
+        "count": 583,
+        "last": "2026-09-21T22:55:02.996Z"
+      },
+      {
+        "asset": "251201595462...",
+        "count": 580,
+        "last": "2026-09-22T03:50:03.171Z"
+      },
+      {
+        "asset": "252481536320...",
+        "count": 584,
+        "last": "2026-09-21T19:25:02.541Z"
+      },
+      {
+        "asset": "253135347361...",
+        "count": 526,
+        "last": "2026-09-21T14:30:14.822Z"
+      },
+      {
+        "asset": "258875595743...",
+        "count": 573,
+        "last": "2026-09-22T03:35:02.977Z"
+      },
+      {
+        "asset": "263499893898...",
+        "count": 562,
+        "last": "2026-09-22T06:40:02.926Z"
+      },
+      {
+        "asset": "268799270181...",
+        "count": 579,
+        "last": "2026-09-22T02:30:02.616Z"
+      },
+      {
+        "asset": "270925970817...",
+        "count": 579,
+        "last": "2026-09-21T13:40:14.712Z"
+      },
+      {
+        "asset": "278084849895...",
+        "count": 578,
+        "last": "2026-09-22T04:10:02.633Z"
+      },
+      {
+        "asset": "278230258502...",
+        "count": 583,
+        "last": "2026-09-21T19:15:02.471Z"
+      },
+      {
+        "asset": "279080968845...",
+        "count": 587,
+        "last": "2026-09-21T17:15:03.089Z"
+      },
+      {
+        "asset": "283339162840...",
+        "count": 580,
+        "last": "2026-09-22T00:50:02.454Z"
+      },
+      {
+        "asset": "285483749187...",
+        "count": 575,
+        "last": "2026-09-21T14:45:14.778Z"
+      },
+      {
+        "asset": "285878093885...",
+        "count": 586,
+        "last": "2026-09-21T18:15:03.026Z"
+      },
+      {
+        "asset": "286390267212...",
+        "count": 583,
+        "last": "2026-09-22T00:20:02.544Z"
+      },
+      {
+        "asset": "287179779587...",
+        "count": 583,
+        "last": "2026-09-21T22:35:02.798Z"
+      },
+      {
+        "asset": "295481049639...",
+        "count": 580,
+        "last": "2026-09-21T22:10:02.619Z"
+      },
+      {
+        "asset": "298111558157...",
+        "count": 566,
+        "last": "2026-09-22T07:10:02.904Z"
+      },
+      {
+        "asset": "300827261738...",
+        "count": 586,
+        "last": "2026-09-21T21:00:02.574Z"
+      },
+      {
+        "asset": "307552140496...",
+        "count": 578,
+        "last": "2026-09-22T03:10:02.719Z"
+      },
+      {
+        "asset": "309870688329...",
+        "count": 562,
+        "last": "2026-09-22T07:45:02.870Z"
+      },
+      {
+        "asset": "317786594390...",
+        "count": 583,
+        "last": "2026-09-21T19:10:02.883Z"
+      },
+      {
+        "asset": "319676317694...",
+        "count": 577,
+        "last": "2026-09-22T04:00:02.537Z"
+      },
+      {
+        "asset": "319811205998...",
+        "count": 580,
+        "last": "2026-09-21T13:35:14.624Z"
+      },
+      {
+        "asset": "320145266893...",
+        "count": 576,
+        "last": "2026-09-21T23:25:02.831Z"
+      },
+      {
+        "asset": "323580333693...",
+        "count": 582,
+        "last": "2026-09-21T20:00:03.097Z"
+      },
+      {
+        "asset": "324168469895...",
+        "count": 580,
+        "last": "2026-09-22T00:30:02.782Z"
+      },
+      {
+        "asset": "324867940923...",
+        "count": 576,
+        "last": "2026-09-22T03:55:02.613Z"
+      },
+      {
+        "asset": "326832915291...",
+        "count": 578,
+        "last": "2026-09-22T05:40:02.996Z"
+      },
+      {
+        "asset": "330460158212...",
+        "count": 578,
+        "last": "2026-09-22T05:40:02.996Z"
+      },
+      {
+        "asset": "331524661957...",
+        "count": 561,
+        "last": "2026-09-22T08:05:02.974Z"
+      },
+      {
+        "asset": "334818763378...",
+        "count": 485,
+        "last": "2026-09-21T13:15:14.535Z"
+      },
+      {
+        "asset": "335757526553...",
+        "count": 586,
+        "last": "2026-09-21T16:40:02.748Z"
+      },
+      {
+        "asset": "336587085580...",
+        "count": 555,
+        "last": "2026-09-22T08:25:02.811Z"
+      },
+      {
+        "asset": "336799042333...",
+        "count": 566,
+        "last": "2026-09-22T07:10:02.904Z"
+      },
+      {
+        "asset": "336925697927...",
+        "count": 589,
+        "last": "2026-09-21T21:40:02.956Z"
+      },
+      {
+        "asset": "338779721383...",
+        "count": 579,
+        "last": "2026-09-21T23:55:02.848Z"
+      },
+      {
+        "asset": "338936701215...",
+        "count": 577,
+        "last": "2026-09-22T05:00:02.684Z"
+      },
+      {
+        "asset": "341327145120...",
+        "count": 586,
+        "last": "2026-09-21T21:55:02.996Z"
+      },
+      {
+        "asset": "343052287802...",
+        "count": 582,
+        "last": "2026-09-21T17:35:02.677Z"
+      },
+      {
+        "asset": "351403681144...",
+        "count": 558,
+        "last": "2026-09-22T07:35:02.935Z"
+      },
+      {
+        "asset": "353949408356...",
+        "count": 580,
+        "last": "2026-09-22T00:05:02.550Z"
+      },
+      {
+        "asset": "359201682055...",
+        "count": 371,
+        "last": "2026-09-21T13:58:55.158Z"
+      },
+      {
+        "asset": "359631442227...",
+        "count": 556,
+        "last": "2026-09-22T08:35:02.802Z"
+      },
+      {
+        "asset": "359991428221...",
+        "count": 585,
+        "last": "2026-09-21T16:25:02.888Z"
+      },
+      {
+        "asset": "361649862372...",
+        "count": 578,
+        "last": "2026-09-22T00:15:02.928Z"
+      },
+      {
+        "asset": "361953833709...",
+        "count": 582,
+        "last": "2026-09-21T21:30:03.069Z"
+      },
+      {
+        "asset": "363502456337...",
+        "count": 577,
+        "last": "2026-09-22T03:30:02.754Z"
+      },
+      {
+        "asset": "364020079498...",
+        "count": 581,
+        "last": "2026-09-22T00:25:02.913Z"
+      },
+      {
+        "asset": "364169522139...",
+        "count": 575,
+        "last": "2026-09-22T05:55:02.823Z"
+      },
+      {
+        "asset": "364507176396...",
+        "count": 579,
+        "last": "2026-09-22T04:30:02.326Z"
+      },
+      {
+        "asset": "365258799933...",
+        "count": 572,
+        "last": "2026-09-21T19:40:03.004Z"
+      },
+      {
+        "asset": "366669275394...",
+        "count": 581,
+        "last": "2026-09-21T17:20:02.422Z"
+      },
+      {
+        "asset": "367749435954...",
+        "count": 582,
+        "last": "2026-09-21T17:50:03.066Z"
+      },
+      {
+        "asset": "368600917810...",
+        "count": 566,
+        "last": "2026-09-22T06:25:02.614Z"
+      },
+      {
+        "asset": "369372879754...",
+        "count": 568,
+        "last": "2026-09-22T05:45:03.036Z"
+      },
+      {
+        "asset": "370601514355...",
+        "count": 575,
+        "last": "2026-09-22T01:35:02.874Z"
+      },
+      {
+        "asset": "371328183258...",
+        "count": 577,
+        "last": "2026-09-22T04:00:02.537Z"
+      },
+      {
+        "asset": "373119292404...",
+        "count": 371,
+        "last": "2026-09-21T13:58:55.159Z"
+      },
+      {
+        "asset": "373337780693...",
+        "count": 581,
+        "last": "2026-09-21T22:15:02.235Z"
+      },
+      {
+        "asset": "374787734329...",
+        "count": 588,
+        "last": "2026-09-21T16:00:03.091Z"
+      },
+      {
+        "asset": "378886385064...",
+        "count": 585,
+        "last": "2026-09-21T18:35:02.000Z"
+      },
+      {
+        "asset": "380193368601...",
+        "count": 585,
+        "last": "2026-09-21T16:05:02.570Z"
+      },
+      {
+        "asset": "384103466728...",
+        "count": 593,
+        "last": "2026-09-21T16:20:02.722Z"
+      },
+      {
+        "asset": "386147378350...",
+        "count": 576,
+        "last": "2026-09-21T23:25:02.831Z"
+      },
+      {
+        "asset": "388505675834...",
+        "count": 577,
+        "last": "2026-09-21T14:35:14.588Z"
+      },
+      {
+        "asset": "394031666188...",
+        "count": 580,
+        "last": "2026-09-22T03:40:02.992Z"
+      },
+      {
+        "asset": "394887054590...",
+        "count": 563,
+        "last": "2026-09-22T06:10:02.988Z"
+      },
+      {
+        "asset": "398239157165...",
+        "count": 529,
+        "last": "2026-09-21T12:55:14.928Z"
+      },
+      {
+        "asset": "401605753788...",
+        "count": 581,
+        "last": "2026-09-21T20:40:02.472Z"
+      },
+      {
+        "asset": "402147149448...",
+        "count": 519,
+        "last": "2026-09-21T23:35:02.646Z"
+      },
+      {
+        "asset": "402458974806...",
+        "count": 588,
+        "last": "2026-09-21T16:00:03.091Z"
+      },
+      {
+        "asset": "403392506408...",
+        "count": 567,
+        "last": "2026-09-22T06:00:02.907Z"
+      },
+      {
+        "asset": "404350907835...",
+        "count": 563,
+        "last": "2026-09-22T06:10:02.988Z"
+      },
+      {
+        "asset": "405592609622...",
+        "count": 529,
+        "last": "2026-09-21T12:55:14.927Z"
+      },
+      {
+        "asset": "406379591410...",
+        "count": 579,
+        "last": "2026-09-22T03:15:02.905Z"
+      },
+      {
+        "asset": "407470000549...",
+        "count": 580,
+        "last": "2026-09-22T02:00:03.038Z"
+      },
+      {
+        "asset": "414399144246...",
+        "count": 584,
+        "last": "2026-09-21T19:55:02.868Z"
+      },
+      {
+        "asset": "416061613229...",
+        "count": 569,
+        "last": "2026-09-21T18:05:02.409Z"
+      },
+      {
+        "asset": "420985686794...",
+        "count": 584,
+        "last": "2026-09-21T18:30:02.994Z"
+      },
+      {
+        "asset": "421085534481...",
+        "count": 582,
+        "last": "2026-09-22T02:35:03.087Z"
+      },
+      {
+        "asset": "424724853200...",
+        "count": 585,
+        "last": "2026-09-21T16:30:03.148Z"
+      },
+      {
+        "asset": "426798450133...",
+        "count": 587,
+        "last": "2026-09-21T19:00:02.995Z"
+      },
+      {
+        "asset": "428130137119...",
+        "count": 586,
+        "last": "2026-09-21T21:00:02.574Z"
+      },
+      {
+        "asset": "429037854786...",
+        "count": 557,
+        "last": "2026-09-22T08:35:02.802Z"
+      },
+      {
+        "asset": "431412179453...",
+        "count": 579,
+        "last": "2026-09-21T13:20:14.750Z"
+      },
+      {
+        "asset": "433395503969...",
+        "count": 579,
+        "last": "2026-09-22T04:40:02.665Z"
+      },
+      {
+        "asset": "435209761705...",
+        "count": 579,
+        "last": "2026-09-22T02:30:02.616Z"
+      },
+      {
+        "asset": "435648052565...",
+        "count": 559,
+        "last": "2026-09-22T07:15:02.946Z"
+      },
+      {
+        "asset": "438742721598...",
+        "count": 526,
+        "last": "2026-09-21T14:30:14.822Z"
+      },
+      {
+        "asset": "440582047607...",
+        "count": 546,
+        "last": "2026-09-22T07:05:02.400Z"
+      },
+      {
+        "asset": "447151379165...",
+        "count": 547,
+        "last": "2026-09-21T23:29:45.453Z"
+      },
+      {
+        "asset": "447593991530...",
+        "count": 587,
+        "last": "2026-09-21T19:00:02.995Z"
+      },
+      {
+        "asset": "450397116330...",
+        "count": 586,
+        "last": "2026-09-21T16:45:02.712Z"
+      },
+      {
+        "asset": "451120577874...",
+        "count": 577,
+        "last": "2026-09-21T23:15:03.050Z"
+      },
+      {
+        "asset": "452042074188...",
+        "count": 577,
+        "last": "2026-09-22T02:40:02.992Z"
+      },
+      {
+        "asset": "455128753619...",
+        "count": 578,
+        "last": "2026-09-22T02:50:02.866Z"
+      },
+      {
+        "asset": "457620965946...",
+        "count": 582,
+        "last": "2026-09-21T22:40:02.434Z"
+      },
+      {
+        "asset": "459892614044...",
+        "count": 580,
+        "last": "2026-09-22T04:35:02.666Z"
+      },
+      {
+        "asset": "460292081121...",
+        "count": 558,
+        "last": "2026-09-22T07:50:02.706Z"
+      },
+      {
+        "asset": "464246525139...",
+        "count": 535,
+        "last": "2026-09-21T13:04:51.428Z"
+      },
+      {
+        "asset": "468807761662...",
+        "count": 586,
+        "last": "2026-09-21T19:45:02.433Z"
+      },
+      {
+        "asset": "470697731708...",
+        "count": 556,
+        "last": "2026-09-22T08:40:02.986Z"
+      },
+      {
+        "asset": "473195576283...",
+        "count": 587,
+        "last": "2026-09-21T18:55:02.759Z"
+      },
+      {
+        "asset": "474394936711...",
+        "count": 519,
+        "last": "2026-09-21T23:35:02.646Z"
+      },
+      {
+        "asset": "475966261863...",
+        "count": 569,
+        "last": "2026-09-22T06:15:02.843Z"
+      },
+      {
+        "asset": "480850542161...",
+        "count": 566,
+        "last": "2026-09-22T07:20:02.959Z"
+      },
+      {
+        "asset": "481642604578...",
+        "count": 575,
+        "last": "2026-09-22T04:50:02.952Z"
+      },
+      {
+        "asset": "483910887265...",
+        "count": 585,
+        "last": "2026-09-21T17:55:02.677Z"
+      },
+      {
+        "asset": "487780289041...",
+        "count": 562,
+        "last": "2026-09-22T07:30:02.891Z"
+      },
+      {
+        "asset": "490137482035...",
+        "count": 580,
+        "last": "2026-09-22T02:00:03.038Z"
+      },
+      {
+        "asset": "493273913226...",
+        "count": 586,
+        "last": "2026-09-21T21:45:02.815Z"
+      },
+      {
+        "asset": "493309310847...",
+        "count": 580,
+        "last": "2026-09-22T00:45:02.612Z"
+      },
+      {
+        "asset": "495812493221...",
+        "count": 574,
+        "last": "2026-09-22T01:55:02.737Z"
+      },
+      {
+        "asset": "500213363058...",
+        "count": 591,
+        "last": "2026-09-21T18:10:02.869Z"
+      },
+      {
+        "asset": "503066438348...",
+        "count": 575,
+        "last": "2026-09-21T19:30:02.598Z"
+      },
+      {
+        "asset": "509404468973...",
+        "count": 582,
+        "last": "2026-09-21T23:05:02.926Z"
+      },
+      {
+        "asset": "511917629225...",
+        "count": 579,
+        "last": "2026-09-22T03:15:02.905Z"
+      },
+      {
+        "asset": "512091121926...",
+        "count": 582,
+        "last": "2026-09-21T21:35:02.557Z"
+      },
+      {
+        "asset": "513944012167...",
+        "count": 588,
+        "last": "2026-09-21T18:20:02.266Z"
+      },
+      {
+        "asset": "514187471504...",
+        "count": 580,
+        "last": "2026-09-22T00:55:02.794Z"
+      },
+      {
+        "asset": "518377552745...",
+        "count": 585,
+        "last": "2026-09-21T19:45:02.433Z"
+      },
+      {
+        "asset": "518758940776...",
+        "count": 573,
+        "last": "2026-09-22T05:20:03.098Z"
+      },
+      {
+        "asset": "519389000166...",
+        "count": 582,
+        "last": "2026-09-21T17:50:03.066Z"
+      },
+      {
+        "asset": "520223319926...",
+        "count": 586,
+        "last": "2026-09-21T19:35:02.662Z"
+      },
+      {
+        "asset": "523053465725...",
+        "count": 577,
+        "last": "2026-09-22T00:40:02.874Z"
+      },
+      {
+        "asset": "523900420892...",
+        "count": 581,
+        "last": "2026-09-21T23:50:02.964Z"
+      },
+      {
+        "asset": "525665791691...",
+        "count": 573,
+        "last": "2026-09-22T05:15:03.087Z"
+      },
+      {
+        "asset": "527236326719...",
+        "count": 567,
+        "last": "2026-09-22T06:00:02.908Z"
+      },
+      {
+        "asset": "529331564764...",
+        "count": 581,
+        "last": "2026-09-21T21:20:03.131Z"
+      },
+      {
+        "asset": "530881015368...",
+        "count": 577,
+        "last": "2026-09-22T03:30:02.754Z"
+      },
+      {
+        "asset": "531305843698...",
+        "count": 556,
+        "last": "2026-09-22T07:25:02.818Z"
+      },
+      {
+        "asset": "534606265135...",
+        "count": 585,
+        "last": "2026-09-21T20:25:03.015Z"
+      },
+      {
+        "asset": "535306445380...",
+        "count": 579,
+        "last": "2026-09-21T23:45:02.915Z"
+      },
+      {
+        "asset": "535482185015...",
+        "count": 572,
+        "last": "2026-09-21T19:40:03.004Z"
+      },
+      {
+        "asset": "536356799102...",
+        "count": 580,
+        "last": "2026-09-22T03:40:02.993Z"
+      },
+      {
+        "asset": "538774114683...",
+        "count": 584,
+        "last": "2026-09-21T20:35:02.963Z"
+      },
+      {
+        "asset": "545708613498...",
+        "count": 563,
+        "last": "2026-09-22T06:30:02.937Z"
+      },
+      {
+        "asset": "545937387984...",
+        "count": 584,
+        "last": "2026-09-21T14:50:15.181Z"
+      },
+      {
+        "asset": "552643381865...",
+        "count": 582,
+        "last": "2026-09-21T23:05:02.926Z"
+      },
+      {
+        "asset": "556294654771...",
+        "count": 585,
+        "last": "2026-09-21T16:25:02.888Z"
+      },
+      {
+        "asset": "556384291968...",
+        "count": 581,
+        "last": "2026-09-22T04:25:02.750Z"
+      },
+      {
+        "asset": "560577930424...",
+        "count": 574,
+        "last": "2026-09-22T05:10:02.730Z"
+      },
+      {
+        "asset": "563172769785...",
+        "count": 578,
+        "last": "2026-09-21T14:25:14.904Z"
+      },
+      {
+        "asset": "563383384881...",
+        "count": 581,
+        "last": "2026-09-21T23:50:02.964Z"
+      },
+      {
+        "asset": "563919494868...",
+        "count": 579,
+        "last": "2026-09-21T23:20:03.057Z"
+      },
+      {
+        "asset": "569876950424...",
+        "count": 586,
+        "last": "2026-09-21T18:00:02.926Z"
+      },
+      {
+        "asset": "571869769522...",
+        "count": 579,
+        "last": "2026-09-21T23:45:02.915Z"
+      },
+      {
+        "asset": "573986268103...",
+        "count": 571,
+        "last": "2026-09-21T13:45:14.532Z"
+      },
+      {
+        "asset": "576217304941...",
+        "count": 589,
+        "last": "2026-09-21T21:40:02.956Z"
+      },
+      {
+        "asset": "576274936944...",
+        "count": 266,
+        "last": "2026-09-21T15:10:14.756Z"
+      },
+      {
+        "asset": "576705930717...",
+        "count": 589,
+        "last": "2026-09-21T16:50:03.077Z"
+      },
+      {
+        "asset": "579139805542...",
+        "count": 576,
+        "last": "2026-09-22T00:40:02.874Z"
+      },
+      {
+        "asset": "585905629672...",
+        "count": 577,
+        "last": "2026-09-22T02:40:02.992Z"
+      },
+      {
+        "asset": "586674584732...",
+        "count": 576,
+        "last": "2026-09-22T03:55:02.613Z"
+      },
+      {
+        "asset": "587696698355...",
+        "count": 563,
+        "last": "2026-09-22T06:30:02.937Z"
+      },
+      {
+        "asset": "591114020564...",
+        "count": 266,
+        "last": "2026-09-21T15:10:14.756Z"
+      },
+      {
+        "asset": "593272710751...",
+        "count": 571,
+        "last": "2026-09-21T21:50:02.847Z"
+      },
+      {
+        "asset": "594177862336...",
+        "count": 587,
+        "last": "2026-09-21T15:35:02.347Z"
+      },
+      {
+        "asset": "598168596258...",
+        "count": 558,
+        "last": "2026-09-22T07:35:02.935Z"
+      },
+      {
+        "asset": "599867901252...",
+        "count": 579,
+        "last": "2026-09-21T22:00:02.711Z"
+      },
+      {
+        "asset": "599951712141...",
+        "count": 577,
+        "last": "2026-09-22T05:30:02.851Z"
+      },
+      {
+        "asset": "600464119318...",
+        "count": 555,
+        "last": "2026-09-22T08:25:02.811Z"
+      },
+      {
+        "asset": "604786910944...",
+        "count": 575,
+        "last": "2026-09-21T15:00:13.166Z"
+      },
+      {
+        "asset": "607195302561...",
+        "count": 571,
+        "last": "2026-09-21T13:45:14.532Z"
+      },
+      {
+        "asset": "609454217070...",
+        "count": 586,
+        "last": "2026-09-21T18:00:02.926Z"
+      },
+      {
+        "asset": "609643843762...",
+        "count": 583,
+        "last": "2026-09-21T23:40:03.013Z"
+      },
+      {
+        "asset": "615776977564...",
+        "count": 586,
+        "last": "2026-09-21T18:45:03.034Z"
+      },
+      {
+        "asset": "617760776060...",
+        "count": 575,
+        "last": "2026-09-21T19:30:02.597Z"
+      },
+      {
+        "asset": "621292275631...",
+        "count": 585,
+        "last": "2026-09-21T20:20:03.040Z"
+      },
+      {
+        "asset": "623859617989...",
+        "count": 573,
+        "last": "2026-09-22T06:05:02.880Z"
+      },
+      {
+        "asset": "631157367484...",
+        "count": 580,
+        "last": "2026-09-22T00:45:02.612Z"
+      },
+      {
+        "asset": "632127292567...",
+        "count": 581,
+        "last": "2026-09-22T01:00:02.765Z"
+      },
+      {
+        "asset": "632675252589...",
+        "count": 556,
+        "last": "2026-09-22T07:25:02.818Z"
+      },
+      {
+        "asset": "637351029828...",
+        "count": 583,
+        "last": "2026-09-21T22:20:02.962Z"
+      },
+      {
+        "asset": "637756870291...",
+        "count": 577,
+        "last": "2026-09-22T00:35:02.935Z"
+      },
+      {
+        "asset": "637966306818...",
+        "count": 584,
+        "last": "2026-09-21T19:55:02.869Z"
+      },
+      {
+        "asset": "638241660792...",
+        "count": 576,
+        "last": "2026-09-22T04:55:02.854Z"
+      },
+      {
+        "asset": "640137554049...",
+        "count": 583,
+        "last": "2026-09-21T20:05:02.520Z"
+      },
+      {
+        "asset": "640194334733...",
+        "count": 571,
+        "last": "2026-09-22T03:45:02.598Z"
+      },
+      {
+        "asset": "644397840568...",
+        "count": 583,
+        "last": "2026-09-21T15:15:14.632Z"
+      },
+      {
+        "asset": "648402550357...",
+        "count": 581,
+        "last": "2026-09-22T01:00:02.765Z"
+      },
+      {
+        "asset": "648554135469...",
+        "count": 561,
+        "last": "2026-09-22T08:00:02.707Z"
+      },
+      {
+        "asset": "648909070682...",
+        "count": 573,
+        "last": "2026-09-22T01:20:02.829Z"
+      },
+      {
+        "asset": "649103383006...",
+        "count": 568,
+        "last": "2026-09-22T05:45:03.036Z"
+      },
+      {
+        "asset": "654267022826...",
+        "count": 571,
+        "last": "2026-09-22T05:50:02.558Z"
+      },
+      {
+        "asset": "655609550654...",
+        "count": 583,
+        "last": "2026-09-21T18:25:02.790Z"
+      },
+      {
+        "asset": "656501551564...",
+        "count": 587,
+        "last": "2026-09-21T19:50:03.043Z"
+      },
+      {
+        "asset": "656956113620...",
+        "count": 586,
+        "last": "2026-09-21T16:45:02.712Z"
+      },
+      {
+        "asset": "662166138305...",
+        "count": 578,
+        "last": "2026-09-21T19:05:03.087Z"
+      },
+      {
+        "asset": "671830057166...",
+        "count": 574,
+        "last": "2026-09-22T02:25:03.100Z"
+      },
+      {
+        "asset": "672543948123...",
+        "count": 589,
+        "last": "2026-09-21T16:10:02.998Z"
+      },
+      {
+        "asset": "676518719233...",
+        "count": 579,
+        "last": "2026-09-22T02:45:02.754Z"
+      },
+      {
+        "asset": "681674740321...",
+        "count": 585,
+        "last": "2026-09-21T16:30:03.148Z"
+      },
+      {
+        "asset": "682284702790...",
+        "count": 396,
+        "last": "2026-09-21T14:10:15.067Z"
+      },
+      {
+        "asset": "686519275382...",
+        "count": 572,
+        "last": "2026-09-22T04:05:02.712Z"
+      },
+      {
+        "asset": "688099001972...",
+        "count": 584,
+        "last": "2026-09-21T17:30:02.712Z"
+      },
+      {
+        "asset": "695040279960...",
+        "count": 559,
+        "last": "2026-09-22T07:15:02.946Z"
+      },
+      {
+        "asset": "699285119816...",
+        "count": 573,
+        "last": "2026-09-22T01:05:03.009Z"
+      },
+      {
+        "asset": "702090894728...",
+        "count": 579,
+        "last": "2026-09-22T03:20:02.688Z"
+      },
+      {
+        "asset": "703869932700...",
+        "count": 577,
+        "last": "2026-09-22T02:05:02.803Z"
+      },
+      {
+        "asset": "704243265231...",
+        "count": 571,
+        "last": "2026-09-21T21:50:02.847Z"
+      },
+      {
+        "asset": "706889345153...",
+        "count": 586,
+        "last": "2026-09-21T18:15:03.026Z"
+      },
+      {
+        "asset": "715160924387...",
+        "count": 583,
+        "last": "2026-09-21T20:15:02.586Z"
+      },
+      {
+        "asset": "716038627145...",
+        "count": 571,
+        "last": "2026-09-22T03:45:02.597Z"
+      },
+      {
+        "asset": "718821717309...",
+        "count": 581,
+        "last": "2026-09-22T04:25:02.750Z"
+      },
+      {
+        "asset": "723880691288...",
+        "count": 578,
+        "last": "2026-09-21T14:25:14.904Z"
+      },
+      {
+        "asset": "729452971568...",
+        "count": 565,
+        "last": "2026-09-22T07:00:02.969Z"
+      },
+      {
+        "asset": "736292950224...",
+        "count": 583,
+        "last": "2026-09-21T23:10:02.733Z"
+      },
+      {
+        "asset": "736617421057...",
+        "count": 575,
+        "last": "2026-09-22T05:55:02.823Z"
+      },
+      {
+        "asset": "737014762192...",
+        "count": 587,
+        "last": "2026-09-21T18:55:02.759Z"
+      },
+      {
+        "asset": "737169851047...",
+        "count": 582,
+        "last": "2026-09-21T20:55:02.933Z"
+      },
+      {
+        "asset": "738655469738...",
+        "count": 581,
+        "last": "2026-09-21T15:40:02.672Z"
+      },
+      {
+        "asset": "739276218914...",
+        "count": 585,
+        "last": "2026-09-21T22:50:02.778Z"
+      },
+      {
+        "asset": "740015999952...",
+        "count": 588,
+        "last": "2026-09-21T16:55:03.053Z"
+      },
+      {
+        "asset": "741396942070...",
+        "count": 579,
+        "last": "2026-09-21T13:55:14.931Z"
+      },
+      {
+        "asset": "744078458802...",
+        "count": 573,
+        "last": "2026-09-22T05:05:02.661Z"
+      },
+      {
+        "asset": "746547673392...",
+        "count": 558,
+        "last": "2026-09-22T07:50:02.706Z"
+      },
+      {
+        "asset": "747951445231...",
+        "count": 587,
+        "last": "2026-09-21T15:55:02.937Z"
+      },
+      {
+        "asset": "750765100407...",
+        "count": 572,
+        "last": "2026-09-22T04:05:02.712Z"
+      },
+      {
+        "asset": "751685225629...",
+        "count": 585,
+        "last": "2026-09-21T17:55:02.677Z"
+      },
+      {
+        "asset": "752026767137...",
+        "count": 588,
+        "last": "2026-09-21T15:25:02.963Z"
+      },
+      {
+        "asset": "754436066351...",
+        "count": 560,
+        "last": "2026-09-22T08:15:02.276Z"
+      },
+      {
+        "asset": "758728074570...",
+        "count": 576,
+        "last": "2026-09-22T05:25:02.925Z"
+      },
+      {
+        "asset": "767019848149...",
+        "count": 546,
+        "last": "2026-09-22T07:05:02.400Z"
+      },
+      {
+        "asset": "767818752262...",
+        "count": 580,
+        "last": "2026-09-21T22:25:02.960Z"
+      },
+      {
+        "asset": "772204983176...",
+        "count": 582,
+        "last": "2026-09-21T20:00:03.097Z"
+      },
+      {
+        "asset": "772397536974...",
+        "count": 578,
+        "last": "2026-09-22T02:15:02.899Z"
+      },
+      {
+        "asset": "772616210440...",
+        "count": 584,
+        "last": "2026-09-21T22:05:02.892Z"
+      },
+      {
+        "asset": "774369673419...",
+        "count": 583,
+        "last": "2026-09-22T00:20:02.544Z"
+      },
+      {
+        "asset": "775159648762...",
+        "count": 581,
+        "last": "2026-09-21T14:55:14.620Z"
+      },
+      {
+        "asset": "776571494497...",
+        "count": 578,
+        "last": "2026-09-22T02:15:02.898Z"
+      },
+      {
+        "asset": "777870638917...",
+        "count": 577,
+        "last": "2026-09-22T01:30:02.822Z"
+      },
+      {
+        "asset": "778108879413...",
+        "count": 580,
+        "last": "2026-09-21T13:30:14.847Z"
+      },
+      {
+        "asset": "780297190114...",
+        "count": 583,
+        "last": "2026-09-22T02:20:02.833Z"
+      },
+      {
+        "asset": "780461790126...",
+        "count": 583,
+        "last": "2026-09-21T23:10:02.733Z"
+      },
+      {
+        "asset": "781328679566...",
+        "count": 578,
+        "last": "2026-09-22T01:10:02.741Z"
+      },
+      {
+        "asset": "792293898320...",
+        "count": 581,
+        "last": "2026-09-21T14:55:14.620Z"
+      },
+      {
+        "asset": "794636656207...",
+        "count": 574,
+        "last": "2026-09-22T02:25:03.100Z"
+      },
+      {
+        "asset": "795019680916...",
+        "count": 579,
+        "last": "2026-09-22T02:10:02.412Z"
+      },
+      {
+        "asset": "795960833347...",
+        "count": 578,
+        "last": "2026-09-22T03:00:02.734Z"
+      },
+      {
+        "asset": "799471208602...",
+        "count": 562,
+        "last": "2026-09-22T07:45:02.872Z"
+      },
+      {
+        "asset": "800210917308...",
+        "count": 583,
+        "last": "2026-09-21T19:15:02.470Z"
+      },
+      {
+        "asset": "803654366210...",
+        "count": 562,
+        "last": "2026-09-22T07:40:02.737Z"
+      },
+      {
+        "asset": "805271513121...",
+        "count": 533,
+        "last": "2026-09-22T08:44:47.608Z"
+      },
+      {
+        "asset": "809102040382...",
+        "count": 582,
+        "last": "2026-09-21T23:40:02.759Z"
+      },
+      {
+        "asset": "812548885114...",
+        "count": 575,
+        "last": "2026-09-22T01:45:02.486Z"
+      },
+      {
+        "asset": "816079183658...",
+        "count": 575,
+        "last": "2026-09-22T04:45:02.499Z"
+      },
+      {
+        "asset": "816099453747...",
+        "count": 586,
+        "last": "2026-09-21T21:45:02.815Z"
+      },
+      {
+        "asset": "816436258024...",
+        "count": 582,
+        "last": "2026-09-21T21:35:02.557Z"
+      },
+      {
+        "asset": "818284043689...",
+        "count": 587,
+        "last": "2026-09-21T19:50:03.043Z"
+      },
+      {
+        "asset": "818788045050...",
+        "count": 556,
+        "last": "2026-09-22T08:40:02.986Z"
+      },
+      {
+        "asset": "825549322604...",
+        "count": 586,
+        "last": "2026-09-21T13:25:14.956Z"
+      },
+      {
+        "asset": "827404373280...",
+        "count": 577,
+        "last": "2026-09-21T23:15:03.050Z"
+      },
+      {
+        "asset": "827591537679...",
+        "count": 591,
+        "last": "2026-09-21T18:10:02.869Z"
+      },
+      {
+        "asset": "828813842458...",
+        "count": 583,
+        "last": "2026-09-21T21:10:02.599Z"
+      },
+      {
+        "asset": "835302640394...",
+        "count": 586,
+        "last": "2026-09-21T22:45:02.790Z"
+      },
+      {
+        "asset": "835904876889...",
+        "count": 584,
+        "last": "2026-09-21T21:10:02.600Z"
+      },
+      {
+        "asset": "836261834028...",
+        "count": 485,
+        "last": "2026-09-21T13:15:14.535Z"
+      },
+      {
+        "asset": "836944850252...",
+        "count": 527,
+        "last": "2026-09-21T15:30:02.710Z"
+      },
+      {
+        "asset": "838523364679...",
+        "count": 586,
+        "last": "2026-09-21T20:50:02.990Z"
+      },
+      {
+        "asset": "839145022913...",
+        "count": 580,
+        "last": "2026-09-22T01:50:02.864Z"
+      },
+      {
+        "asset": "839576236631...",
+        "count": 583,
+        "last": "2026-09-21T17:45:02.955Z"
+      },
+      {
+        "asset": "840632034357...",
+        "count": 448,
+        "last": "2026-09-21T17:05:02.889Z"
+      },
+      {
+        "asset": "841768079086...",
+        "count": 574,
+        "last": "2026-09-22T03:35:02.978Z"
+      },
+      {
+        "asset": "843725728961...",
+        "count": 577,
+        "last": "2026-09-22T01:30:02.822Z"
+      },
+      {
+        "asset": "847818690526...",
+        "count": 569,
+        "last": "2026-09-22T02:55:02.799Z"
+      },
+      {
+        "asset": "848759958987...",
+        "count": 593,
+        "last": "2026-09-21T16:20:02.722Z"
+      },
+      {
+        "asset": "855052499262...",
+        "count": 583,
+        "last": "2026-09-21T13:00:14.759Z"
+      },
+      {
+        "asset": "856693557536...",
+        "count": 585,
+        "last": "2026-09-21T23:00:03.128Z"
+      },
+      {
+        "asset": "861250080941...",
+        "count": 569,
+        "last": "2026-09-21T19:20:03.079Z"
+      },
+      {
+        "asset": "862521178315...",
+        "count": 579,
+        "last": "2026-09-22T02:45:02.754Z"
+      },
+      {
+        "asset": "862941467776...",
+        "count": 584,
+        "last": "2026-09-21T22:05:02.892Z"
+      },
+      {
+        "asset": "863993936789...",
+        "count": 562,
+        "last": "2026-09-22T07:30:02.891Z"
+      },
+      {
+        "asset": "864498903042...",
+        "count": 588,
+        "last": "2026-09-21T16:55:03.053Z"
+      },
+      {
+        "asset": "865303736506...",
+        "count": 576,
+        "last": "2026-09-22T04:55:02.854Z"
+      },
+      {
+        "asset": "868978669501...",
+        "count": 578,
+        "last": "2026-09-22T02:50:02.866Z"
+      },
+      {
+        "asset": "870317529122...",
+        "count": 577,
+        "last": "2026-09-22T05:00:02.684Z"
+      },
+      {
+        "asset": "872874561332...",
+        "count": 580,
+        "last": "2026-09-22T00:55:02.794Z"
+      },
+      {
+        "asset": "874280805157...",
+        "count": 577,
+        "last": "2026-09-22T01:25:03.021Z"
+      },
+      {
+        "asset": "874947725743...",
+        "count": 570,
+        "last": "2026-09-22T06:45:02.859Z"
+      },
+      {
+        "asset": "876692377465...",
+        "count": 582,
+        "last": "2026-09-21T15:40:02.672Z"
+      },
+      {
+        "asset": "878157012133...",
+        "count": 579,
+        "last": "2026-09-21T20:45:02.993Z"
+      },
+      {
+        "asset": "880455456821...",
+        "count": 588,
+        "last": "2026-09-21T18:20:02.725Z"
+      },
+      {
+        "asset": "881251484176...",
+        "count": 565,
+        "last": "2026-09-22T06:35:02.762Z"
+      },
+      {
+        "asset": "883063281549...",
+        "count": 572,
+        "last": "2026-09-22T03:25:02.773Z"
+      },
+      {
+        "asset": "885882790478...",
+        "count": 579,
+        "last": "2026-09-22T04:40:02.665Z"
+      },
+      {
+        "asset": "885953373550...",
+        "count": 583,
+        "last": "2026-09-21T18:25:02.790Z"
+      },
+      {
+        "asset": "886543481615...",
+        "count": 552,
+        "last": "2026-09-22T07:55:03.099Z"
+      },
+      {
+        "asset": "889468422139...",
+        "count": 577,
+        "last": "2026-09-22T00:00:02.935Z"
+      },
+      {
+        "asset": "889762900277...",
+        "count": 583,
+        "last": "2026-09-21T19:10:02.883Z"
+      },
+      {
+        "asset": "890600081365...",
+        "count": 570,
+        "last": "2026-09-21T18:05:02.879Z"
+      },
+      {
+        "asset": "893158585179...",
+        "count": 573,
+        "last": "2026-09-22T05:05:02.661Z"
+      },
+      {
+        "asset": "893726767092...",
+        "count": 580,
+        "last": "2026-09-22T00:50:02.454Z"
+      },
+      {
+        "asset": "894303089345...",
+        "count": 573,
+        "last": "2026-09-21T17:25:02.783Z"
+      },
+      {
+        "asset": "896013409155...",
+        "count": 561,
+        "last": "2026-09-22T08:05:02.974Z"
+      },
+      {
+        "asset": "899706270095...",
+        "count": 578,
+        "last": "2026-09-22T05:30:02.851Z"
+      },
+      {
+        "asset": "903194665290...",
+        "count": 577,
+        "last": "2026-09-22T03:05:03.037Z"
+      },
+      {
+        "asset": "912576663228...",
+        "count": 587,
+        "last": "2026-09-21T18:40:02.855Z"
+      },
+      {
+        "asset": "912647817486...",
+        "count": 578,
+        "last": "2026-09-22T01:10:02.741Z"
+      },
+      {
+        "asset": "913330306431...",
+        "count": 587,
+        "last": "2026-09-21T16:35:02.769Z"
+      },
+      {
+        "asset": "914305002765...",
+        "count": 580,
+        "last": "2026-09-21T14:20:14.942Z"
+      },
+      {
+        "asset": "919816939238...",
+        "count": 578,
+        "last": "2026-09-22T03:00:02.734Z"
+      },
+      {
+        "asset": "921112329671...",
+        "count": 535,
+        "last": "2026-09-21T13:04:51.427Z"
+      },
+      {
+        "asset": "924613168460...",
+        "count": 568,
+        "last": "2026-09-22T06:20:02.983Z"
+      },
+      {
+        "asset": "926240775964...",
+        "count": 583,
+        "last": "2026-09-21T15:15:14.632Z"
+      },
+      {
+        "asset": "934588539586...",
+        "count": 577,
+        "last": "2026-09-22T04:20:02.687Z"
+      },
+      {
+        "asset": "935376903217...",
+        "count": 574,
+        "last": "2026-09-22T05:20:03.098Z"
+      },
+      {
+        "asset": "935431335845...",
+        "count": 577,
+        "last": "2026-09-22T05:25:02.925Z"
+      },
+      {
+        "asset": "936497171848...",
+        "count": 566,
+        "last": "2026-09-22T06:25:02.614Z"
+      },
+      {
+        "asset": "937006219628...",
+        "count": 578,
+        "last": "2026-09-22T03:10:02.719Z"
+      },
+      {
+        "asset": "938695567887...",
+        "count": 584,
+        "last": "2026-09-21T14:50:15.182Z"
+      },
+      {
+        "asset": "939316110566...",
+        "count": 586,
+        "last": "2026-09-21T20:10:03.057Z"
+      },
+      {
+        "asset": "948069596170...",
+        "count": 577,
+        "last": "2026-09-22T05:35:02.925Z"
+      },
+      {
+        "asset": "951472291770...",
+        "count": 557,
+        "last": "2026-09-22T08:30:03.074Z"
+      },
+      {
+        "asset": "952544691367...",
+        "count": 581,
+        "last": "2026-09-21T17:20:02.422Z"
+      },
+      {
+        "asset": "955214240120...",
+        "count": 577,
+        "last": "2026-09-22T04:15:03.088Z"
+      },
+      {
+        "asset": "966581071508...",
+        "count": 577,
+        "last": "2026-09-22T04:15:03.088Z"
+      },
+      {
+        "asset": "966711932658...",
+        "count": 582,
+        "last": "2026-09-21T17:10:02.696Z"
+      },
+      {
+        "asset": "973309418787...",
+        "count": 552,
+        "last": "2026-09-22T07:55:03.099Z"
+      },
+      {
+        "asset": "974874335615...",
+        "count": 580,
+        "last": "2026-09-21T14:40:14.473Z"
+      },
+      {
+        "asset": "978047757740...",
+        "count": 569,
+        "last": "2026-09-21T19:20:03.079Z"
+      },
+      {
+        "asset": "978253119880...",
+        "count": 582,
+        "last": "2026-09-21T22:30:02.753Z"
+      },
+      {
+        "asset": "983463867908...",
+        "count": 579,
+        "last": "2026-09-21T23:55:02.848Z"
+      },
+      {
+        "asset": "983991056865...",
+        "count": 580,
+        "last": "2026-09-21T22:10:02.619Z"
+      },
+      {
+        "asset": "985675199957...",
+        "count": 577,
+        "last": "2026-09-21T14:15:14.715Z"
+      },
+      {
+        "asset": "985880927341...",
+        "count": 563,
+        "last": "2026-09-22T06:50:02.993Z"
+      },
+      {
+        "asset": "990291244527...",
+        "count": 561,
+        "last": "2026-09-22T08:10:02.860Z"
+      },
+      {
+        "asset": "994488631837...",
+        "count": 585,
+        "last": "2026-09-21T16:05:02.570Z"
+      },
+      {
+        "asset": "996748014197...",
+        "count": 576,
+        "last": "2026-09-22T01:15:02.856Z"
+      },
+      {
+        "asset": "996816634276...",
+        "count": 396,
+        "last": "2026-09-21T14:10:15.067Z"
+      },
+      {
+        "asset": "997197982105...",
+        "count": 586,
+        "last": "2026-09-21T21:25:02.756Z"
+      },
+      {
+        "asset": "998924678157...",
+        "count": 585,
+        "last": "2026-09-21T18:50:02.841Z"
+      }
+    ]
+  },
+  "errors": {
+    "chainlink-twap-ws": 14,
+    "chainlink-ws": 15,
+    "clock": 16,
+    "jev": 4593,
+    "kill-switch": 220,
+    "market-ws": 2,
+    "observer-wait": 38
+  },
+  "lastErrors": [
+    {
+      "at": "2026-09-22T08:44:46.275Z",
+      "component": "jev",
+      "message": "402 Your organization has no available TypeSafe API credits. Please add more credits and/or set up auto-reload at https://console.typesafe.ai/settings/billing"
+    },
+    {
+      "at": "2026-09-22T08:44:45.291Z",
+      "component": "jev",
+      "message": "402 Your organization has no available TypeSafe API credits. Please add more credits and/or set up auto-reload at https://console.typesafe.ai/settings/billing"
+    },
+    {
+      "at": "2026-09-22T08:44:44.198Z",
+      "component": "jev",
+      "message": "402 Your organization has no available TypeSafe API credits. Please add more credits and/or set up auto-reload at https://console.typesafe.ai/settings/billing"
+    },
+    {
+      "at": "2026-09-22T08:44:42.355Z",
+      "component": "jev",
+      "message": "402 Your organization has no available TypeSafe API credits. Please add more credits and/or set up auto-reload at https://console.typesafe.ai/settings/billing"
+    },
+    {
+      "at": "2026-09-22T08:44:41.243Z",
+      "component": "jev",
+      "message": "402 Your organization has no available TypeSafe API credits. Please add more credits and/or set up auto-reload at https://console.typesafe.ai/settings/billing"
+    }
+  ]
+}
+
+## acceptance
+
+phase 1 acceptance: INSUFFICIENT
+
+  INSUFFICIENT 24 h unattended runtime
+               recorded span 19.9 h, longest continuous stretch 14.4 h, 6 outage(s) over 60 s totalling 40.8 min, largest gap 607 s
+  PASS         websocket reconnection
+               31 stream error(s), data resumed within 2 min after 31 of them
+  PASS         stale-state protection
+               10892 decision(s) rejected for staleness, 0 approved despite it; 10468 of 18355 buy decision(s) were stale at validation
+  PASS         every Jev decision stored
+               47399 request(s), 47399 answer(s), 47399 latency row(s), 4601 failed call(s) recorded as errors
+  PASS         latency statistics generated
+               47399 samples: Jev p50 285 ms, p95 533 ms, p99 694 ms, max 2367 ms
+  PASS         no order submitted
+               no order outside simulation modes
+
+written: reports/acceptance.json
+
+## calibrate
+
+markets: 237 total, 236 resolved (235 by feed, 1 derived), UP share 51%
+observations: 47399
+
+overall: brier 0.223  accuracy 0.734  naive pnl/share   -    win 0.623
+
+calibration by confidence   n     predicted  observed   error    brier
+  50-60%         2424   0.548     0.507   -0.040   0.253
+  60-70%         1973   0.648     0.460   -0.189   0.287
+  70-80%         1807   0.749     0.492   -0.257   0.315
+  80-90%         2260   0.860     0.682   -0.178   0.247
+  90-95%         5721   0.934     0.732   -0.202   0.237
+  95-97.5%       7525   0.965     0.757   -0.207   0.227
+  97.5-99%      20036   0.986     0.779   -0.207   0.215
+  99%+           5653   0.997     0.838   -0.159   0.161
+
+naive edge by time          n   accuracy  executable  ask      jevEdge  pnl/share  win
+  300-120s      31512   0.676    31419      0.669   0.252   0.006     0.675
+  120-60s        9378   0.821     8166      0.753   0.176   0.042     0.795
+  60-30s         3459   0.871     1927      0.705   0.196   0.064     0.769
+  30-15s         1412   0.902      382      0.636   0.246   0.003     0.639
+  15-10s          460   0.917       77      0.468   0.427   0.038     0.506
+  10-5s           441   0.934       55      0.464   0.424   0.008     0.473
+  5-2s            313   0.936       29      0.312   0.631   -0.001     0.310
+  <2s             424   0.894       50      0.105   0.887   -0.005     0.100
+  (accuracy over all n; price columns over states with a payable ask, 0 < ask < 1 - an empty ask side is not a price)
+
+=== markets with the start price from the tape only: 182 market(s), 37228 observation(s), brier 0.218 ===
+calibration by confidence   n     predicted  observed   error    brier
+  50-60%         2222   0.547     0.505   -0.042   0.253
+  60-70%         1732   0.648     0.449   -0.200   0.290
+  70-80%         1559   0.749     0.489   -0.260   0.317
+  80-90%         1961   0.860     0.690   -0.170   0.241
+  90-95%         5068   0.934     0.738   -0.195   0.232
+  95-97.5%       6483   0.965     0.769   -0.196   0.216
+  97.5-99%      14199   0.986     0.784   -0.201   0.210
+  99%+           4004   0.996     0.861   -0.134   0.138
+
+naive edge by time          n   accuracy  executable  ask      jevEdge  pnl/share  win
+  300-120s      25088   0.671    25050      0.669   0.243   0.001     0.670
+  120-60s        7215   0.833     6310      0.759   0.165   0.050     0.809
+  60-30s         2711   0.889     1571      0.748   0.145   0.060     0.808
+  30-15s         1094   0.917      312      0.726   0.138   -0.017     0.708
+  15-10s          350   0.946       53      0.638   0.229   0.003     0.642
+  10-5s           335   0.964       33      0.662   0.191   -0.025     0.636
+  5-2s            241   0.975       11      0.459   0.475   -0.005     0.455
+  <2s             194   0.990        6      0.655   0.328   0.012     0.667
+
+lead held to settlement (base rate Jev receives), 224 market(s) recorded from the open; cells: held% (n), '-' below 20 samples
+  |lead|         300-120s   120-60s    60-30s    30-15s    15-10s     10-5s      5-2s       <2s
+  0-1bps       60% (224)  83% (51)  97% (25)  94% (21)  100% (9)  100% (9) 100% (10)         -
+  1-2.5bps     71% (220)  83% (72)  98% (35)  98% (24)  95% (16) 100% (14) 100% (11)         -
+  2.5-5bps     78% (202)  94% (89)  99% (52)  98% (32)  99% (26)  96% (30)  98% (26) 100% (20)
+  5-10bps      86% (144)  99% (94) 100% (71) 100% (58) 100% (40) 100% (44)  98% (42)  97% (37)
+  10-20bps      93% (66)  99% (74) 100% (57) 100% (43) 100% (39) 100% (37) 100% (38) 100% (37)
+  20-50bps      90% (13) 100% (16) 100% (22) 100% (21) 100% (21) 100% (20) 100% (18)         -
+  50bps+               -         -         -         -         -         -         -         -
+
+outcome cross-check per market   feed  TWAP  spot  market(UPmid)  Jev(last)      start: derived / Jev    first tick +s  last tick -s
+  1789995000  DOWN  -     UP    DOWN (0.010)  UP@0s          85240.5 / 85240.4   -  -   <-- derived DOWN vs Jev UP at 0s (distance 3.68 bps); end price: derived 85273.04628519375 vs Jev's last state 85271.81; no TWAP ticks inside the window (spot used)
+  1789995300  UP    -     UP    UP   (0.990)  DOWN@0s        85273.4 / 85274.6   -  -   <-- derived UP vs Jev DOWN at 0s (distance -0.28 bps); start price: derived 85273.38429258546 vs Jev's state 85274.59; end price: derived 85315.74705950805 vs Jev's last state 85272.21; no TWAP ticks inside the window (spot used)
+  1789995600  DOWN  -     DOWN  DOWN (0.010)  DOWN@9.9s      85302.1 / 85270.4   -  -   <-- start price: derived 85302.076 vs Jev's state 85270.36; end price: derived 85205.04776811066 vs Jev's last state 85203.06; no TWAP ticks inside the window (spot used)
+  1789996200  DOWN  -     DOWN  DOWN (0.001)  DOWN@0s        85238.1 / 85238.1   -  -   <-- end price: derived 85150.90255188207 vs Jev's last state 85165.82; no TWAP ticks inside the window (spot used)
+  1789996500  DOWN  -     DOWN  DOWN (0.010)  DOWN@0s        85150.0 / 85168.2   -  -   <-- start price: derived 85150.00286574563 vs Jev's state 85168.24; no TWAP ticks inside the window (spot used)
+  1789996800  DOWN  -     DOWN  DOWN (0.010)  DOWN@0s        85138.9 / 85138.9   -  -   <-- end price: derived 85055.9610669 vs Jev's last state 84995.66; no TWAP ticks inside the window (spot used)
+  1789997100  DOWN  -     DOWN  DOWN (0.010)  DOWN@0s        85055.1 / 84997.6   -  -   <-- start price: derived 85055.143141275 vs Jev's state 84997.65; end price: derived 84919.07656484292 vs Jev's last state 84910.37; no TWAP ticks inside the window (spot used)
+  1789997400  UP    -     UP    UP   (0.990)  UP@0s          84918.0 / 84933.9   -  -   <-- start price: derived 84917.99359919048 vs Jev's state 84933.93; end price: derived 85142.50194646293 vs Jev's last state 85191.85; no TWAP ticks inside the window (spot used)
+  1789997700  DOWN  -     DOWN  DOWN (0.010)  DOWN@0s        85139.7 / 85198.8   -  -   <-- start price: derived 85139.70951501 vs Jev's state 85198.83; end price: derived 85026.16343690394 vs Jev's last state 85049.57; no TWAP ticks inside the window (spot used)
+  1789998000  UP    -     UP    UP   (0.999)  UP@0s          85033.2 / 84967.2   -  -   <-- start price: derived 85033.20453719511 vs Jev's state 84967.24; end price: derived 85050.60051360706 vs Jev's last state 85059.92; no TWAP ticks inside the window (spot used)
+  1789998300  UP    -     UP    UP   (0.999)  UP@0s          85050.8 / 85057.6   -  -   <-- start price: derived 85050.83169341892 vs Jev's state 85057.55; end price: derived 85406.46431133639 vs Jev's last state 85458.68; no TWAP ticks inside the window (spot used)
+  1789998600  UP    -     DOWN  UP   (0.999)  DOWN@0s        85414.2 / 85492.4   -  -   <-- derived UP vs Jev DOWN at 0s (distance -15.66 bps); start price: derived 85414.23207664477 vs Jev's state 85492.39; end price: derived 85367.49862589 vs Jev's last state 85358.5; no TWAP ticks inside the window (spot used)
+  1789998900  DOWN  -     UP    UP   (0.535)  UP@64.9s       85375.0 / 85378.9   -  -   <-- derived DOWN vs market UP (UP mid 0.535); derived DOWN vs Jev UP at 64.9s (distance 6.78 bps); start price: derived 85375.02225295057 vs Jev's state 85378.87; no TWAP ticks inside the window (spot used)
+  1789999500  DOWN  -     UP    DOWN (0.010)  UP@0s          85150.5 / 85150.5   -  -   <-- derived DOWN vs Jev UP at 0s (distance 10.45 bps); end price: derived 85217.17713914778 vs Jev's last state 85239.53; no TWAP ticks inside the window (spot used)
+  1789999800  UP    -     UP    UP   (0.990)  DOWN@0s        85216.8 / 85261.4   -  -   <-- derived UP vs Jev DOWN at 0s (distance -1.51 bps); start price: derived 85216.79708539593 vs Jev's state 85261.44; end price: derived 85288.77023627372 vs Jev's last state 85248.59; no TWAP ticks inside the window (spot used)
+  1790000100  UP    -     UP    UP   (0.990)  UP@0s          85288.7 / 85228.4   -  -   <-- start price: derived 85288.73240543262 vs Jev's state 85228.35; end price: derived 85374.02176705495 vs Jev's last state 85407.39; no TWAP ticks inside the window (spot used)
+  1790000400  UP    -     UP    UP   (0.990)  UP@0s          85375.0 / 85407.2   -  -   <-- start price: derived 85375.04541205689 vs Jev's state 85407.22; end price: derived 85674.98683833696 vs Jev's last state 85684.22; no TWAP ticks inside the window (spot used)
+  1790000700  UP    -     UP    UP   (0.990)  UP@0s          85685.0 / 85612.4   -  -   <-- start price: derived 85684.96430852491 vs Jev's state 85612.37; end price: derived 85693.03373721117 vs Jev's last state 85664.9; no TWAP ticks inside the window (spot used)
+  1790001000  UP    -     UP    UP   (0.990)  UP@0s          85693.1 / 85669.8   -  -   <-- start price: derived 85693.11055863807 vs Jev's state 85669.82; no TWAP ticks inside the window (spot used)
+  1790001300  DOWN  -     DOWN  DOWN (0.010)  DOWN@0s        85965.6 / 85967.5   -  -   <-- start price: derived 85965.55495231162 vs Jev's state 85967.54; end price: derived 85774.85285213345 vs Jev's last state 85661.98; no TWAP ticks inside the window (spot used)
+  1790001600  DOWN  -     DOWN  DOWN (0.010)  UP@0s          85790.9 / 85637.3   -  -   <-- derived DOWN vs Jev UP at 0s (distance 14.28 bps); start price: derived 85790.88560353608 vs Jev's state 85637.34; end price: derived 85771.409130414 vs Jev's last state 85759.66; no TWAP ticks inside the window (spot used)
+  1790001900  UP    -     UP    UP   (0.990)  UP@0s          85771.7 / 85754.4   -  -   <-- start price: derived 85771.66525594096 vs Jev's state 85754.44; end price: derived 85970.22918093804 vs Jev's last state 85968.03; no TWAP ticks inside the window (spot used)
+  1790002200  UP    -     UP    UP   (0.990)  UP@0s          85965.8 / 85974.0   -  -   <-- start price: derived 85965.78319763514 vs Jev's state 85974.04; end price: derived 86052.85599867464 vs Jev's last state 86019.99; no TWAP ticks inside the window (spot used)
+  1790002500  DOWN  -     DOWN  DOWN (0.010)  DOWN@0s        86052.8 / 86016.6   -  -   <-- start price: derived 86052.78268049516 vs Jev's state 86016.56; end price: derived 85821.45232777264 vs Jev's last state 85810.87; no TWAP ticks inside the window (spot used)
+  1790003100  UP    UP    UP    UP   (0.999)  UP@0s          86030.5 / 86030.5   175  1   <-- end price: derived 86226.37589448872 vs Jev's last state 86240.35
+  1790003400  UP    UP    DOWN  UP   (0.990)  UP@0s          86226.4 / 86243.5   0  1   <-- TWAP-derived UP vs spot-derived DOWN; start price: derived 86226.37589448872 vs Jev's state 86243.46; end price: derived 86239.46496822835 vs Jev's last state 86251.32
+  1790003700  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86240.5 / 86244.3   0  1   <-- start price: derived 86240.47200119696 vs Jev's state 86244.31; end price: derived 86170.44288091999 vs Jev's last state 86171.58; start price 39 s late
+  1790004000  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      86169.2 / 86169.2   0  1   <-- end price: derived 85908.36743920516 vs Jev's last state 85915.34
+  1790004300  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85906.8 / 85853.8   0  1   <-- start price: derived 85906.77011753221 vs Jev's state 85853.8; end price: derived 85824.94072169792 vs Jev's last state 85823.27; start price 158 s late
+  1790004600  UP    UP    UP    UP   (0.990)  UP@1.9s        85824.9 / 85824.9   0  1   <-- end price: derived 85876.94565277356 vs Jev's last state 85877.98
+  1790004900  UP    UP    UP    UP   (0.999)  UP@1.9s        85876.7 / 85876.7   0  1   <-- end price: derived 85936.04249267376 vs Jev's last state 85933.72
+  1790005200  UP    UP    UP    UP   (0.990)  UP@1.9s        85936.7 / 85936.7   0  1   <-- end price: derived 86039.3221890253 vs Jev's last state 86032.46
+  1790005500  UP    UP    DOWN  UP   (0.990)  UP@1.9s        86041.0 / 86041.0   0  1   <-- TWAP-derived UP vs spot-derived DOWN; end price: derived 86081.66012936017 vs Jev's last state 86088.49
+  1790005800  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86080.2 / 86080.2   0  1   <-- end price: derived 85999.01709211108 vs Jev's last state 86003.64
+  1790006100  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85998.0 / 85998.0   0  1
+  1790006400  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.1s      85927.2 / 85927.2   0  1   <-- end price: derived 85845.73172784287 vs Jev's last state 85848.67
+  1790006700  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85844.0 / 85844.0   0  1   <-- end price: derived 85719.0364432388 vs Jev's last state 85720.39
+  1790007000  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@0.2s      85719.0 / 85719.0   0  1
+  1790007300  UP    UP    UP    UP   (0.990)  DOWN@0.1s      85712.8 / 85820.2   0  1   <-- derived UP vs Jev DOWN at 0.1s (distance -4.72 bps); start price: derived 85712.8340199071 vs Jev's state 85820.24; end price: derived 85781.12103004479 vs Jev's last state 85779.7; start price 212 s late
+  1790007600  UP    UP    UP    UP   (0.990)  UP@1.9s        85781.1 / 85781.1   0  1
+  1790007900  UP    UP    UP    UP   (0.990)  UP@1.9s        85818.5 / 85818.5   5  1   <-- end price: derived 85863.62166074102 vs Jev's last state 85865.59; start price 5 s late
+  1790008200  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85862.6 / 85862.6   0  1   <-- end price: derived 85778.16615729999 vs Jev's last state 85787.13
+  1790008500  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85776.3 / 85776.3   0  1   <-- end price: derived 85662.98762932018 vs Jev's last state 85665.55
+  1790008800  UP    UP    UP    UP   (0.999)  UP@1.9s        85662.2 / 85662.2   0  1   <-- end price: derived 85854.57618695419 vs Jev's last state 85852.88
+  1790009100  UP    UP    UP    UP   (0.999)  UP@1.9s        85855.1 / 85855.1   0  1   <-- end price: derived 85996.58220094384 vs Jev's last state 85995.24
+  1790009400  DOWN  DOWN  UP    DOWN (0.010)  DOWN@1.6s      85996.9 / 85996.9   0  1   <-- TWAP-derived DOWN vs spot-derived UP; end price: derived 85970.58208136712 vs Jev's last state 85968.44
+  1790009700  UP    UP    UP    UP   (0.845)  UP@274.5s      85971.3 / 85985.1   0  276   <-- start price: derived 85971.26929792839 vs Jev's state 85985.07; start price 10 s late
+  1790010000  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@0s        85971.6 / 85971.6   71  1   <-- end price: derived 85925.20067670195 vs Jev's last state 85926.46; start price 71 s late
+  1790010300  UP    UP    UP    UP   (0.999)  UP@1.9s        85922.7 / 85922.7   0  1   <-- end price: derived 86082.10954050187 vs Jev's last state 86084.57
+  1790010600  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@0.8s      86081.4 / 86081.4   0  1
+  1790010900  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      85976.7 / 85976.7   0  1
+  1790011200  UP    UP    UP    UP   (0.990)  UP@1.9s        85788.8 / 85791.5   0  1   <-- start price: derived 85788.80270025686 vs Jev's state 85791.54; start price 9 s late
+  1790011500  UP    UP    UP    UP   (0.990)  UP@1.9s        85902.5 / 85902.6   0  1   <-- end price: derived 85912.30173027853 vs Jev's last state 85911.72
+  1790011800  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.6s      85912.7 / 85912.7   0  1
+  1790012100  UP    UP    UP    UP   (0.990)  UP@0.3s        85900.1 / 85900.1   0  1
+  1790012400  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85932.4 / 85932.4   0  1   <-- end price: derived 85910.32494644221 vs Jev's last state 85911.52
+  1790012700  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85909.8 / 85909.8   0  1   <-- end price: derived 85832.86614489442 vs Jev's last state 85830.87
+  1790013000  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      85833.6 / 85833.6   0  1   <-- end price: derived 85714.73225376598 vs Jev's last state 85715.27
+  1790013300  UP    UP    UP    UP   (0.999)  UP@1.9s        85714.4 / 85714.4   0  1   <-- end price: derived 85874.46246211418 vs Jev's last state 85872.86
+  1790013600  UP    UP    UP    UP   (0.990)  UP@1.9s        85874.5 / 85877.0   0  2   <-- start price: derived 85874.46246211418 vs Jev's state 85876.97; end price: derived 85927.33601936352 vs Jev's last state 85924.12; start price 9 s late
+  1790013900  UP    UP    DOWN  UP   (0.990)  UP@1.9s        85930.2 / 85930.2   0  1   <-- TWAP-derived UP vs spot-derived DOWN; end price: derived 85933.9494040341 vs Jev's last state 85932.08
+  1790014200  UP    UP    UP    UP   (0.999)  UP@1.9s        85933.9 / 85933.9   0  272
+  1790014500  UP    -     -     UP   (0.990)  -              - / -   335  -   <-- no TWAP ticks inside the window (spot used)
+  1790014800  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86052.0 / 86052.0   35  1   <-- end price: derived 85981.6461939545 vs Jev's last state 85985.56; start price 35 s late
+  1790015100  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85980.4 / 85980.4   0  1   <-- end price: derived 85909.17592729915 vs Jev's last state 85908.21
+  1790015400  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@0.8s      85909.2 / 85909.2   0  1   <-- end price: derived 85901.01463949829 vs Jev's last state 85901.89
+  1790015700  UP    UP    UP    UP   (0.990)  UP@1.9s        85900.6 / 85900.6   0  1   <-- end price: derived 85931.27222082297 vs Jev's last state 85927.95
+  1790016000  UP    UP    DOWN  UP   (0.990)  UP@1.9s        85932.4 / 85932.4   0  1   <-- TWAP-derived UP vs spot-derived DOWN; end price: derived 85958.9007152298 vs Jev's last state 85961.72
+  1790016300  UP    UP    UP    UP   (0.990)  UP@1.9s        85958.0 / 85958.0   0  1   <-- end price: derived 85971.0766327258 vs Jev's last state 85969.76
+  1790016600  UP    UP    UP    UP   (0.990)  UP@1.9s        85971.4 / 85971.4   0  1
+  1790016900  UP    UP    UP    UP   (0.990)  UP@1.9s        86047.4 / 86047.4   0  1
+  1790017200  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86052.4 / 86052.4   0  1
+  1790017500  UP    UP    UP    UP   (0.990)  UP@1.9s        86013.4 / 86013.4   0  1   <-- end price: derived 86028.7236032568 vs Jev's last state 86029.73
+  1790017800  UP    UP    UP    UP   (0.990)  UP@1.9s        86027.7 / 86027.7   0  1
+  1790018100  UP    UP    UP    UP   (0.999)  UP@1.9s        86050.1 / 86050.0   0  1   <-- end price: derived 86256.33878314942 vs Jev's last state 86253.87; start price 9 s late
+  1790018400  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86258.4 / 86258.4   0  1   <-- end price: derived 86235.66356288188 vs Jev's last state 86235.09
+  1790018700  UP    UP    UP    UP   (0.990)  UP@1.9s        86235.7 / 86238.5   0  1   <-- start price: derived 86235.66356288188 vs Jev's state 86238.5; end price: derived 86326.4251432728 vs Jev's last state 86322.3; start price 9 s late
+  1790019000  UP    UP    UP    UP   (0.990)  UP@0.9s        86327.8 / 86327.8   0  1   <-- end price: derived 86736.04268628945 vs Jev's last state 86731.85
+  1790019300  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@0.1s      86743.8 / 86780.1   0  1   <-- start price: derived 86743.84017760104 vs Jev's state 86780.12; start price 10 s late
+  1790019600  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@0.6s      86593.4 / 86593.4   0  1   <-- end price: derived 86539.21757674964 vs Jev's last state 86537.87
+  1790019900  DOWN  DOWN  DOWN  DOWN (0.065)  DOWN@0.1s      86540.5 / 86540.5   0  1   <-- end price: derived 86506.8770393442 vs Jev's last state 86505.77
+  1790020200  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86507.4 / 86507.4   0  1
+  1790020500  UP    UP    DOWN  UP   (0.999)  UP@0.9s        86488.3 / 86488.3   0  1   <-- TWAP-derived UP vs spot-derived DOWN; end price: derived 86567.65896164086 vs Jev's last state 86572.62
+  1790020800  UP    UP    UP    UP   (0.990)  UP@1.8s        86567.7 / 86567.7   0  1   <-- end price: derived 86647.30822479652 vs Jev's last state 86648.14
+  1790021100  UP    UP    UP    UP   (0.999)  UP@1.9s        86647.0 / 86647.1   0  1   <-- end price: derived 86720.85490236466 vs Jev's last state 86722.47
+  1790021400  UP    UP    UP    UP   (0.990)  UP@1.9s        86720.4 / 86720.4   0  1   <-- end price: derived 86765.2551659894 vs Jev's last state 86766.85
+  1790021700  UP    UP    UP    UP   (0.990)  UP@0.8s        86764.7 / 86764.7   0  1   <-- end price: derived 86960.57476712466 vs Jev's last state 86959.06
+  1790022000  UP    UP    DOWN  UP   (0.990)  UP@1.8s        86960.6 / 86960.6   0  1   <-- TWAP-derived UP vs spot-derived DOWN; end price: derived 86981.0646972989 vs Jev's last state 86982.19
+  1790022300  UP    UP    UP    UP   (0.990)  DOWN@0.4s      86980.9 / 87304.5   0  1   <-- derived UP vs Jev DOWN at 0.4s (distance -1.92 bps); start price: derived 86980.87270195447 vs Jev's state 87304.46; start price 233 s late
+  1790022600  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      87286.3 / 87286.3   0  1   <-- end price: derived 87016.37981803149 vs Jev's last state 87017.04
+  1790022900  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      87016.4 / 87016.4   0  1   <-- end price: derived 86983.65696862832 vs Jev's last state 86986.51
+  1790023200  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86982.5 / 86982.5   0  1   <-- end price: derived 86921.52222202967 vs Jev's last state 86923.49
+  1790023500  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86920.5 / 86920.6   0  1   <-- end price: derived 86876.270581967 vs Jev's last state 86877.88
+  1790023800  UP    UP    UP    UP   (0.990)  UP@1.9s        86875.7 / 86875.7   0  1   <-- end price: derived 86960.14483638402 vs Jev's last state 86961.72
+  1790024100  UP    UP    UP    UP   (0.990)  DOWN@1.9s      86959.4 / 86959.4   0  1   <-- derived UP vs Jev DOWN at 1.9s (distance -0.13 bps); end price: derived 86961.48389558349 vs Jev's last state 86958.26
+  1790024400  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86961.5 / 86961.5   0  1   <-- end price: derived 86791.84634646104 vs Jev's last state 86792.42
+  1790024700  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      86791.6 / 86791.6   0  1   <-- end price: derived 86638.52792614265 vs Jev's last state 86640.43
+  1790025000  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86637.9 / 86637.9   0  1   <-- end price: derived 86587.98506256845 vs Jev's last state 86588.81
+  1790025300  UP    UP    UP    UP   (0.990)  UP@1.9s        86587.8 / 86586.9   0  1   <-- start price: derived 86587.83343269462 vs Jev's state 86586.92; end price: derived 86632.93805058124 vs Jev's last state 86634.8; start price 6 s late
+  1790025600  UP    UP    UP    UP   (0.990)  UP@1.9s        86632.3 / 86632.3   0  1   <-- end price: derived 86635.94480861709 vs Jev's last state 86632.87
+  1790025900  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86636.8 / 86636.8   0  1   <-- end price: derived 86620.96359350692 vs Jev's last state 86622.01
+  1790026200  UP    UP    UP    UP   (0.999)  UP@1.9s        86620.6 / 86620.6   0  1   <-- end price: derived 86778.20644794143 vs Jev's last state 86774.85
+  1790026500  UP    UP    DOWN  UP   (0.990)  UP@1.8s        86778.2 / 86778.2   0  1   <-- TWAP-derived UP vs spot-derived DOWN; end price: derived 86789.80003884099 vs Jev's last state 86788.75
+  1790026800  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86790.1 / 86790.1   0  1   <-- end price: derived 86776.59028148159 vs Jev's last state 86777.11
+  1790027100  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      86776.3 / 86776.4   0  1   <-- end price: derived 86666.94885116372 vs Jev's last state 86669.69
+  1790027400  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      86666.1 / 86666.1   0  1
+  1790027700  UP    UP    DOWN  UP   (0.990)  UP@1.9s        86578.9 / 86578.6   0  1   <-- TWAP-derived UP vs spot-derived DOWN; end price: derived 86590.87569946553 vs Jev's last state 86592.19; start price 9 s late
+  1790028000  UP    UP    UP    UP   (0.990)  UP@1.9s        86590.2 / 86590.2   0  1   <-- end price: derived 86659.65811294089 vs Jev's last state 86657.9
+  1790028300  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86661.0 / 86661.0   0  1   <-- end price: derived 86560.8402680543 vs Jev's last state 86562.41
+  1790028600  UP    UP    UP    UP   (0.990)  UP@1.9s        86560.3 / 86560.3   0  1   <-- end price: derived 86614.19007507477 vs Jev's last state 86613.59
+  1790028900  UP    UP    UP    UP   (0.999)  UP@1.9s        86614.1 / 86614.1   0  1   <-- end price: derived 86687.70064698179 vs Jev's last state 86688.95
+  1790029200  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      86687.7 / 86687.7   0  1   <-- end price: derived 86533.87536785354 vs Jev's last state 86534.7
+  1790029500  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      86533.7 / 86533.6   0  1   <-- end price: derived 86368.16345085262 vs Jev's last state 86367.06
+  1790029800  UP    UP    UP    UP   (0.990)  UP@1.9s        86368.8 / 86368.8   0  2   <-- end price: derived 86483.82195356327 vs Jev's last state 86478.51
+  1790030100  UP    UP    DOWN  UP   (0.990)  UP@1.9s        86485.6 / 86485.6   0  1   <-- TWAP-derived UP vs spot-derived DOWN; end price: derived 86490.32479233886 vs Jev's last state 86491.73
+  1790030400  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86489.9 / 86489.9   0  1
+  1790030700  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      86402.9 / 86402.9   0  1   <-- end price: derived 86304.19024216109 vs Jev's last state 86305.35
+  1790031000  UP    UP    UP    UP   (0.990)  UP@1.9s        86303.5 / 86303.5   0  1   <-- end price: derived 86350.34856967568 vs Jev's last state 86349.14
+  1790031300  UP    UP    UP    UP   (0.990)  UP@1.9s        86350.9 / 86350.9   0  1   <-- end price: derived 86421.05400772931 vs Jev's last state 86419.31
+  1790031600  UP    UP    UP    UP   (0.990)  UP@1.9s        86421.6 / 86421.6   0  1   <-- end price: derived 86542.87456470585 vs Jev's last state 86541.97
+  1790031900  UP    UP    DOWN  UP   (0.990)  UP@0s          86543.2 / 86543.2   0  1   <-- TWAP-derived UP vs spot-derived DOWN
+  1790032200  UP    UP    UP    UP   (0.990)  UP@1.9s        86544.5 / 86544.5   0  1   <-- end price: derived 86655.04888177528 vs Jev's last state 86657.07
+  1790032500  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86654.3 / 86654.3   0  1   <-- end price: derived 86563.15245988293 vs Jev's last state 86563.81
+  1790032800  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@0.2s      86562.8 / 86562.8   0  1
+  1790033100  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@14.9s     86522.5 / 86522.5   0  16
+  1790033400  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1s        86482.1 / 86481.1   1  1   <-- start price: derived 86482.14798607309 vs Jev's state 86481.07; start price 13 s late
+  1790033700  DOWN  DOWN  UP    DOWN (0.010)  DOWN@1.9s      86411.7 / 86411.7   0  1   <-- TWAP-derived DOWN vs spot-derived UP
+  1790034000  UP    UP    UP    UP   (0.990)  UP@1.9s        86410.5 / 86410.5   0  1   <-- end price: derived 86462.16184124834 vs Jev's last state 86464.68
+  1790034300  UP    UP    UP    UP   (0.990)  UP@1.9s        86461.3 / 86461.3   0  1   <-- end price: derived 86464.71349017473 vs Jev's last state 86463.56
+  1790034600  UP    UP    UP    UP   (0.990)  UP@1.3s        86465.6 / 86465.6   0  1   <-- end price: derived 86510.43002328886 vs Jev's last state 86509.49
+  1790034900  UP    UP    UP    UP   (0.990)  UP@1.9s        86511.0 / 86517.7   0  1   <-- start price: derived 86511.03029349353 vs Jev's state 86517.67; start price 8 s late
+  1790035200  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.7s      86605.6 / 86605.6   0  1   <-- end price: derived 86399.5428075847 vs Jev's last state 86400.85
+  1790035500  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86399.0 / 86399.0   0  1   <-- end price: derived 86319.76801713809 vs Jev's last state 86320.88
+  1790035800  UP    UP    UP    UP   (0.999)  UP@1.9s        86319.4 / 86319.4   0  1   <-- end price: derived 86431.29538191266 vs Jev's last state 86428.39
+  1790036100  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      86431.3 / 86431.3   0  1   <-- end price: derived 86419.81428012553 vs Jev's last state 86417.9
+  1790036400  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86421.0 / 86421.0   0  1   <-- end price: derived 86356.42576325683 vs Jev's last state 86357.86
+  1790036700  UP    UP    UP    UP   (0.990)  UP@0.8s        86356.4 / 86356.4   0  1   <-- end price: derived 86397.19442571833 vs Jev's last state 86396.43
+  1790037000  UP    UP    UP    UP   (0.990)  UP@1.9s        86397.6 / 86397.6   0  1
+  1790037300  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      86462.0 / 86462.0   0  1   <-- end price: derived 86299.63853839564 vs Jev's last state 86301.3
+  1790037600  UP    UP    UP    UP   (0.990)  UP@1.9s        86298.9 / 86298.9   0  1   <-- end price: derived 86305.87795154493 vs Jev's last state 86303.5
+  1790037900  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@0.1s      86306.6 / 86306.6   0  1   <-- end price: derived 86230.04483738924 vs Jev's last state 86230.82
+  1790038200  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      86229.3 / 86229.3   0  1   <-- end price: derived 86096.13016468404 vs Jev's last state 86094.61
+  1790038500  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      86096.6 / 86096.6   0  1   <-- end price: derived 85861.3049754912 vs Jev's last state 85860.76
+  1790038800  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85861.7 / 85861.7   0  1   <-- end price: derived 85675.909429623 vs Jev's last state 85676.9
+  1790039100  UP    UP    UP    UP   (0.999)  UP@1.9s        85675.5 / 85675.5   0  1   <-- end price: derived 85850.2625600815 vs Jev's last state 85847.75
+  1790039400  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85851.2 / 85851.2   0  1   <-- end price: derived 85740.95445003013 vs Jev's last state 85740.1
+  1790039700  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.1s      85741.0 / 85740.9   0  1   <-- end price: derived 85492.04700694155 vs Jev's last state 85493.42
+  1790040000  UP    UP    UP    UP   (0.990)  UP@1.9s        85491.9 / 85491.9   0  1   <-- end price: derived 85620.26466635765 vs Jev's last state 85617.84
+  1790040300  UP    UP    UP    UP   (0.999)  UP@1.9s        85620.3 / 85620.3   0  1   <-- end price: derived 85715.19853824911 vs Jev's last state 85710.93
+  1790040600  UP    UP    UP    UP   (0.990)  UP@1.9s        85718.1 / 85718.1   0  1   <-- end price: derived 85795.69031006175 vs Jev's last state 85794.21
+  1790040900  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85795.7 / 85795.7   0  1
+  1790041200  UP    UP    UP    UP   (0.990)  UP@0.2s        85632.9 / 85632.9   0  1
+  1790041500  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.2s      85656.2 / 85656.2   0  1   <-- end price: derived 85585.5508585244 vs Jev's last state 85587.46
+  1790041800  UP    UP    UP    UP   (0.990)  UP@1.9s        85585.6 / 85585.6   0  1   <-- end price: derived 85612.27388341587 vs Jev's last state 85611.04
+  1790042100  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      85612.7 / 85612.7   0  1   <-- end price: derived 85539.4906884148 vs Jev's last state 85537.58
+  1790042400  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.7s      85540.2 / 85548.3   0  1   <-- start price: derived 85540.23297117825 vs Jev's state 85548.26; start price 9 s late
+  1790042700  UP    UP    UP    UP   (0.990)  UP@1.9s        85517.4 / 85517.4   0  1   <-- end price: derived 85544.7520960578 vs Jev's last state 85547.13
+  1790043000  UP    UP    UP    UP   (0.990)  UP@0.7s        85543.6 / 85543.6   0  1   <-- end price: derived 85584.76622063694 vs Jev's last state 85583.61
+  1790043300  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@0.6s      85587.0 / 85587.0   0  1
+  1790043600  UP    UP    UP    UP   (0.990)  UP@1s          85586.3 / 85586.3   0  1
+  1790043900  UP    UP    UP    UP   (0.990)  UP@1.9s        85643.0 / 85643.0   0  1   <-- end price: derived 85741.44490154568 vs Jev's last state 85745.46
+  1790044200  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      85741.4 / 85741.4   0  1   <-- end price: derived 85695.25098590108 vs Jev's last state 85694.34
+  1790044500  UP    UP    UP    UP   (0.990)  UP@1s          85695.7 / 85695.7   0  1   <-- end price: derived 85767.48754047607 vs Jev's last state 85768.24
+  1790044800  UP    UP    UP    UP   (0.990)  UP@1.9s        85766.8 / 85766.8   0  1   <-- end price: derived 85795.77010345734 vs Jev's last state 85796.87
+  1790045100  UP    UP    UP    UP   (0.999)  UP@1.9s        85795.6 / 85795.6   0  1   <-- end price: derived 85836.25865644313 vs Jev's last state 85838.69
+  1790045400  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      85835.5 / 85835.5   0  1
+  1790045700  UP    UP    UP    UP   (0.990)  UP@1.9s        85655.6 / 85655.6   0  1   <-- end price: derived 85722.52171549886 vs Jev's last state 85724.11
+  1790046000  DOWN  DOWN  UP    DOWN (0.010)  DOWN@1.9s      85721.9 / 85721.9   0  1   <-- TWAP-derived DOWN vs spot-derived UP; end price: derived 85698.58476563546 vs Jev's last state 85696.36
+  1790046300  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1s        85698.6 / 85698.6   0  1   <-- end price: derived 85594.76670696698 vs Jev's last state 85597.29
+  1790046600  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85593.6 / 85593.6   0  1   <-- end price: derived 85512.93561276123 vs Jev's last state 85513.59
+  1790046900  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85512.8 / 85512.8   0  1   <-- end price: derived 85484.82718082187 vs Jev's last state 85486.81
+  1790047200  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      85484.4 / 85484.4   0  1   <-- end price: derived 85396.2201651356 vs Jev's last state 85395.63
+  1790047500  UP    UP    UP    UP   (0.999)  UP@1.9s        85396.6 / 85396.6   0  1   <-- end price: derived 85591.66275308066 vs Jev's last state 85592.61
+  1790047800  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85591.7 / 85591.7   0  1   <-- end price: derived 85516.27549559042 vs Jev's last state 85515.05
+  1790048100  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85516.3 / 85516.3   0  1   <-- end price: derived 85472.58003596988 vs Jev's last state 85473.69
+  1790048400  DOWN  DOWN  UP    DOWN (0.010)  DOWN@1.9s      85472.1 / 85472.1   0  1   <-- TWAP-derived DOWN vs spot-derived UP; end price: derived 85466.21675942067 vs Jev's last state 85465.03
+  1790048700  UP    UP    UP    UP   (0.990)  UP@1.9s        85466.2 / 85466.2   0  1   <-- end price: derived 85507.03977616601 vs Jev's last state 85504.26
+  1790049000  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85508.9 / 85508.9   0  1   <-- end price: derived 85485.22388676515 vs Jev's last state 85484.34
+  1790049300  UP    UP    UP    UP   (0.999)  UP@0.8s        85485.7 / 85485.7   0  1   <-- end price: derived 85633.51509981992 vs Jev's last state 85632.45
+  1790049600  UP    UP    UP    UP   (0.990)  UP@1.9s        85634.6 / 85634.6   0  1   <-- end price: derived 85672.7825248908 vs Jev's last state 85671.15
+  1790049900  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85673.6 / 85673.6   0  1
+  1790050200  UP    UP    DOWN  UP   (0.990)  UP@1.9s        85608.7 / 85608.8   0  1   <-- TWAP-derived UP vs spot-derived DOWN; end price: derived 85611.94745665228 vs Jev's last state 85614.79
+  1790050500  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85610.7 / 85610.7   0  1
+  1790050800  UP    UP    UP    UP   (0.990)  UP@1.9s        85513.9 / 85513.9   0  1
+  1790051100  UP    UP    UP    UP   (0.990)  UP@1.9s        85526.4 / 85526.4   0  1   <-- end price: derived 85561.93753818606 vs Jev's last state 85563.53
+  1790051400  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      85561.7 / 85561.7   0  1   <-- end price: derived 85457.38290415947 vs Jev's last state 85458.84
+  1790051700  UP    UP    UP    UP   (0.990)  UP@1.9s        85457.4 / 85457.4   0  1   <-- end price: derived 85567.26468276313 vs Jev's last state 85566.74
+  1790052000  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85567.3 / 85567.3   0  1   <-- end price: derived 85523.89489189813 vs Jev's last state 85525.37
+  1790052300  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      85522.4 / 85522.4   0  1   <-- end price: derived 85453.2756381352 vs Jev's last state 85452.15
+  1790052600  UP    UP    UP    UP   (0.990)  UP@1.9s        85453.6 / 85453.6   0  1
+  1790052900  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@0.5s      85492.1 / 85492.1   0  1
+  1790053200  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85410.3 / 85410.3   0  1   <-- end price: derived 85387.39881561702 vs Jev's last state 85388.02
+  1790053500  UP    UP    UP    UP   (0.990)  UP@1.9s        85387.2 / 85387.2   0  1   <-- end price: derived 85462.57488338489 vs Jev's last state 85464.05
+  1790053800  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@1.9s      85462.1 / 85462.1   0  1
+  1790054100  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85381.7 / 85381.7   0  1   <-- end price: derived 85225.35204968168 vs Jev's last state 85226.44
+  1790054400  UP    UP    UP    UP   (0.999)  UP@0.9s        85225.0 / 85225.0   0  1   <-- end price: derived 85301.85274675114 vs Jev's last state 85304.45
+  1790054700  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85300.5 / 85300.5   0  1   <-- end price: derived 85182.85528524844 vs Jev's last state 85182.31
+  1790055000  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@0.1s      85183.1 / 85183.1   0  1   <-- end price: derived 85168.87803706362 vs Jev's last state 85168.09
+  1790055300  UP    UP    UP    UP   (0.990)  UP@1.9s        85169.3 / 85169.3   0  1   <-- end price: derived 85304.37231563688 vs Jev's last state 85302.55
+  1790055600  UP    UP    UP    UP   (0.999)  UP@1.9s        85305.4 / 85312.8   0  1   <-- start price: derived 85305.43694292469 vs Jev's state 85312.81; start price 14 s late
+  1790055900  UP    UP    UP    UP   (0.999)  UP@1.9s        85396.4 / 85396.4   0  1   <-- end price: derived 85529.43370963992 vs Jev's last state 85530.2
+  1790056200  DOWN  DOWN  DOWN  DOWN (0.010)  UP@1.9s        85529.2 / 85529.2   0  1   <-- derived DOWN vs Jev UP at 1.9s (distance 0.42 bps); end price: derived 85528.9942937341 vs Jev's last state 85532.83
+  1790056500  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85528.1 / 85528.1   0  1   <-- end price: derived 85388.64861735648 vs Jev's last state 85391.08
+  1790056800  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85387.6 / 85387.6   0  1   <-- end price: derived 85341.61997035574 vs Jev's last state 85343.19
+  1790057100  UP    UP    UP    UP   (0.990)  UP@1.7s        85340.7 / 85327.9   0  1   <-- start price: derived 85340.72321334535 vs Jev's state 85327.85; end price: derived 85349.2252550451 vs Jev's last state 85349.96; start price 16 s late
+  1790057400  DOWN  DOWN  UP    DOWN (0.001)  DOWN@1.9s      85348.8 / 85348.8   0  1   <-- TWAP-derived DOWN vs spot-derived UP; end price: derived 85317.80470552418 vs Jev's last state 85314.46
+  1790057700  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85319.1 / 85319.1   0  1   <-- end price: derived 85256.12261850851 vs Jev's last state 85258.14
+  1790058000  DOWN  DOWN  UP    DOWN (0.010)  DOWN@1.9s      85255.4 / 85255.4   0  1   <-- TWAP-derived DOWN vs spot-derived UP
+  1790058300  UP    UP    UP    UP   (0.990)  UP@1.9s        85241.4 / 85241.4   0  1   <-- end price: derived 85317.96511359251 vs Jev's last state 85316.27
+  1790058600  UP    UP    UP    UP   (0.999)  UP@1.9s        85318.6 / 85318.6   0  1   <-- end price: derived 85479.72104921739 vs Jev's last state 85480.88
+  1790058900  UP    UP    UP    UP   (0.990)  UP@1.9s        85479.5 / 85472.4   0  1   <-- start price: derived 85479.5426264412 vs Jev's state 85472.39; end price: derived 85533.57347477133 vs Jev's last state 85532.13; start price 17 s late
+  1790059200  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85534.1 / 85534.1   0  1   <-- end price: derived 85475.49831561837 vs Jev's last state 85476.46
+  1790059500  DOWN  DOWN  DOWN  DOWN (0.010)  DOWN@1.9s      85475.2 / 85475.2   0  1
+  1790059800  UP    UP    DOWN  UP   (0.990)  UP@1.9s        85437.8 / 85434.1   0  1   <-- TWAP-derived UP vs spot-derived DOWN; start price: derived 85437.82033320161 vs Jev's state 85434.13; end price: derived 85446.12898907432 vs Jev's last state 85448.61; start price 17 s late
+  1790060100  DOWN  DOWN  DOWN  DOWN (0.001)  DOWN@81.4s     85446.1 / 85446.1   0  1   <-- end price: derived 85363.75746917141 vs Jev's last state 85353.93
+  1790060400  DOWN  DOWN  DOWN  DOWN (0.010)  -              85364.1 / -   0  1   <-- start price 21 s late
+  1790060700  UP    UP    UP    UP   (0.990)  -              85330.2 / -   0  1
+  1790061000  UP    UP    UP    UP   (0.999)  -              85379.5 / -   1  1   <-- start price 18 s late
+  1790061300  DOWN  DOWN  DOWN  DOWN (0.010)  -              85435.8 / -   0  1
+  1790061600  DOWN  DOWN  DOWN  DOWN (0.001)  -              85351.0 / -   0  1   <-- start price 17 s late
+  1790061900  UP    UP    UP    UP   (0.990)  -              85211.1 / -   0  1
+  1790062200  DOWN  DOWN  DOWN  DOWN (0.001)  -              85269.9 / -   0  1   <-- start price 20 s late
+  1790062500  UP    UP    UP    UP   (0.990)  -              85181.4 / -   0  1
+  1790062800  DOWN  DOWN  DOWN  DOWN (0.010)  -              85206.8 / -   0  1
+  1790063100  UP    UP    UP    UP   (0.990)  -              85199.1 / -   0  11
+  1790063400  UP    UP    UP    UP   (0.990)  -              85265.7 / -   18  1   <-- start price 18 s late
+  1790063700  DOWN  DOWN  UP    DOWN (0.010)  -              85302.3 / -   0  1   <-- TWAP-derived DOWN vs spot-derived UP
+  1790064000  UP    UP    UP    UP   (0.999)  -              85297.6 / -   0  1
+  1790064300  UP    UP    UP    UP   (0.990)  -              85395.0 / -   0  1
+  1790064600  UP    UP    DOWN  UP   (0.990)  -              85461.4 / -   0  1   <-- TWAP-derived UP vs spot-derived DOWN
+  1790064900  DOWN  DOWN  UP    DOWN (0.010)  -              85483.1 / -   0  1   <-- TWAP-derived DOWN vs spot-derived UP
+  1790065200  UP    UP    UP    UP   (0.990)  -              85470.7 / -   0  1
+  1790065500  DOWN  DOWN  DOWN  DOWN (0.010)  -              85507.5 / -   0  1
+  1790065800  UP    UP    UP    UP   (0.990)  -              85397.5 / -   0  1
+  1790066100  UP    UP    UP    UP   (0.999)  -              85474.6 / -   0  1
+  1790066400  -     UP    UP    UP   (0.999)  -              85825.0 / -   0  1
+  43 of 236 market(s) consistent across all sources
+
+written: reports/calibration.{json,csv}, reports/edge-by-time.csv, reports/edge-by-price.csv
+
+## analyze (paper)
+
+analyze: 237 market(s), 236 resolved, 47399 observation(s); mode paper
+
+paper: 211 settled market(s)  net -222.879  gross -222.879  merge 489.088  settlement -711.967  fees 0.000  gas 0.000
+  deployed 29507.06 USD  ROC -1%  per market -1.056  per fill -0.232  per Jev call -0.0052 (42554 calls)
+  max drawdown 1040.903  worst exposure 277.00 USD  unpaired 34090 s total, 54% of market time
+  orders 1126: filled 699 partial 81 none 340 cancelled 6  fill 69%  cancel 1%  maker/taker 951/8
+  Jev tokens 123643701 -> 0.0000 USD at 0/Mtok; net after Jev cost -222.879
+
+realised PnL by time      fills  shares    cost     pnl    /share   win
+  300-120s        811   57688 26576.47  -62.494   -0.001   46%
+  120-60s          94    5942  2301.92  155.079    0.026   33%
+  60-30s           41    2310   606.25 -157.249   -0.068   17%
+  30-15s            9     571    19.33  -19.333   -0.034   0%
+  15-10s            2     122     1.24   -1.242   -0.010   0%
+  10-5s             1      84     0.84   -0.840   -0.010   0%
+  5-2s              1     100     1.00   -1.000   -0.010   0%
+
+naive EV by distance         n   accuracy  exec.   ask     jevEdge  pnl/share  win
+  0-1bps         9845    59%    9726  0.563   0.306   0.022     58%
+  1-2.5bps      10301    66%   10045  0.627   0.280   0.021     65%
+  2.5-5bps      10940    73%   10291  0.701   0.234   0.012     71%
+  5-10bps        9496    85%    8032  0.805   0.158   0.012     82%
+  10-20bps       5282    90%    3389  0.841   0.129   0.008     85%
+  20-50bps       1528    94%     619  0.894   0.087   -0.041     85%
+  50bps+            7   100%       3  0.990   -0.002   0.010     100%
+
+naive EV by 30s vol          n   accuracy  exec.   ask     jevEdge  pnl/share  win
+  <2bps         47286    73%   42016  0.685   0.236   0.016     70%
+  2-5bps          112    71%      88  0.778   0.131   -0.141     64%
+  5-10bps           1   100%       1  0.930   0.060   0.070     100%
+  10-20bps          0      -       0    -       -       -       -
+  20-50bps          0      -       0    -       -       -       -
+  50bps+            0      -       0    -       -       -       -
+
+naive EV by Jev confidence   n   accuracy  exec.   ask     jevEdge  pnl/share  win
+  <0.5          37948    75%   33062  0.702   0.221   0.012     71%
+  0.5-0.7        8426    67%    8018  0.625   0.296   0.028     65%
+  0.7-0.9        1025    65%    1025  0.608   0.275   0.039     65%
+  0.9-0.99          0      -       0    -       -       -       -
+  0.99+             0      -       0    -       -       -       -
+
+naive EV by action           n   accuracy  exec.   ask     jevEdge  pnl/share  win
+  ABSTAIN        6490    61%    6447  0.600   0.297   0.009     61%
+  ADD_COMPLEMENT  12082    74%   11592  0.711   0.178   0.016     73%
+  BUY_DOWN       2189    73%    2041  0.652   0.261   0.056     71%
+  BUY_UP         4084    68%    4000  0.675   0.261   -0.003     67%
+  HOLD          22554    78%   18025  0.706   0.244   0.017     72%
+
+naive EV by pair cost        n   accuracy  exec.   ask     jevEdge  pnl/share  win
+  <0.98          5480    97%     186  0.009   0.919   -0.009     0%
+  0.98-0.99         0      -       0    -       -       -       -
+  0.99-1.00         0      -       0    -       -       -       -
+  1.00-1.01       120    75%     120  0.749   0.213   0.001     75%
+  1.01-1.03     40151    71%   40151  0.691   0.232   0.015     71%
+  1.03+          1648    64%    1648  0.620   0.274   0.022     64%
+
+animal00: 726 candidate state(s) (2% of observations); winner accuracy 100% at mean ask 0.990; complement 0.020; pair cost 1.010; pair below par in 0 (0%), locked   -  /share; naive winner EV 0.0058/share
+
+latency: 47399 decision(s); Jev p50 285 p95 533 max 2367 ms; over 500 ms 6%; stale buys 10468/18355 (57%)
+
+written: reports/metrics-paper.json, reports/ev-segments.json (+ ev-by-*.csv), reports/animal00.json, reports/latency.json
+
+## analyze (backtest)
+
+analyze: 237 market(s), 236 resolved, 47399 observation(s); mode backtest
+
+backtest: 22 settled market(s)  net 0.000  gross 0.000  merge 0.000  settlement 0.000  fees 0.000  gas 0.000
+  deployed 0.00 USD  ROC -  per market 0.000  per fill   -    per Jev call   -   (0 calls)
+  max drawdown 0.000  worst exposure 0.00 USD  unpaired 0 s total, 0% of market time
+  orders 0: filled 0 partial 0 none 0 cancelled 0  fill -  cancel -  maker/taker 0/0
+  Jev tokens 0 -> 0.0000 USD at 0/Mtok; net after Jev cost 0.000
+
+naive EV by distance         n   accuracy  exec.   ask     jevEdge  pnl/share  win
+  0-1bps         9845    59%    9726  0.563   0.306   0.022     58%
+  1-2.5bps      10301    66%   10045  0.627   0.280   0.021     65%
+  2.5-5bps      10940    73%   10291  0.701   0.234   0.012     71%
+  5-10bps        9496    85%    8032  0.805   0.158   0.012     82%
+  10-20bps       5282    90%    3389  0.841   0.129   0.008     85%
+  20-50bps       1528    94%     619  0.894   0.087   -0.041     85%
+  50bps+            7   100%       3  0.990   -0.002   0.010     100%
+
+naive EV by 30s vol          n   accuracy  exec.   ask     jevEdge  pnl/share  win
+  <2bps         47286    73%   42016  0.685   0.236   0.016     70%
+  2-5bps          112    71%      88  0.778   0.131   -0.141     64%
+  5-10bps           1   100%       1  0.930   0.060   0.070     100%
+  10-20bps          0      -       0    -       -       -       -
+  20-50bps          0      -       0    -       -       -       -
+  50bps+            0      -       0    -       -       -       -
+
+naive EV by Jev confidence   n   accuracy  exec.   ask     jevEdge  pnl/share  win
+  <0.5          37948    75%   33062  0.702   0.221   0.012     71%
+  0.5-0.7        8426    67%    8018  0.625   0.296   0.028     65%
+  0.7-0.9        1025    65%    1025  0.608   0.275   0.039     65%
+  0.9-0.99          0      -       0    -       -       -       -
+  0.99+             0      -       0    -       -       -       -
+
+naive EV by action           n   accuracy  exec.   ask     jevEdge  pnl/share  win
+  ABSTAIN        6490    61%    6447  0.600   0.297   0.009     61%
+  ADD_COMPLEMENT  12082    74%   11592  0.711   0.178   0.016     73%
+  BUY_DOWN       2189    73%    2041  0.652   0.261   0.056     71%
+  BUY_UP         4084    68%    4000  0.675   0.261   -0.003     67%
+  HOLD          22554    78%   18025  0.706   0.244   0.017     72%
+
+naive EV by pair cost        n   accuracy  exec.   ask     jevEdge  pnl/share  win
+  <0.98          5480    97%     186  0.009   0.919   -0.009     0%
+  0.98-0.99         0      -       0    -       -       -       -
+  0.99-1.00         0      -       0    -       -       -       -
+  1.00-1.01       120    75%     120  0.749   0.213   0.001     75%
+  1.01-1.03     40151    71%   40151  0.691   0.232   0.015     71%
+  1.03+          1648    64%    1648  0.620   0.274   0.022     64%
+
+animal00: 726 candidate state(s) (2% of observations); winner accuracy 100% at mean ask 0.990; complement 0.020; pair cost 1.010; pair below par in 0 (0%), locked   -  /share; naive winner EV 0.0058/share
+
+latency: 47399 decision(s); Jev p50 285 p95 533 max 2367 ms; over 500 ms 6%; stale buys 10468/18355 (57%)
+
+written: reports/metrics-backtest.json, reports/ev-segments.json (+ ev-by-*.csv), reports/animal00.json, reports/latency.json
+
+## backtest-summary.json (without per-market rows)
+
+{
+  "generatedAt": "2026-09-21T14:52:26.360Z",
+  "markets": 22,
+  "latencyMs": 350,
+  "seed": 1,
+  "fillParams": {
+    "slippage": 0.001,
+    "queueFillProbability": 0.35,
+    "takerFee": 0,
+    "makerFee": 0
+  },
+  "decisions": 0,
+  "approved": 0,
+  "orders": 0,
+  "fillRatio": null,
+  "partialRatio": null,
+  "merges": 0,
+  "grossPnl": 0,
+  "netPnl": 0,
+  "mergePnl": 0,
+  "fees": 0,
+  "pnlPerMarket": 0,
+  "worstMarket": 0,
+  "bestMarket": 0,
+  "skippedNoJev": 4826,
+  "note": "Simulated fills against recorded books at 500 ms resolution with a fixed latency; no live order was ever built."
+}
