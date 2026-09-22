@@ -1,0 +1,131 @@
+/**
+ * The director's page (spec §9), German, vanilla JS over the JSON API in
+ * server.ts. Views: Projekte, Bibel, Board (Kanban), Karte (shot card),
+ * Jobs, Review. Nothing here talks to Venice, Claude or Jev directly.
+ */
+export const DIRECTOR_HTML = String.raw`<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Venice Director</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{--bg:#f6f6f4;--fg:#1c1c1a;--muted:#6b6b66;--line:#dcdcd6;--card:#fff;--green:#1f8a4c;--yellow:#c98a00;--red:#c0392b;--blue:#2a5db0}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+header{display:flex;gap:16px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:2;flex-wrap:wrap}
+header a{color:var(--blue);text-decoration:none;font-weight:600}header .cost{margin-left:auto;color:var(--muted);font-size:12px}
+main{padding:16px;max-width:1400px;margin:0 auto}h1,h2,h3{margin:0 0 8px;font-weight:600}h2{font-size:18px;margin-top:20px}h3{font-size:15px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:12px}
+.row{display:flex;gap:12px;flex-wrap:wrap}.col{flex:1;min-width:260px}
+label{display:block;font-size:12px;color:var(--muted);margin-top:8px}input,select,textarea{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font:inherit;background:#fff}
+textarea{min-height:64px;resize:vertical}button{padding:6px 12px;border:1px solid var(--line);border-radius:6px;background:#fff;font:inherit;cursor:pointer;margin:6px 6px 0 0}
+button.primary{background:var(--blue);color:#fff;border-color:var(--blue)}button.danger{background:var(--red);color:#fff;border-color:var(--red)}button:disabled{opacity:.5;cursor:not-allowed}
+.board{display:grid;grid-template-columns:repeat(8,minmax(150px,1fr));gap:8px;overflow-x:auto}.lane{background:#eeeeea;border-radius:8px;padding:8px;min-height:120px}.lane h3{font-size:12px;text-transform:uppercase;color:var(--muted)}
+.tile{background:#fff;border:1px solid var(--line);border-radius:6px;padding:8px;margin-bottom:6px;cursor:pointer}.tile:hover{border-color:var(--blue)}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;color:#fff;background:var(--muted)}.pill.green{background:var(--green)}.pill.yellow{background:var(--yellow)}.pill.red{background:var(--red)}.pill.block{background:var(--red)}.pill.warn{background:var(--yellow)}
+table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:4px 8px;border-bottom:1px solid var(--line);vertical-align:top;font-size:13px}
+pre{background:#f0f0ec;padding:8px;border-radius:6px;overflow:auto;font-size:12px;white-space:pre-wrap}.muted{color:var(--muted)}.err{color:var(--red);white-space:pre-wrap}
+.frames{display:flex;gap:8px;flex-wrap:wrap}.frames img{max-height:180px;border:1px solid var(--line)}.compare img{max-width:100%;border:1px solid var(--line)}
+.toast{position:fixed;bottom:16px;right:16px;background:#1c1c1a;color:#fff;padding:10px 14px;border-radius:8px;max-width:520px;white-space:pre-wrap;display:none;z-index:9}
+.inactive{opacity:.5}.small{font-size:12px}
+</style></head><body>
+<header><a href="#projects">Projekte</a><span id="nav"></span><span class="cost" id="cost"></span></header>
+<main id="main"></main><div class="toast" id="toast"></div>
+<script>
+const $=(s,r=document)=>r.querySelector(s);const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const STATUS=["draft","claude","gated","approved","queued","done","review","failed"];
+const LANE={draft:"Entwurf",claude:"Claude",gated:"Geprüft",approved:"Freigegeben",queued:"Läuft",done:"Fertig",review:"Review",failed:"Fehler"};
+const WORKFLOWS=["t2v","i2v","r2v_reference","r2v_edit","r2v_extend","r2v_stitch"];const ROLES=["identity","keyframe","style","motion","audio"];
+let STATE=null;
+function toast(msg,ms=6000){const t=$("#toast");t.textContent=msg;t.style.display="block";clearTimeout(t._h);t._h=setTimeout(()=>t.style.display="none",ms)}
+async function api(method,path,body,raw){const init={method,headers:{}};if(raw){init.body=raw}else if(body!==undefined){init.headers["content-type"]="application/json";init.body=JSON.stringify(body)}
+ const r=await fetch(path,init);const j=await r.json().catch(()=>({error:"keine JSON-Antwort"}));if(!r.ok){throw new Error(j.error||("HTTP "+r.status))}return j}
+async function loadState(){STATE=await api("GET","/api/state");const c={};for(const x of STATE.costs)c[x.kind]=x;
+ $("#cost").textContent="Venice "+((c.venice?.usd)||0).toFixed(2)+" USD · Claude "+((c.claude?.tokens)||0)+" Tokens ("+((c.claude?.usd)||0).toFixed(3)+" USD) · Jev "+((c.jev?.n)||0)+" Aufrufe"
+ +" · "+(STATE.capabilities.claude?"Claude ✓":"Claude ✗")+" "+(STATE.capabilities.gate?"Jev ✓":"Jev ✗")+" "+(STATE.capabilities.venice?"Venice ✓":"Venice ✗")+" "+(STATE.capabilities.ffmpeg?"ffmpeg ✓":"ffmpeg ✗")}
+function field(label,name,value,type="input",opts){if(type==="select"){return '<label>'+esc(label)+'</label><select name="'+name+'">'+opts.map(o=>'<option value="'+esc(o)+'"'+(String(o)===String(value)?" selected":"")+'>'+esc(o)+'</option>').join("")+'</select>'}
+ if(type==="textarea")return '<label>'+esc(label)+'</label><textarea name="'+name+'">'+esc(value)+'</textarea>';return '<label>'+esc(label)+'</label><input name="'+name+'" value="'+esc(value)+'">'}
+function formData(el){const o={};for(const i of el.querySelectorAll("[name]"))o[i.name]=i.value;return o}
+function route(){const h=location.hash.slice(1)||"projects";const p=h.split("/");const v={projects:viewProjects,bible:viewBible,board:viewBoard,shot:viewShot,jobs:viewJobs,review:viewReview}[p[0]]||viewProjects;
+ loadState().then(()=>v(...p.slice(1).map(Number))).catch(e=>{$("#main").innerHTML='<p class="err">'+esc(e.message)+'</p>'})}
+window.addEventListener("hashchange",route);route();
+function nav(pid){$("#nav").innerHTML=pid?'<a href="#bible/'+pid+'">Bibel</a> · <a href="#board/'+pid+'">Board</a> · <a href="#jobs/'+pid+'">Jobs</a>':""}
+
+async function viewProjects(){nav();const m=$("#main");m.innerHTML='<h1>Projekte</h1>'+STATE.projects.map(p=>'<div class="card"><a href="#board/'+p.id+'"><b>'+esc(p.name)+'</b></a> <span class="muted small">'+esc(p.default_engine)+' · '+esc(p.default_resolution)+' · '+esc(p.aspect_ratio)+'</span></div>').join("")
+ +'<div class="card"><h3>Neues Projekt</h3><form id="np">'+field("Name","name","")+field("Seitenverhältnis","aspect_ratio","16:9")+field("Standard-Auflösung","default_resolution","480p")+field("Standard-Engine","default_engine",STATE.engines[0]?.id||"","select",STATE.engines.map(e=>e.id))+'<button class="primary">Anlegen</button></form></div>'
+ +'<div class="card small muted">Engines: '+STATE.engines.map(e=>esc(e.id)+" ("+esc(e.source)+")").join(", ")+'</div>';
+ $("#np").onsubmit=async e=>{e.preventDefault();try{const p=await api("POST","/api/projects",formData(e.target));location.hash="bible/"+p.id}catch(x){toast(x.message)}}}
+
+async function viewBible(pid){nav(pid);const d=await api("GET","/api/projects/"+pid);const m=$("#main");const refOf=id=>d.references.filter(r=>r.character_id===id);
+ m.innerHTML='<h1>Bibel · '+esc(d.project.name)+'</h1><div class="row"><div class="col card"><h3>Projekt</h3><form id="pf">'+field("Name","name",d.project.name)+field("Seitenverhältnis","aspect_ratio",d.project.aspect_ratio)+field("Standard-Auflösung","default_resolution",d.project.default_resolution)+field("Standard-Engine","default_engine",d.project.default_engine,"select",STATE.engines.map(e=>e.id))
+ +field("Style Guide (DE)","style_guide_de",d.project.style_guide_de,"textarea")+field("Style Guide (EN, für Jev/Venice)","style_guide_en",d.project.style_guide_en,"textarea")+'<button class="primary">Speichern</button> <button type="button" id="tr">Fehlende EN-Texte übersetzen (Claude)</button></form></div>'
+ +'<div class="col card"><h3>Regeln</h3><table>'+d.rules.map(r=>'<tr class="'+(r.active?"":"inactive")+'"><td><b>'+esc(r.code)+'</b><br><span class="pill '+esc(r.severity)+'">'+esc(r.severity)+'</span> <span class="small muted">'+esc(r.check_type)+' · '+esc(r.origin)+'</span></td><td>'+esc(r.text_de)+'<br><span class="small muted">'+esc(r.text_en)+'</span></td><td><button data-rule="'+r.id+'" data-active="'+(r.active?0:1)+'">'+(r.active?"aus":"an")+'</button></td></tr>').join("")+'</table>'
+ +'<form id="rf">'+field("Neue Regel (DE)","text_de","","textarea")+field("Regel (EN)","text_en","","textarea")+field("Schwere","severity","block","select",["block","warn"])+field("Prüfung","check_type","jev","select",["jev","code","vision","review","jev+review"])+'<button>Regel hinzufügen</button></form></div></div>'
+ +'<h2>Figuren</h2>'+d.characters.map(c=>'<div class="card"><form data-char="'+c.id+'"><div class="row"><div class="col">'+field("Name","name",c.name)+field("Feste Merkmale (DE)","fixed_attributes_de",c.fixed_attributes_de,"textarea")+field("Feste Merkmale (EN)","fixed_attributes_en",c.fixed_attributes_en,"textarea")+'</div><div class="col">'+field("Variable Merkmale","variable_attributes",c.variable_attributes,"textarea")+field("Likeness-Cap","likeness_cap",c.likeness_cap??"")+field("Notizen","notes",c.notes,"textarea")+'<button class="primary">Speichern</button></div></div></form>'
+ +'<h3>Referenzen</h3><div class="frames">'+refOf(c.id).map(refTile).join("")+'</div>'+uploadForm(pid,c.id)+'</div>').join("")
+ +'<div class="card"><h3>Neue Figur</h3><form id="cf">'+field("Name","name","")+field("Feste Merkmale (DE)","fixed_attributes_de","","textarea")+'<button class="primary">Anlegen</button></form></div>'
+ +'<div class="card"><h3>Referenzen ohne Figur (Style, Motion, Audio, Keyframes)</h3><div class="frames">'+d.references.filter(r=>!r.character_id).map(refTile).join("")+'</div>'+uploadForm(pid,"")+'</div>';
+ $("#pf").onsubmit=async e=>{e.preventDefault();try{await api("PATCH","/api/projects/"+pid,formData(e.target));toast("gespeichert");route()}catch(x){toast(x.message)}};
+ $("#tr").onclick=async()=>{try{toast("übersetze …");await api("POST","/api/projects/"+pid+"/translate");route()}catch(x){toast(x.message)}};
+ $("#rf").onsubmit=async e=>{e.preventDefault();try{await api("POST","/api/projects/"+pid+"/rules",formData(e.target));route()}catch(x){toast(x.message)}};
+ $("#cf").onsubmit=async e=>{e.preventDefault();try{await api("POST","/api/projects/"+pid+"/characters",formData(e.target));route()}catch(x){toast(x.message)}};
+ for(const b of m.querySelectorAll("[data-rule]"))b.onclick=async()=>{await api("PATCH","/api/rules/"+b.dataset.rule,{active:b.dataset.active==="1"});route()};
+ for(const f of m.querySelectorAll("[data-char]"))f.onsubmit=async e=>{e.preventDefault();const o=formData(f);o.likeness_cap=o.likeness_cap===""?null:Number(o.likeness_cap);try{await api("PATCH","/api/characters/"+f.dataset.char,o);toast("gespeichert")}catch(x){toast(x.message)}};
+ for(const f of m.querySelectorAll("[data-upload]"))f.onsubmit=async e=>{e.preventDefault();const file=f.querySelector("input[type=file]").files[0];if(!file)return toast("Datei wählen");const o=formData(f);
+  const q=new URLSearchParams({name:file.name,kind:o.kind,role:o.role,character_id:f.dataset.upload||"",duration_s:o.duration_s||""});try{await api("PUT","/api/projects/"+pid+"/references?"+q,undefined,file);route()}catch(x){toast(x.message)}};
+ for(const b of m.querySelectorAll("[data-consent]"))b.onclick=async()=>{const t=prompt("Consent-Objekt (JSON) für diese Referenz, wie von Venice verlangt:");if(!t)return;try{await api("POST","/api/references/"+b.dataset.consent+"/consent",{consent:JSON.parse(t)});route()}catch(x){toast(x.message)}}}
+const fileUrl=p=>"/files/"+encodeURIComponent(p);
+function refTile(r){const src=fileUrl(r.path);const media=r.kind==="image"?'<img src="'+esc(src)+'" alt="">':r.kind==="video"?'<video src="'+esc(src)+'" controls style="max-height:180px"></video>':'<audio src="'+esc(src)+'" controls></audio>';
+ return '<div class="small">'+media+'<br>#'+r.id+' '+esc(r.kind)+' · '+esc(r.role_default)+(r.duration_s?' · '+r.duration_s+' s':'')+'<br>'+(r.consent_json?'<span class="pill green">Consent</span>':'<button data-consent="'+r.id+'">Consent eintragen</button>')+'</div>'}
+function uploadForm(pid,cid){return '<form data-upload="'+cid+'" class="small"><div class="row"><div class="col"><label>Datei</label><input type="file"></div><div class="col">'+field("Art","kind","image","select",["image","video","audio"])+'</div><div class="col">'+field("Standardrolle","role",cid?"identity":"style","select",ROLES)+'</div><div class="col">'+field("Dauer (s, Video)","duration_s","")+'</div></div><button>Hochladen</button></form>'}
+
+async function viewBoard(pid){nav(pid);const d=await api("GET","/api/projects/"+pid);const m=$("#main");
+ m.innerHTML='<h1>Board · '+esc(d.project.name)+'</h1><div class="board">'+STATUS.map(s=>'<div class="lane"><h3>'+LANE[s]+'</h3>'+d.shots.filter(x=>x.status===s).map(x=>'<div class="tile" onclick="location.hash=\'shot/'+x.id+'\'"><b>#'+x.seq+'</b> '+esc((x.beat_de||"(kein Beat)").slice(0,80))+'<br><span class="small muted">'+esc(x.workflow)+' · '+x.duration_s+' s · '+esc(x.resolution)+'</span></div>').join("")+'</div>').join("")+'</div>'
+ +'<div class="card"><h3>Neuer Shot</h3><form id="sf">'+field("Beat (DE)","beat_de","","textarea")+'<div class="row"><div class="col">'+field("Workflow","workflow","r2v_reference","select",WORKFLOWS)+'</div><div class="col">'+field("Dauer (s)","duration_s","5","select",[5,10])+'</div><div class="col">'+field("Übergang","transition_in","hard_cut","select",["hard_cut","extend"])+'</div></div><button class="primary">Anlegen</button></form></div>';
+ $("#sf").onsubmit=async e=>{e.preventDefault();const o=formData(e.target);o.duration_s=Number(o.duration_s);try{const s=await api("POST","/api/projects/"+pid+"/shots",o);location.hash="shot/"+s.id}catch(x){toast(x.message)}}}
+
+async function viewShot(id){const d=await api("GET","/api/shots/"+id);const s=d.shot;nav(s.project_id);const p=await api("GET","/api/projects/"+s.project_id);const m=$("#main");const V=STATE.vocabulary;const cap=STATE.capabilities;
+ const gateHtml=d.gate?'<h3>Jev-Gate <span class="pill '+esc(d.gate.verdict)+'">'+esc(d.gate.verdict)+'</span> <span class="small muted">'+esc(d.gate.jev_model)+' · '+new Date(d.gate.created_at).toLocaleString("de")+'</span></h3><table>'+Object.entries(d.gate.answers).map(([k,a])=>'<tr><td>'+esc(k)+'</td><td>'+(a.type==="noul"?"p(ja) = "+a.noul.toFixed(2):a.type==="score"?"score "+a.score.toFixed(2)+" · conf "+(a.confidence??0).toFixed(2):esc(a.choice)+" · conf "+(a.confidence??0).toFixed(2))+'</td></tr>').join("")+'</table>'
+  +'<table>'+d.gate.code_checks.map(c=>'<tr><td><span class="pill '+(c.ok?"green":c.severity)+'">'+esc(c.rule)+'</span></td><td>'+esc(c.detail)+'</td></tr>').join("")+'</table>':'<p class="muted">Noch kein Gate-Lauf. Code-Checks jetzt: '+(d.checks||[]).map(c=>'<span class="pill '+(c.ok?"green":c.severity)+'" title="'+esc(c.detail)+'">'+esc(c.rule)+'</span>').join(" ")+'</p>';
+ const refRows=(d.references.length?d.references:[]).map((r,i)=>refRow(r,i,p.references)).join("");
+ m.innerHTML='<h1>Shot #'+s.seq+' <span class="pill">'+esc(LANE[s.status])+'</span></h1>'+(s.review_note?'<div class="card err">Review-Notiz: '+esc(s.review_note)+'</div>':"")
+ +'<div class="row"><div class="col card"><form id="cardf">'+field("Beat (DE)","beat_de",s.beat_de,"textarea")+'<div class="row"><div class="col">'+field("Einstellungsgröße","shot_size",s.shot_size,"select",[""].concat(V.shotSizes))+'</div><div class="col">'+field("Kamerabewegung","camera_move",s.camera_move,"select",[""].concat(V.cameraMoves))+'</div></div>'
+ +field("Objektiv-Notiz","lens_note",s.lens_note)+field("Licht","lighting",s.lighting)+field("Komposition","composition",s.composition)+field("Aktion physisch (DE)","action_physical_de",s.action_physical_de,"textarea")+field("Aktion physisch (EN)","action_physical_en",s.action_physical_en,"textarea")
+ +'<div class="row"><div class="col">'+field("Engine","engine",s.engine,"select",STATE.engines.map(e=>e.id))+'</div><div class="col">'+field("Workflow","workflow",s.workflow,"select",WORKFLOWS)+'</div><div class="col">'+field("Dauer (s)","duration_s",s.duration_s,"select",[5,10])+'</div></div>'
+ +'<div class="row"><div class="col">'+field("Auflösung","resolution",s.resolution,"select",["480p","720p","1080p"])+'</div><div class="col">'+field("Seitenverhältnis","aspect_ratio",s.aspect_ratio)+'</div><div class="col">'+field("Übergang","transition_in",s.transition_in,"select",["hard_cut","extend"])+'</div></div>'
+ +field("Grund für >480p (R9)","resolution_reason",s.resolution_reason)+field("Negativ-Prompt","negative_prompt",s.negative_prompt)+field("Seed","seed",s.seed??"")+'<button class="primary">Karte speichern</button></form></div>'
+ +'<div class="col"><div class="card"><h3>Referenzen dieses Shots</h3><table id="reft"><tr><th>Slot</th><th>Referenz</th><th>Rolle</th><th>Subjekt</th><th></th></tr>'+refRows+'</table><button id="addref">Zeile</button> <button id="saveref" class="primary">Referenzen speichern</button><p class="small muted">Bild-Slots: Image 1, Image 2 … Video-Slots: Video 1 … Für Keyframes: Image 1 = Keyframe, Image 2 = Identität (R2).</p></div>'
+ +'<div class="card"><h3>Schritte</h3><button id="bdraft" '+(cap.claude?"":"disabled title='ANTHROPIC_API_KEY fehlt'")+'>1 · Claude-Entwurf</button><button id="bbuild">2 · Prompt bauen</button><button id="bgate" '+(cap.gate?"":"disabled title='TYPESAFE_API_KEY fehlt oder kein Guthaben'")+'>3 · Jev-Gate</button><button id="bfix" '+(cap.claude&&d.gate&&d.gate.verdict==="yellow"?"":"disabled")+'>3b · Claude-Korrektur (gelb)</button><button id="bquote" class="primary" '+(cap.venice&&d.gate&&d.gate.verdict==="green"?"":"disabled title='Quote nur bei grünem Gate'")+'>4 · Venice-Quote</button><p class="small muted">Erst der Klick auf „Freigeben“ in der Job-Liste schickt etwas an Venice.</p></div>'
+ +'<div class="card">'+gateHtml+'</div><div class="card"><h3>prompt_final</h3><pre>'+esc(s.prompt_final||"(noch nicht gebaut)")+'</pre><div id="reqbody"></div></div>'
+ +'<div class="card"><h3>Jobs</h3>'+jobsTable(d.jobs)+'</div><div class="card"><h3>Reviews</h3>'+(d.reviews.map(r=>'<div><a href="#review/'+r.id+'">Review #'+r.id+'</a> '+(r.verdict?'<span class="pill '+(r.verdict==="pass"?"green":"red")+'">'+r.verdict+'</span>':'offen')+'</div>').join("")||'<span class="muted">keine</span>')+'</div>'
+ +'<div class="card small muted">Claude-Aufrufe: '+(d.claude_calls.map(c=>esc(c.purpose)+" "+c.input_tokens+"/"+c.output_tokens).join(", ")||"keine")+'</div></div></div>';
+ const run=async(fn,msg)=>{try{if(msg)toast(msg,60000);await fn();route()}catch(x){toast(x.message,12000)}};
+ $("#cardf").onsubmit=e=>{e.preventDefault();const o=formData(e.target);o.duration_s=Number(o.duration_s);o.seed=o.seed===""?null:Number(o.seed);run(()=>api("PATCH","/api/shots/"+id,o))};
+ $("#bdraft").onclick=()=>run(()=>api("POST","/api/shots/"+id+"/draft"),"Claude entwirft …");
+ $("#bbuild").onclick=()=>run(async()=>{const r=await api("POST","/api/shots/"+id+"/build");if(!r.result.ok)throw new Error(r.result.reason);toast("Prompt gebaut. Hinweise: "+(r.result.notes.join("; ")||"keine"))});
+ $("#bgate").onclick=()=>run(()=>api("POST","/api/shots/"+id+"/gate"),"Jev prüft …");
+ $("#bfix").onclick=()=>run(()=>api("POST","/api/shots/"+id+"/review-fix"),"Claude korrigiert …");
+ $("#bquote").onclick=()=>quote(id,undefined);
+ $("#addref").onclick=()=>{const tr=document.createElement("tr");tr.innerHTML=refRow({slot:"Image "+(d.references.length+1),reference_id:p.references[0]?.id,role:"identity",subject_label:""},d.references.length,p.references).replace(/^<tr>|<\/tr>$/g,"");$("#reft").appendChild(tr);d.references.push({})};
+ $("#saveref").onclick=()=>run(()=>api("PUT","/api/shots/"+id+"/references",{references:[...$("#reft").querySelectorAll("tr[data-ref]")].map(tr=>formData(tr))}));
+ m.addEventListener("click",e=>{const b=e.target.closest("[data-del]");if(b){b.closest("tr").remove()}});
+ bindJobButtons(m,run);
+ const lastJob=d.jobs[0];if(lastJob)$("#reqbody").innerHTML='<h3>Letzter Request-Body (Job #'+lastJob.id+', ohne Base64-Daten)</h3><pre>'+esc(JSON.stringify(JSON.parse(lastJob.request_json),null,1))+'</pre>'}
+function refRow(r,i,all){return '<tr data-ref><td><input name="slot" value="'+esc(r.slot||"")+'"></td><td><select name="reference_id">'+all.map(x=>'<option value="'+x.id+'"'+(x.id===r.reference_id?" selected":"")+'>#'+x.id+' '+esc(x.kind)+' '+esc(x.path.split(/[\\/]/).pop())+'</option>').join("")+'</select></td><td><select name="role">'+ROLES.map(x=>'<option'+(x===r.role?" selected":"")+'>'+x+'</option>').join("")+'</select></td><td><input name="subject_label" value="'+esc(r.subject_label||"")+'" placeholder="z. B. Mara"></td><td><button type="button" data-del>×</button></td></tr>'}
+function jobsTable(jobs){if(!jobs.length)return '<span class="muted">keine</span>';return '<table><tr><th>Job</th><th>Shot</th><th>Status</th><th>Quote USD</th><th>Queue-ID</th><th>Aktion</th></tr>'+jobs.map(j=>'<tr><td>#'+j.id+'</td><td><a href="#shot/'+j.shot_id+'">'+j.shot_id+'</a></td><td>'+esc(j.status)+(j.error_json?'<br><span class="err small">'+esc(String(j.error_json).slice(0,300))+'</span>':"")+'</td><td>'+(j.quote_usd??"–")+'</td><td class="small">'+esc(j.queue_id||"")+'</td><td>'
+ +(j.status==="quoted"?'<button class="primary" data-approve="'+j.id+'">Freigeben ('+j.quote_usd+' USD)</button>':"")+(j.status==="approved"?'<button class="primary" data-queue="'+j.id+'">An Venice senden</button>':"")+(j.status==="queued"?'<button data-poll="'+j.id+'">Status abfragen</button>':"")+(j.status==="needs_consent"?'<button data-consent-job="'+j.id+'" data-shot="'+j.shot_id+'">Consent bestätigen &amp; neu quoten</button>':"")+(j.output_path?'<a href="'+esc(fileUrl(j.output_path))+'">Clip</a>':"")+'</td></tr>').join("")+'</table>'}
+function bindJobButtons(m,run){for(const b of m.querySelectorAll("[data-approve]"))b.onclick=()=>{if(confirm("Job #"+b.dataset.approve+" freigeben? Danach kann er an Venice gesendet werden (kostenpflichtig)."))run(()=>api("POST","/api/jobs/"+b.dataset.approve+"/approve"))};
+ for(const b of m.querySelectorAll("[data-queue]"))b.onclick=()=>run(()=>api("POST","/api/jobs/"+b.dataset.queue+"/queue"),"sende …");
+ for(const b of m.querySelectorAll("[data-poll]"))b.onclick=()=>run(()=>api("POST","/api/jobs/"+b.dataset.poll+"/poll"),"frage ab …");
+ for(const b of m.querySelectorAll("[data-consent-job]"))b.onclick=()=>{const j=b.dataset.consentJob;api("GET","/api/jobs").then(js=>{const job=js.find(x=>String(x.id)===j);const c=job&&job.error_json?JSON.parse(job.error_json):null;const txt=prompt("Venice verlangt eine Einwilligung (Consent). Antwort von Venice:\n"+JSON.stringify(c,null,1).slice(0,1500)+"\n\nConsent-Objekt (JSON), das mitgeschickt werden soll:",c&&c.consent?JSON.stringify(c.consent):"");if(!txt)return;quote(Number(b.dataset.shot),JSON.parse(txt))})}}
+async function quote(shotId,consent){try{toast("hole Quote …",60000);const r=await api("POST","/api/shots/"+shotId+"/quote",{consent});if(r.result.ok)toast("Quote: "+r.result.quoteUsd+" USD. Job #"+r.job.id+" wartet auf Freigabe.");else if(r.result.kind==="needs_consent")toast("Venice verlangt Consent. Job #"+r.job.id+" in der Job-Liste bestätigen.");else toast("Quote fehlgeschlagen: "+JSON.stringify(r.result.error).slice(0,400),12000);route()}catch(x){toast(x.message,12000)}}
+
+async function viewJobs(pid){nav(pid);const d=pid?await api("GET","/api/projects/"+pid):{jobs:await api("GET","/api/jobs")};const m=$("#main");m.innerHTML='<h1>Jobs</h1><div class="card">'+jobsTable(d.jobs)+'</div><p class="small muted">Quote → Freigeben (Klick) → An Venice senden → Status abfragen (Backoff 5–30 s pro Klick-Serie) → Download → Review. Nichts wird ohne Freigabe gesendet.</p>';
+ bindJobButtons(m,async(fn,msg)=>{try{if(msg)toast(msg,60000);await fn();route()}catch(x){toast(x.message,12000)}})}
+
+async function viewReview(id){const r=await api("GET","/api/reviews/"+id);nav(r.shot.project_id);const m=$("#main");const f=fileUrl;
+ m.innerHTML='<h1>Review · Shot #'+r.shot.seq+'</h1><div class="card compare">'+(r.compare_image_path?'<img src="'+esc(f(r.compare_image_path))+'" alt="Vergleich">':'<span class="muted">kein Vergleichsbild (ffmpeg oder Identitätsreferenz fehlt)</span>')+'</div>'
+ +'<div class="card"><div class="frames">'+r.frames.map(p=>'<img src="'+esc(f(p))+'" alt="">').join("")+'</div>'+(r.job&&r.job.output_path?'<video src="'+esc(f(r.job.output_path))+'" controls style="max-width:100%;margin-top:8px"></video>':"")+'</div>'
+ +'<div class="card"><h3>Checkliste</h3><form id="vf"><table>'+r.checklist.map((c,i)=>'<tr><td><b>'+esc(c.rule)+'</b></td><td>'+esc(c.text_de)+'</td><td><select data-ck="'+esc(c.rule)+'"><option value="">–</option><option value="1"'+(c.pass===true?" selected":"")+'>ok</option><option value="0"'+(c.pass===false?" selected":"")+'>nicht ok</option></select></td></tr>').join("")+'</table>'
+ +field("Notizen","notes",r.notes,"textarea")+'<h3>Regel hinzufügen (optional, gilt ab jetzt für alle weiteren Shots)</h3>'+field("Regel (DE)","nr_de","")+field("Regel (EN)","nr_en","")+field("Schwere","nr_sev","block","select",["block","warn"])
+ +(r.verdict?'<p>Urteil: <span class="pill '+(r.verdict==="pass"?"green":"red")+'">'+r.verdict+'</span></p>':'<button type="button" class="primary" id="pass">Pass</button><button type="button" class="danger" id="fail">Fail → zurück in Entwurf</button>')+'</form></div>';
+ const send=async v=>{const o=formData($("#vf"));const checklist=[...m.querySelectorAll("[data-ck]")].map(s=>({rule:s.dataset.ck,pass:s.value===""?null:s.value==="1"}));try{await api("POST","/api/reviews/"+id+"/verdict",{verdict:v,notes:o.notes,checklist,new_rule:{text_de:o.nr_de,text_en:o.nr_en,severity:o.nr_sev}});location.hash="shot/"+r.shot.id}catch(x){toast(x.message)}};
+ if($("#pass")){$("#pass").onclick=()=>send("pass");$("#fail").onclick=()=>send("fail")}}
+</script></body></html>`;

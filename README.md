@@ -86,7 +86,24 @@ pnpm benchmark:jev      # latency + stability over recorded states
 `LOG_LEVEL=debug` for verbose JSON logs. Decisions, ticks, books and latency
 land in `data/bot.sqlite` (override with `DATABASE_URL`).
 
+## Venice Director
+
+The trading experiment is over (`STOP`, `docs/JEV_DECISIONS.md`). The
+same infrastructure now runs the Venice Director (`docs/DIRECTOR.md`,
+spec in `docs/VENICE_DIRECTOR_SPEC.md`): a local UI that turns shot cards
+into Venice video jobs, with a deterministic prompt builder, a Jev gate
+before every job, Claude only for drafting, and a user click before any
+money is spent.
+
+```bash
+pnpm director            # http://127.0.0.1:8787
+pnpm director:probe      # records what the Venice API really answers
+```
+
 ## Documentation
+
+- `docs/DIRECTOR.md` — the Venice Director: start, flow, what is not yet
+  verified against the live API, Definition-of-Done status.
 
 - `docs/DEPENDENCIES.md` — pinned versions, which APIs were verified from
   shipped type declarations, and what could not be verified.

@@ -33,9 +33,12 @@
     "sync": "tsx scripts/sync.ts",
     "dashboard": "tsx scripts/dashboard.ts",
     "kill": "tsx scripts/control.ts kill",
-    "resume": "tsx scripts/control.ts resume"
+    "resume": "tsx scripts/control.ts resume",
+    "director": "tsx scripts/director.ts",
+    "director:probe": "tsx scripts/director-probe.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.127.0",
     "@polymarket/client": "0.10.0",
     "@typesafe-ai/sdk": "0.6.0",
     "viem": "2.56.8",
