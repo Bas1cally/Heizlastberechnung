@@ -12,7 +12,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { loadEnvFile } from "../src/app/env.js";
 import { rng } from "../src/cards/cards.js";
-import { blackjackItems, callItems, equityItems, jevAsker, render, run, textAsker, type Asker, type Item } from "../src/cards/bench.js";
+import { blackjackItems, callItems, equityItems, jevAsker, render, renderTeam, run, textAsker, type Asker, type Item, type Result } from "../src/cards/bench.js";
 import { cardStr } from "../src/cards/cards.js";
 
 loadEnvFile();
@@ -47,6 +47,7 @@ for (const test of selected) {
   const items: Item[] = test === "blackjack" ? blackjackItems(n, r) : test === "equity" ? equityItems(n, r) : callItems(n, r);
   process.stdout.write(" fertig\n");
   const report: Record<string, unknown> = { test, n, seed, at: new Date().toISOString() };
+  const runs: { name: string; results: Result[] }[] = [];
   for (const asker of askers) {
     let last = 0;
     const results = await run(items, asker, {
@@ -56,12 +57,14 @@ for (const test of selected) {
     });
     process.stdout.write("\n");
     console.log(render(test, asker.name, results));
+    runs.push({ name: asker.name, results });
     report[asker.name] = results.map((x) => ({
       state: x.item.state, truth: x.item.kind === "equity" ? Number(x.item.truth.toFixed(4)) : x.item.kind === "call" ? { action: x.item.truth, equity: Number(x.item.eq.toFixed(4)) } : x.item.truth,
       answer: x.answer ?? null, error: x.error ?? null,
       ...(x.item.kind !== "blackjack" ? { cards: [...x.item.hand, ...x.item.board].map(cardStr).join(" ") } : {}),
     }));
   }
+  if (runs.length === 2) { const t = renderTeam(test, runs[0]!, runs[1]!); if (t) console.log(t); }
   writeFileSync(`reports/cards-${test}.json`, JSON.stringify(report, null, 1));
   console.log(`  → reports/cards-${test}.json\n`);
 }

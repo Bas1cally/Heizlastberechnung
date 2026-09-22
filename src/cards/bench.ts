@@ -185,3 +185,32 @@ export function render(test: Item["kind"], asker: string, results: readonly Resu
   if (errs) L.push(`  ${errs} Fehler, z. B. ${String(firstErr).slice(0, 160)}`);
   return L.join("\n");
 }
+
+/**
+ * What a team of two would have done on the same situations, from the
+ * answers already collected (no new calls): agreement, who is right when
+ * they disagree, and for probabilities the average of both.
+ */
+export function renderTeam(test: Item["kind"], a: { name: string; results: readonly Result[] }, b: { name: string; results: readonly Result[] }): string {
+  const byItem = new Map<Item, { x?: Answer; y?: Answer }>();
+  for (const r of a.results) if (r.answer) byItem.set(r.item, { ...byItem.get(r.item), x: r.answer });
+  for (const r of b.results) if (r.answer) byItem.set(r.item, { ...byItem.get(r.item), y: r.answer });
+  const both = [...byItem.entries()].filter(([, v]) => v.x && v.y) as [Item, { x: Answer; y: Answer }][];
+  if (!both.length) return "";
+  const L = [`== ${test} · zusammen (${a.name} + ${b.name}, ${both.length} gemeinsame) ==`];
+  if (test === "equity") {
+    const err = (f: (x: number, y: number) => number) => both.reduce((s, [it, v]) => s + Math.abs(f(Number(v.x.value), Number(v.y.value)) - (it as EqItem).truth), 0) / both.length;
+    L.push(`  mittlerer Fehler: ${a.name} ${(100 * err((x) => x)).toFixed(1)} · ${b.name} ${(100 * err((_x, y) => y)).toFixed(1)} · Mittelwert beider ${(100 * err((x, y) => (x + y) / 2)).toFixed(1)} Prozentpunkte`);
+    return L.join("\n");
+  }
+  const truth = (it: Item) => (it.kind === "blackjack" ? it.truth : it.kind === "call" ? it.truth : "");
+  const agree = both.filter(([, v]) => v.x.value === v.y.value);
+  const agreeRight = agree.filter(([it, v]) => v.x.value === truth(it)).length;
+  const dis = both.filter(([, v]) => v.x.value !== v.y.value);
+  const xRight = dis.filter(([it, v]) => v.x.value === truth(it)).length, yRight = dis.filter(([it, v]) => v.y.value === truth(it)).length;
+  L.push(`  einig in ${agree.length} von ${both.length}: dann richtig ${agree.length ? ((100 * agreeRight) / agree.length).toFixed(1) : "-"} %`);
+  L.push(`  uneinig in ${dis.length}: ${a.name} hatte recht ${xRight}×, ${b.name} ${yRight}×, keiner ${dis.length - xRight - yRight}×`);
+  const best = Math.max(xRight, yRight) + agreeRight;
+  L.push(`  Team, das bei Uneinigkeit dem Besseren folgt: ${((100 * best) / both.length).toFixed(1)} %`);
+  return L.join("\n");
+}
