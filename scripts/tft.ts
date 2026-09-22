@@ -68,6 +68,7 @@ if (measureDir) {
 
 // ---- server first, so the overlay has contact while the meta loads ----
 let meta: Meta | undefined;
+let lastFingerprint = "";
 let metaError: string | undefined;
 const status = () => ({ vision: visionModel, advisor: jev && !jevDown ? "jev" : `text:${adviceModel}`, ...(jevDown ? { jev_error: jevDown.slice(0, 80) } : {}), meta: meta ? `${meta.patch || "?"} (${meta.comps.length} comps)` : metaError ? `Fehler: ${metaError.slice(0, 80)}` : "wird geladen …", interval_s: intervalMs / 1000 });
 startTftServer({ store, meta: () => meta, status, log: (m, f) => log.info(m, f) }, port);
@@ -78,11 +79,13 @@ async function loadMeta(force: boolean): Promise<void> {
     const m = await ensureMeta({ apiKey: veniceKey!, model: metaModel, cachePath: join(dataDir, "meta.json") }, force);
     meta = m.meta; metaError = undefined;
     log.info("meta", { fromCache: m.fromCache, set: meta.set, patch: meta.patch, comps: meta.comps.map((c) => `${c.name} ${c.tier}`) });
+    lastFingerprint = "";
   } catch (err) { metaError = err instanceof Error ? err.message : String(err); log.error("meta fetch failed; advice is off until it works, retry in 2 min", { err: metaError }); setTimeout(() => void loadMeta(force), 120_000); }
+  if (!metaError) return;
 }
-await loadMeta(flag("refresh-meta"));
+// Not awaited: the loop reads screenshots right away; advice starts once the meta is there.
+void loadMeta(flag("refresh-meta"));
 
-let lastFingerprint = "";
 async function cycle(imagePath?: string): Promise<void> {
   const tc = performance.now();
   const shot = imagePath ?? (await captureScreen(join(dataDir, "shots", `shot-${Date.now()}.jpg`), { width }));
