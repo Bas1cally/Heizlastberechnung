@@ -47,6 +47,10 @@ export function startTftServer(d: TftServerDeps, port: number, host = "127.0.0.1
       json(404, { error: "not found" });
     } catch (err) { json(500, { error: err instanceof Error ? err.message : String(err) }); }
   });
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE") { console.error(`Port ${port} ist belegt: ein alter TFT-Berater läuft noch. tft-stop.cmd ausführen und neu starten.`); process.exit(1); }
+    throw err;
+  });
   server.listen(port, host, () => d.log(`tft advisor on http://${host}:${port}`));
   return server;
 }
