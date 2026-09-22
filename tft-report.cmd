@@ -1,6 +1,5 @@
 @echo off
-rem TFT-Bericht der letzten Sitzung: Lesungen, Ratschlaege (Jev oder Textmodell), Fehler, Kosten.
+rem TFT-Bericht der letzten Sitzung. Oeffnet ihn im Editor zum Kopieren.
 cd /d "%~dp0"
 call pnpm -s tft:report
-echo.
-pause
+start "" notepad reports\tft-report.txt

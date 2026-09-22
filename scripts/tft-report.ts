@@ -6,7 +6,7 @@
  *   pnpm tft:report -- --hours 3    # everything of the last three hours
  */
 import { join } from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { loadEnvFile } from "../src/app/env.js";
 import { ENDPOINTS } from "../src/director/venice.js";
 import { TftStore } from "../src/tft/store.js";
@@ -16,7 +16,7 @@ loadEnvFile();
 const env = (name: string): string | undefined => { const v = process.env[name]?.trim(); return v ? v : undefined; };
 const dataDir = env("TFT_DATA") ?? "data/tft";
 const dbPath = join(dataDir, "tft.sqlite");
-if (!existsSync(dbPath)) { console.log("Noch keine TFT-Daten. Erst tft.cmd starten und spielen."); process.exit(0); }
+if (!existsSync(dbPath)) { const msg = `Noch keine TFT-Daten in ${dbPath}. Erst tft.cmd starten und spielen.`; console.log(msg); mkdirSync("reports", { recursive: true }); writeFileSync("reports/tft-report.txt", msg + "\n", "utf8"); process.exit(0); }
 const store = TftStore.open(dbPath);
 const argv = process.argv.slice(2);
 const hi = argv.indexOf("--hours");
@@ -31,4 +31,8 @@ if (key) {
     for (const m of j.data ?? []) { const i = m.model_spec?.pricing?.input?.usd, o = m.model_spec?.pricing?.output?.usd; if (typeof i === "number" && typeof o === "number") prices[m.id] = { inPerM: i, outPerM: o }; }
   } catch { /* report without cost */ }
 }
-console.log(renderReport(buildReport(store, prices, since)));
+const text = renderReport(buildReport(store, prices, since));
+console.log(text);
+mkdirSync("reports", { recursive: true });
+writeFileSync("reports/tft-report.txt", text + "\n", "utf8");
+console.log("\n(auch gespeichert in reports\\tft-report.txt)");
