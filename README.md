@@ -99,10 +99,12 @@ money is spent.
 pnpm director            # http://127.0.0.1:8787
 pnpm director:probe      # records what the Venice API really answers
 pnpm tft                 # TFT advisor: screenshot -> Venice vision -> Jev -> overlay (docs/TFT.md)
+pnpm cards               # Jev against exact answers: blackjack chart, poker equity, pot odds (docs/CARDS.md)
 ```
 
 ## Documentation
 
+- `docs/TFT.md` — TFT advisor; `docs/CARDS.md` — card benchmarks for Jev.
 - `docs/DIRECTOR.md` — the Venice Director: start, flow, what is not yet
   verified against the live API, Definition-of-Done status.
 
