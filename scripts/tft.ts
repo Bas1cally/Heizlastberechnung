@@ -66,16 +66,21 @@ if (measureDir) {
   process.exit(0);
 }
 
-// ---- meta ----
+// ---- server first, so the overlay has contact while the meta loads ----
 let meta: Meta | undefined;
-try {
-  const m = await ensureMeta({ apiKey: veniceKey, model: metaModel, cachePath: join(dataDir, "meta.json") }, flag("refresh-meta"));
-  meta = m.meta;
-  log.info("meta", { fromCache: m.fromCache, set: meta.set, patch: meta.patch, comps: meta.comps.map((c) => `${c.name} ${c.tier}`) });
-} catch (err) { log.error("meta fetch failed; advice is off until it works", { err: err instanceof Error ? err.message : String(err) }); }
-
-const status = () => ({ vision: visionModel, advisor: jev && !jevDown ? "jev" : `text:${adviceModel}`, ...(jevDown ? { jev_error: jevDown.slice(0, 80) } : {}), meta: meta ? `${meta.patch || "?"} (${meta.comps.length} comps)` : "none", interval_s: intervalMs / 1000 });
+let metaError: string | undefined;
+const status = () => ({ vision: visionModel, advisor: jev && !jevDown ? "jev" : `text:${adviceModel}`, ...(jevDown ? { jev_error: jevDown.slice(0, 80) } : {}), meta: meta ? `${meta.patch || "?"} (${meta.comps.length} comps)` : metaError ? `Fehler: ${metaError.slice(0, 80)}` : "wird geladen …", interval_s: intervalMs / 1000 });
 startTftServer({ store, meta: () => meta, status, log: (m, f) => log.info(m, f) }, port);
+
+// ---- meta ----
+async function loadMeta(force: boolean): Promise<void> {
+  try {
+    const m = await ensureMeta({ apiKey: veniceKey!, model: metaModel, cachePath: join(dataDir, "meta.json") }, force);
+    meta = m.meta; metaError = undefined;
+    log.info("meta", { fromCache: m.fromCache, set: meta.set, patch: meta.patch, comps: meta.comps.map((c) => `${c.name} ${c.tier}`) });
+  } catch (err) { metaError = err instanceof Error ? err.message : String(err); log.error("meta fetch failed; advice is off until it works, retry in 2 min", { err: metaError }); setTimeout(() => void loadMeta(force), 120_000); }
+}
+await loadMeta(flag("refresh-meta"));
 
 let lastFingerprint = "";
 async function cycle(imagePath?: string): Promise<void> {

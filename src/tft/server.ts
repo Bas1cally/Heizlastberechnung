@@ -11,7 +11,7 @@ import type { Advice, BoardRead, Meta } from "./types.js";
 export interface TftServerDeps { readonly store: TftStore; readonly meta: () => Meta | undefined; readonly status: () => Record<string, unknown>; readonly log: (msg: string, fields?: Record<string, unknown>) => void }
 
 export function overlayText(advice: Advice | undefined, read: BoardRead | undefined): { line1: string; line2: string; line3: string } {
-  if (!advice) return { line1: read ? `Stage ${read.stage || "?"} · ${read.gold} Gold · Lvl ${read.level}` : "TFT-Berater wartet auf Screenshot", line2: read?.phase === "not_tft" ? "Kein TFT im Bild" : "noch kein Rat", line3: "" };
+  if (!advice) return { line1: read ? `Stage ${read.stage || "?"} · ${read.gold} Gold · Lvl ${read.level}` : "TFT-Berater: warte auf den ersten Screenshot", line2: read?.phase === "not_tft" ? "Kein TFT im Bild" : read ? "noch kein Rat" : "", line3: "" };
   const act = { ROLL: "Rollen", LEVEL: "Leveln", SAVE: "Sparen", BUY: "Kaufen" }[advice.action];
   return { line1: `${advice.comp}${advice.confidence ? ` (${Math.round(advice.confidence * 100)}%)` : ""}`, line2: `${act}${advice.buy.length ? `: ${advice.buy.join(", ")}` : ""}`, line3: `Kurs ${Math.round(advice.onTrack * 100)}% · Druck ${advice.urgency} · ${advice.source} ${advice.latencyMs} ms` };
 }
