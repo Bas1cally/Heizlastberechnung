@@ -28,6 +28,11 @@ pnpm cards -- all --n 100 --text
 pnpm cards -- equity --text kimi-k2-6 --seed 7
 ```
 
+DeepSeek denkt vor jeder Antwort (etwa 11 s). Schneller: `--reasoning none`
+(ohne Denkschritt) oder `--text mercury-2-5` (Diffusionsmodell, sehr
+schnell). Das Textmodell läuft mit 12 Anfragen gleichzeitig
+(`--text-concurrency`).
+
 `--seed` erzeugt dieselben Situationen wieder, damit sich Läufe und Modelle
 vergleichen lassen. Jede Situation mit Antwort und Wahrheit landet in
 `reports/cards-<test>.json`. Bei „keine Credits“ bricht der Lauf nach der

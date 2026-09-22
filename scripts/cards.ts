@@ -6,6 +6,9 @@
  *   pnpm cards -- equity call --n 50 --text  # plus a text model on Venice as comparison
  *   pnpm cards -- all --text deepseek-v4-flash --seed 7
  *   pnpm cards -- all --text --team         # plus Jev with the text model's guide and with its suggestion
+ *   pnpm cards -- all --team --reasoning none            # text model without its thinking step (faster)
+ *   pnpm cards -- all --team --text mercury-2-5          # a much faster text model
+ *   --text-concurrency 12 (default): text-model requests in flight
  *
  * --team adds two teams: "jev+wissen" (the text model writes a guide once per
  * test, Jev reads it with every decision, stays fast) and "jev+vorschlag"
@@ -24,7 +27,7 @@ loadEnvFile();
 const env = (name: string): string | undefined => { const v = process.env[name]?.trim(); return v ? v : undefined; };
 const argv = process.argv.slice(2);
 const opt = (n: string) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? argv[i + 1] : undefined; };
-const tests = argv.filter((a, i) => !a.startsWith("--") && !(i > 0 && argv[i - 1]!.startsWith("--") && ["n", "seed", "text", "concurrency"].includes(argv[i - 1]!.slice(2))) && ["blackjack", "equity", "call", "all"].includes(a));
+const tests = argv.filter((a, i) => !a.startsWith("--") && !(i > 0 && argv[i - 1]!.startsWith("--") && ["n", "seed", "text", "concurrency", "text-concurrency", "reasoning"].includes(argv[i - 1]!.slice(2))) && ["blackjack", "equity", "call", "all"].includes(a));
 const selected = (tests.length === 0 || tests.includes("all") ? ["blackjack", "equity", "call"] : tests) as Item["kind"][];
 const n = Number(opt("n") ?? 100);
 const seed = Number(opt("seed") ?? 1);
@@ -40,7 +43,10 @@ if (!argv.includes("--no-jev")) {
 const veniceKey = env("VENICE_API_KEY");
 const t = opt("text");
 const textModel = t && !t.startsWith("--") && !["blackjack", "equity", "call", "all"].includes(t) ? t : env("CARDS_TEXT_MODEL") ?? "deepseek-v4-flash";
-const text = argv.includes("--text") || argv.includes("--team") ? (veniceKey ? textAsker({ apiKey: veniceKey, model: textModel }) : undefined) : undefined;
+// The text model is slow per answer (it thinks first); more requests in flight shorten the run, --reasoning none skips the thinking.
+const textConcurrency = Number(opt("text-concurrency") ?? 12);
+const reasoning = opt("reasoning");
+const text = argv.includes("--text") || argv.includes("--team") ? (veniceKey ? textAsker({ apiKey: veniceKey, model: textModel, reasoningEffort: reasoning }) : undefined) : undefined;
 if ((argv.includes("--text") || argv.includes("--team")) && !text) console.log("VENICE_API_KEY fehlt: kein Textmodell-Vergleich.");
 if (text) askers.push(text);
 const team = argv.includes("--team") && jevClient && text;
@@ -57,7 +63,7 @@ for (const test of selected) {
   for (const asker of askers) {
     let last = 0;
     const results = await run(items, asker, {
-      concurrency,
+      concurrency: asker === text ? textConcurrency : concurrency,
       onProgress: (d, t) => { if (d - last >= Math.max(5, Math.floor(t / 10)) || d === t) { last = d; process.stdout.write(`  ${asker.name}: ${d}/${t}\r`); } },
       stopOn: (e) => / 402|credits|Insufficient/i.test(e),
     });
