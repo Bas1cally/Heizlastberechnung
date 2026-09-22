@@ -38,6 +38,9 @@ if (!veniceKey) { console.error("VENICE_API_KEY is not set"); process.exit(1); }
 const dataDir = env("TFT_DATA") ?? "data/tft";
 mkdirSync(join(dataDir, "shots"), { recursive: true });
 const visionModel = env("TFT_VISION_MODEL") ?? "qwen-3-8-flash";
+// Used for a few cycles after a 429 from the main vision model.
+const visionFallback = env("TFT_VISION_FALLBACK") ?? "z-ai-glm-5-3-flash";
+let fallbackUntil = 0;
 const metaModel = env("TFT_META_MODEL") ?? "qwen-3-8-flash";
 const adviceModel = env("TFT_ADVICE_MODEL") ?? "qwen-3-8-flash";
 const intervalMs = Number(opt("interval") ?? env("TFT_INTERVAL_S") ?? 8) * 1000;
@@ -102,11 +105,19 @@ async function cycle(imagePath?: string): Promise<void> {
   const bytes = statSync(shot).size;
   log.info("captured", { shot, source: cap.source, kb: Math.round(bytes / 1024), ms: Math.round(performance.now() - tc) });
   const t0 = performance.now();
-  const r = await readBoard(shot, { apiKey: veniceKey!, model: visionModel }, meta ? `TFT ${meta.set} patch ${meta.patch}. Champion names in this set include: ${[...new Set(meta.comps.flatMap((c) => [...c.core_units, ...c.carries]))].join(", ")}.` : "");
+  const model = Date.now() < fallbackUntil ? visionFallback : visionModel;
+  let r;
+  try { r = await readBoard(shot, { apiKey: veniceKey!, model }, meta ? `TFT ${meta.set} patch ${meta.patch}. Champion names in this set include: ${[...new Set(meta.comps.flatMap((c) => [...c.core_units, ...c.carries]))].join(", ")}.` : ""); }
+  catch (err) {
+    if (err instanceof Error && / 429:/.test(err.message) && model === visionModel) { fallbackUntil = Date.now() + 120_000; log.warn("vision model overloaded; using the fallback for 2 min", { model: visionFallback }); r = await readBoard(shot, { apiKey: veniceKey!, model: visionFallback }, ""); }
+    else throw err;
+  }
   const fp = fingerprint(r.value);
   const reading = store.addReading(shot, r.value, fp, r.usage.model, Math.round(performance.now() - t0), r.usage);
   log.info("read", { id: reading.id, phase: r.value.phase, stage: r.value.stage, gold: r.value.gold, lvl: r.value.level, hp: r.value.hp, shop: r.value.shop, board: r.value.board.map((u) => `${u.name}${u.stars > 1 ? "*" + u.stars : ""}`), bench: r.value.bench.map((u) => u.name), ms: reading.latency_ms, conf: r.value.confidence });
-  if (!meta || r.value.phase === "not_tft" || r.value.phase === "loading" || r.value.phase === "combat" || (r.value.board.length === 0 && r.value.shop.every((s) => !s))) return;
+  if (!meta || r.value.phase === "not_tft" || r.value.phase === "loading" || r.value.phase === "unknown" || (r.value.board.length === 0 && r.value.shop.every((s) => !s))) return;
+  // Stage 1 is PvE with no gold to spend; advice starts at 2-1.
+  if (/^1-/.test(r.value.stage)) return;
   if (fp === lastFingerprint) return;
   lastFingerprint = fp;
   let result;

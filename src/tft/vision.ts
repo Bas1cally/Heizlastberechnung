@@ -24,7 +24,13 @@ export function imagePart(path: string): { type: "image_url"; image_url: { url: 
 
 export async function readBoard(imagePath: string, o: VisionOptions, hint = ""): Promise<ClaudeResult<BoardRead>> {
   const user: ChatContent = [{ type: "text", text: `Read this TFT screenshot.${hint ? ` Context: ${hint}` : ""}` }, imagePart(imagePath)];
-  return chatJson({ apiKey: o.apiKey, model: o.model, purpose: "tft_read", system: SYSTEM, user, schema: BoardReadSchema, maxTokens: 900, temperature: 0, reasoningEffort: o.reasoningEffort ?? "none", fetch: o.fetch, base: o.base, timeoutMs: 60_000 });
+  try {
+    return await chatJson({ apiKey: o.apiKey, model: o.model, purpose: "tft_read", system: SYSTEM, user, schema: BoardReadSchema, maxTokens: 1200, temperature: 0, reasoningEffort: o.reasoningEffort ?? "none", fetch: o.fetch, base: o.base, timeoutMs: 60_000 });
+  } catch (err) {
+    // An empty list is what the reader sends for loading screens and transitions: a reading with nothing in it, not a failure.
+    if (err instanceof Error && /Raw: \[\s*\]/.test(err.message)) return { value: BoardReadSchema.parse({ stage: "", phase: "unknown", confidence: 0 }), usage: { input_tokens: 0, output_tokens: 0, model: o.model }, request: null, response: [] };
+    throw err;
+  }
 }
 
 /** What changed between two readings, for deciding whether to ask the advisor again. */

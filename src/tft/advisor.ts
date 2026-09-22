@@ -61,15 +61,15 @@ export function createJevAsk(client: { systemOne(req: { state: unknown; question
   return async (state, questions) => { const r = await client.systemOne({ state, questions }); return { answers: r.answers as Answers, model: r.model, usage: r.usage }; };
 }
 
-const TextAdviceSchema = z.object({ comp_key: z.string(), action: z.enum(["ROLL", "LEVEL", "SAVE", "BUY"]), on_track: z.number().min(0).max(1), urgency: z.enum(["low", "medium", "high"]), reason: z.string() });
+const TextAdviceSchema = z.object({ comp_key: z.string(), action: z.enum(["ROLL", "LEVEL", "SAVE", "BUY"]), on_track: z.number().min(0).max(1), urgency: z.enum(["low", "medium", "high"]), reason: z.string().describe("at most 25 words") });
 export interface TextAdvisorOptions { readonly apiKey: string; readonly model: string; readonly fetch?: FetchLike | undefined; readonly base?: string | undefined }
 
 export async function adviseWithText(read: BoardRead, meta: Meta, o: TextAdvisorOptions, now: () => number = () => performance.now()): Promise<{ advice: Advice; usage: { input_tokens: number; output_tokens: number } }> {
   const t0 = now();
   const q = buildQuestions(meta);
   const r = await chatJson({
-    apiKey: o.apiKey, model: o.model, purpose: "tft_advice", system: "You coach one Teamfight Tactics turn. Answer only from the state given; comp_key must be one of the comp keys listed. Output only the JSON.",
-    user: JSON.stringify({ state: buildState(read, meta), questions: { comp: q.comp.instructions, action: q.action.instructions, on_track: q.on_track.instructions, urgency: q.urgency.instructions } }), schema: TextAdviceSchema, maxTokens: 400, temperature: 0.1, reasoningEffort: "low", fetch: o.fetch, base: o.base,
+    apiKey: o.apiKey, model: o.model, purpose: "tft_advice", system: "You coach one Teamfight Tactics turn. Answer only from the state given; comp_key must be one of the comp keys listed. Keep reason to one short sentence (at most 25 words). Output only the JSON.",
+    user: JSON.stringify({ state: buildState(read, meta), questions: { comp: q.comp.instructions, action: q.action.instructions, on_track: q.on_track.instructions, urgency: q.urgency.instructions } }), schema: TextAdviceSchema, maxTokens: 1500, temperature: 0.1, reasoningEffort: "low", fetch: o.fetch, base: o.base, timeoutMs: 60_000,
   });
   const comp = meta.comps.find((c) => compKey(c.name) === r.value.comp_key);
   const advice: Advice = { comp: comp?.name ?? r.value.comp_key, compKey: r.value.comp_key, action: r.value.action, buy: unitsToBuy(read, comp), urgency: r.value.urgency, onTrack: r.value.on_track, confidence: 0.5, reasons: [r.value.reason], source: "text", model: r.usage.model, latencyMs: Math.round(now() - t0) };
