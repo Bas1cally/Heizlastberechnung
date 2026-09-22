@@ -35,6 +35,13 @@ describe("card benchmark", () => {
     const exact: Asker = { name: "x", ask: async (i) => ({ value: i.kind === "equity" ? i.truth : 0, ms: 1, tokens: 0 }) };
     const s = scoreEquity(await run(eq, exact));
     expect(s.mae).toBe(0); expect(s.bias).toBe(0); expect(s.within5).toBe(1);
+    // a consistently pessimistic estimator is fixed by the cross-validated recalibration
+    const eq2 = equityItems(40, rng(13), 1000);
+    const pess: Asker = { name: "p", ask: async (i) => ({ value: i.kind === "equity" ? 0.8 * i.truth : 0, ms: 1, tokens: 0 }) };
+    const p2 = scoreEquity(await run(eq2, pess));
+    expect(p2.bias).toBeLessThan(-0.05);
+    expect(p2.calibratedMae).toBeLessThan(0.01);
+    expect(p2.calibration.b).toBeCloseTo(1.25, 1);
     const cs = callItems(20, rng(6), 2000);
     const right: Asker = { name: "y", ask: async (i) => ({ value: i.kind === "call" ? i.truth : "", ms: 1, tokens: 0 }) };
     const c = scoreCall(await run(cs, right));

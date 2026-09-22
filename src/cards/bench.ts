@@ -106,7 +106,7 @@ export function textAsker(o: { apiKey: string; model: string; fetch?: FetchLike 
       const t0 = now();
       const q = QUESTIONS[item.kind];
       const question = "action" in q ? `${q.action.instructions} Options: ${JSON.stringify(q.action.criteria)}` : q.win.instructions;
-      const r = await chatJson({ apiKey: o.apiKey, model: o.model, purpose: `cards_${item.kind}`, system: "You answer one card-game question from the state given. Output only the JSON.", user: JSON.stringify({ state: item.state, question }), schema: TEXT[item.kind] as z.ZodType<Record<string, unknown>>, maxTokens: 3000, temperature: 0, reasoningEffort: o.reasoningEffort ?? "low", fetch: o.fetch, timeoutMs: 90_000 });
+      const r = await chatJson({ apiKey: o.apiKey, model: o.model, purpose: `cards_${item.kind}`, system: "You answer one card-game question from the state given. Output only the JSON.", user: JSON.stringify({ state: item.state, question }), schema: TEXT[item.kind] as z.ZodType<Record<string, unknown>>, maxTokens: 3000, temperature: 0, reasoningEffort: o.reasoningEffort ?? "low", fetch: o.fetch, timeoutMs: 240_000 });
       const v = r.value as { action?: string; win_probability?: number };
       return { value: item.kind === "equity" ? v.win_probability! : v.action!, ms: Math.round(now() - t0), tokens: r.usage.input_tokens + r.usage.output_tokens };
     },
@@ -152,7 +152,13 @@ export function scoreEquity(results: readonly Result[]) {
   const byStreet: Record<string, { n: number; mae: number }> = {};
   for (const r of ok) { const k = String(r.item.state["street"]); byStreet[k] ??= { n: 0, mae: 0 }; byStreet[k].n++; byStreet[k].mae += Math.abs(Number(r.answer.value) - r.item.truth); }
   for (const v of Object.values(byStreet)) v.mae /= v.n;
-  return { n: ok.length, errors: results.length - ok.length, mae: d.length ? d.reduce((s, x) => s + Math.abs(x), 0) / d.length : 0, bias: d.length ? d.reduce((s, x) => s + x, 0) / d.length : 0, within5: d.length ? d.filter((x) => Math.abs(x) <= 0.05).length / d.length : 0, correlation: vx && vy ? cov / Math.sqrt(vx * vy) : 0, buckets, byStreet, msMedian: median(ok.map((r) => r.answer.ms)) };
+  // Two-fold cross-validated linear recalibration: learn truth = a + b * said on one half, measure on the other.
+  const fit = (xs: typeof ok) => { const n = xs.length; if (n < 3) return { a: 0, b: 1 }; const mx2 = xs.reduce((s, r) => s + Number(r.answer.value), 0) / n, my2 = xs.reduce((s, r) => s + r.item.truth, 0) / n; const sxy = xs.reduce((s, r) => s + (Number(r.answer.value) - mx2) * (r.item.truth - my2), 0), sxx = xs.reduce((s, r) => s + (Number(r.answer.value) - mx2) ** 2, 0); const b = sxx ? sxy / sxx : 1; return { a: my2 - b * mx2, b }; };
+  const halves = [ok.filter((_, i) => i % 2 === 0), ok.filter((_, i) => i % 2 === 1)];
+  let calErr = 0;
+  for (const [train, test] of [[halves[0]!, halves[1]!], [halves[1]!, halves[0]!]]) { const f = fit(train); for (const r of test) calErr += Math.abs(Math.min(1, Math.max(0, f.a + f.b * Number(r.answer.value))) - r.item.truth); }
+  const full = fit(ok);
+  return { calibratedMae: ok.length ? calErr / ok.length : 0, calibration: full, n: ok.length, errors: results.length - ok.length, mae: d.length ? d.reduce((s, x) => s + Math.abs(x), 0) / d.length : 0, bias: d.length ? d.reduce((s, x) => s + x, 0) / d.length : 0, within5: d.length ? d.filter((x) => Math.abs(x) <= 0.05).length / d.length : 0, correlation: vx && vy ? cov / Math.sqrt(vx * vy) : 0, buckets, byStreet, msMedian: median(ok.map((r) => r.answer.ms)) };
 }
 
 export function scoreCall(results: readonly Result[]) {
@@ -174,6 +180,7 @@ export function render(test: Item["kind"], asker: string, results: readonly Resu
   } else if (test === "equity") {
     const s = scoreEquity(results);
     L.push(`Mittlerer Fehler: ${(100 * s.mae).toFixed(1)} Prozentpunkte · Verzerrung ${s.bias >= 0 ? "+" : ""}${(100 * s.bias).toFixed(1)} · innerhalb 5 Punkte: ${pct(s.within5)} · Korrelation ${s.correlation.toFixed(2)} · ${s.n} Hände (Median ${s.msMedian} ms)`);
+    L.push(`  nach Umrechnung (an der anderen Hälfte gelernt): mittlerer Fehler ${(100 * s.calibratedMae).toFixed(1)} Prozentpunkte · wahr ≈ ${(100 * s.calibration.a).toFixed(0)} + ${s.calibration.b.toFixed(2)} × gesagt`);
     L.push(`  nach Straße: ${Object.entries(s.byStreet).map(([k, v]) => `${k} ${(100 * v.mae).toFixed(1)} (${v.n})`).join(" · ")}`);
     for (const b of s.buckets.filter((b) => b.n)) L.push(`  gesagt ${b.range}: Ø gesagt ${pct(b.said)}, Ø wahr ${pct(b.truth)} (${b.n})`);
   } else {
