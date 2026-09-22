@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { codeChecks, type CodeCheck } from "./code-checks.js";
-import { ClaudeCalls, usdFor, type ClaudeResult } from "./claude.js";
+import { usdFor, type ClaudeResult, type TextCalls } from "./claude.js";
 import type { EngineRegistry } from "./engines.js";
 import { buildGateState, evaluateGate, GATE_QUESTIONS, type GateCall, type GateEvaluation } from "./jev-gate.js";
 import { buildPrompt, type BuildResult, type VeniceVideoRequest } from "./prompt-builder.js";
@@ -13,7 +13,7 @@ import type { Vocabulary } from "./vocabulary.js";
 
 /**
  * The operations behind the UI's buttons, in the order of the card's
- * status: draft -> claude (Claude filled the fields) -> gated (Jev + code
+ * status: draft -> claude (the text model filled the fields) -> gated (Jev + code
  * checks, verdict stored) -> approved (user clicked, quote known) ->
  * queued -> done -> review -> back to draft on fail. Nothing here sends a
  * job without `approved_at`; nothing here retries a failed Venice job.
@@ -22,8 +22,9 @@ export interface ServiceDeps {
   readonly repo: DirectorRepo;
   readonly engines: EngineRegistry;
   readonly vocabulary: Vocabulary;
-  readonly claude?: ClaudeCalls | undefined;
-  readonly claudePrice: { inPerM: number; outPerM: number };
+  /** Draft / review_fix / translate: Anthropic directly or a text model on Venice. */
+  readonly text?: TextCalls | undefined;
+  readonly textPrice: { inPerM: number; outPerM: number };
   readonly gate?: GateCall | undefined;
   readonly venice?: VeniceClient | undefined;
   readonly dataDir: string;
@@ -45,20 +46,21 @@ export class DirectorService {
     return { shot, project, characters, references, previous, rules };
   }
 
-  private logClaude<T>(shotId: number | null, purpose: string, r: ClaudeResult<T>): void {
+  /** Every text-model call lands in claude_call (request, answer, tokens); the cost goes to the account that pays: Venice or Anthropic. */
+  private logText<T>(shotId: number | null, purpose: string, r: ClaudeResult<T>): void {
     this.d.repo.saveClaudeCall({ shot_id: shotId, purpose, input_tokens: r.usage.input_tokens, output_tokens: r.usage.output_tokens, model: r.usage.model, request_json: JSON.stringify(r.request), response_json: JSON.stringify(r.response) });
-    this.d.repo.addCost("claude", `${purpose}:${shotId ?? "-"}`, usdFor(r.usage, this.d.claudePrice), r.usage.input_tokens + r.usage.output_tokens);
+    this.d.repo.addCost(this.d.text?.provider === "venice" ? "venice" : "claude", `${purpose}:${shotId ?? "-"}`, usdFor(r.usage, this.d.textPrice), r.usage.input_tokens + r.usage.output_tokens);
   }
+  private text(): TextCalls { if (!this.d.text) throw new Error("no text model configured (VENICE_API_KEY or ANTHROPIC_API_KEY)"); return this.d.text; }
 
-  /** DE -> EN through Claude, cached by the source's sha256 (spec §6 translate). */
+  /** DE -> EN through the text model, cached by the source's sha256 (spec §6 translate). */
   async translate(textDe: string, shotId: number | null = null): Promise<string> {
     const t = textDe.trim();
     if (!t) return "";
     const cached = this.d.repo.cachedTranslation(t);
     if (cached) return cached;
-    if (!this.d.claude) throw new Error("ANTHROPIC_API_KEY is not set: cannot translate");
-    const r = await this.d.claude.translate(t);
-    this.logClaude(shotId, "translate", r);
+    const r = await this.text().translate(t);
+    this.logText(shotId, "translate", r);
     this.d.repo.cacheTranslation(t, r.value);
     return r.value;
   }
@@ -71,17 +73,16 @@ export class DirectorService {
     for (const r of this.d.repo.rules(p.id, false)) if (r.text_de && !r.text_en) this.d.repo.db.run(`UPDATE rule SET text_en = ? WHERE id = ?`, [await this.translate(r.text_de), r.id]);
   }
 
-  /** Claude fills the creative fields from the beat (spec §6 draft). Status -> claude. */
+  /** The text model fills the creative fields from the beat (spec §6 draft). Status -> claude. */
   async draft(shotId: number): Promise<Shot> {
-    if (!this.d.claude) throw new Error("ANTHROPIC_API_KEY is not set: cannot draft");
     const { shot, project, characters, previous } = this.ctx(shotId);
     await this.ensureEnglish(project.id);
-    const r = await this.d.claude.draft({
+    const r = await this.text().draft({
       styleGuideEn: this.d.repo.project(project.id)!.style_guide_en, characters: this.d.repo.characters(project.id).map((c) => ({ name: c.name, fixed_attributes_en: c.fixed_attributes_en, variable_attributes: c.variable_attributes })),
       previous: previous ? { seq: previous.seq, shot_size: previous.shot_size, camera_move: previous.camera_move, lighting: previous.lighting, action_physical_en: previous.action_physical_en, transition_in: previous.transition_in } : undefined,
       beatDe: shot.beat_de, engine: shot.engine, workflow: shot.workflow, vocabulary: this.d.vocabulary,
     });
-    this.logClaude(shot.id, "draft", r);
+    this.logText(shot.id, "draft", r);
     const v = r.value;
     this.d.repo.updateShot(shot.id, { shot_size: v.shot_size, camera_move: v.camera_move, lens_note: v.lens_note, lighting: v.lighting, composition: v.composition, action_physical_en: v.action_physical_en, action_physical_de: v.action_physical_de, status: "claude" });
     void characters;
@@ -120,9 +121,8 @@ export class DirectorService {
     return { evaluation, model: res.model, latencyMs: res.latencyMs, state };
   }
 
-  /** Yellow: Claude corrects only the affected fields, then the gate runs again (spec §5). */
+  /** Yellow: the text model corrects only the affected fields, then the gate runs again (spec §5). */
   async reviewFix(shotId: number): Promise<Shot> {
-    if (!this.d.claude) throw new Error("ANTHROPIC_API_KEY is not set: cannot review_fix");
     const { shot, project, previous } = this.ctx(shotId);
     const last = this.d.repo.latestGate(shot.id);
     const findings: string[] = [];
@@ -131,14 +131,14 @@ export class DirectorService {
       for (const [k, a] of Object.entries(answers)) findings.push(`${k}: ${a.type === "noul" ? `p(yes)=${a.noul?.toFixed(2)}` : a.type === "score" ? `score=${a.score?.toFixed(2)}` : `choice=${a.choice}`}`);
       for (const c of JSON.parse(last.code_checks_json) as CodeCheck[]) if (!c.ok) findings.push(`code ${c.rule}: ${c.detail}`);
     }
-    const r = await this.d.claude.reviewFix({
+    const r = await this.text().reviewFix({
       styleGuideEn: project.style_guide_en, characters: this.d.repo.characters(project.id).map((c) => ({ name: c.name, fixed_attributes_en: c.fixed_attributes_en, variable_attributes: c.variable_attributes })),
       previous: previous ? { seq: previous.seq, shot_size: previous.shot_size, camera_move: previous.camera_move, lighting: previous.lighting, action_physical_en: previous.action_physical_en, transition_in: previous.transition_in } : undefined,
       beatDe: shot.beat_de, engine: shot.engine, workflow: shot.workflow, vocabulary: this.d.vocabulary,
       current: { shot_size: shot.shot_size, camera_move: shot.camera_move, lens_note: shot.lens_note, lighting: shot.lighting, composition: shot.composition, action_physical_en: shot.action_physical_en, action_physical_de: shot.action_physical_de },
       gateFindings: findings,
     });
-    this.logClaude(shot.id, "review_fix", r);
+    this.logText(shot.id, "review_fix", r);
     const patch: Partial<Shot> = {};
     for (const [k, v] of Object.entries(r.value)) if (typeof v === "string" && v.trim()) (patch as Record<string, unknown>)[k] = v;
     this.d.repo.updateShot(shot.id, { ...patch, status: "claude" });

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { createApi, HttpError } from "../../../src/director/server.js";
 import { DirectorService } from "../../../src/director/service.js";
 import { VeniceClient, type FetchLike } from "../../../src/director/venice.js";
-import type { ClaudeCalls } from "../../../src/director/claude.js";
+import type { TextCalls } from "../../../src/director/claude.js";
 import { engines, greenAnswers, memRepo, pngFile, scriptedGate, tmpDir, vocabulary } from "./helpers.js";
 
 /** Venice as a script: quote 0.37 USD, queue q-1, processing twice, then done with a download. */
@@ -24,11 +24,12 @@ function veniceScript(opts: { consentOnFirstQuote?: boolean } = {}) {
   };
   return { fetch, calls };
 }
-const fakeClaude = (): ClaudeCalls => ({
+const fakeText = (): TextCalls => ({
+  provider: "anthropic", model: "claude-test",
   draft: async () => ({ value: { shot_size: "medium close-up", camera_move: "slow push-in", lens_note: "", lighting: "soft window light", composition: "centered", action_physical_en: "Mara lifts the cup with her right hand and drinks.", action_physical_de: "Mara hebt die Tasse und trinkt.", engine_recommendation: "seedance-2-0-reference-to-video", duration_s_recommendation: 5, references_needed: [] }, usage: { input_tokens: 900, output_tokens: 120, model: "claude-test" }, request: {}, response: {} }),
   reviewFix: async () => ({ value: { camera_move: "dolly in" }, usage: { input_tokens: 700, output_tokens: 20, model: "claude-test" }, request: {}, response: {} }),
   translate: async (t: string) => ({ value: ({ "Gedeckte Farben.": "Muted colours.", "rote Haare": "red hair" } as Record<string, string>)[t] ?? `translated ${t.length}`, usage: { input_tokens: 50, output_tokens: 10, model: "claude-test" }, request: {}, response: {} }),
-}) as unknown as ClaudeCalls;
+});
 
 function setup(opts: { gateAnswers?: ReturnType<typeof greenAnswers>; consent?: boolean; download?: (url: string) => Buffer } = {}) {
   const repo = memRepo(); const dataDir = tmpDir();
@@ -38,8 +39,8 @@ function setup(opts: { gateAnswers?: ReturnType<typeof greenAnswers>; consent?: 
   // download is HTTP in production; here the "CDN" is a buffer.
   client.download = async (_url: string, outDir: string, name: string) => { const { mkdirSync, writeFileSync } = await import("node:fs"); mkdirSync(outDir, { recursive: true }); const p = join(outDir, name); writeFileSync(p, (opts.download ?? (() => Buffer.from("mp4")))(_url)); return p; };
   const logs: string[] = [];
-  const service = new DirectorService({ repo, engines, vocabulary, claude: fakeClaude(), claudePrice: { inPerM: 15, outPerM: 75 }, gate: gate.call, venice: client, dataDir, tools: { ffmpeg: "/nonexistent/ffmpeg", ffprobe: "/nonexistent/ffprobe" }, log: (m) => logs.push(m) });
-  const api = createApi({ repo, service, engines, vocabulary, dataDir, capabilities: { claude: true, gate: true, venice: true, ffmpeg: false }, log: (m) => logs.push(m) });
+  const service = new DirectorService({ repo, engines, vocabulary, text: fakeText(), textPrice: { inPerM: 15, outPerM: 75 }, gate: gate.call, venice: client, dataDir, tools: { ffmpeg: "/nonexistent/ffmpeg", ffprobe: "/nonexistent/ffprobe" }, log: (m) => logs.push(m) });
+  const api = createApi({ repo, service, engines, vocabulary, dataDir, capabilities: { text: true, textModel: "claude-test", textProvider: "anthropic", gate: true, venice: true, ffmpeg: false }, log: (m) => logs.push(m) });
   return { repo, service, api, venice, gate, dataDir, logs };
 }
 

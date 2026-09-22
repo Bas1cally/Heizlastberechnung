@@ -21,7 +21,7 @@ export interface ServerDeps {
   readonly engines: EngineRegistry;
   readonly vocabulary: Vocabulary;
   readonly dataDir: string;
-  readonly capabilities: { claude: boolean; gate: boolean; venice: boolean; ffmpeg: boolean };
+  readonly capabilities: { text: boolean; textModel: string; textProvider: string; gate: boolean; venice: boolean; ffmpeg: boolean };
   readonly log: (msg: string, fields?: Record<string, unknown>) => void;
 }
 

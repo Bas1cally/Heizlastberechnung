@@ -23,6 +23,7 @@ export const ENDPOINTS = {
   queue: "/video/queue",
   retrieve: "/video/retrieve",
   delete: "/video/delete",
+  chat: "/chat/completions",
 } as const;
 
 export type FetchLike = (url: string, init?: { method?: string; headers?: Record<string, string>; body?: string }) => Promise<{ status: number; ok: boolean; json(): Promise<unknown>; text(): Promise<string>; body?: unknown; headers: { get(name: string): string | null } }>;
@@ -55,7 +56,7 @@ export class VeniceClient {
 
   /** GET /models, normalised into engine specs; the documented Seedance ids are always present. */
   async listEngines(): Promise<{ engines: EngineSpec[]; raw: unknown }> {
-    const r = await this.fetchImpl(`${this.base}${ENDPOINTS.models}`, { headers: this.headers() });
+    const r = await this.fetchImpl(`${this.base}${ENDPOINTS.models}?type=video`, { headers: this.headers() });
     const raw = await r.json();
     const items = Array.isArray(raw) ? raw : Array.isArray((raw as { data?: unknown })?.data) ? (raw as { data: unknown[] }).data : Array.isArray((raw as { models?: unknown })?.models) ? (raw as { models: unknown[] }).models : [];
     const engines = new Map<string, EngineSpec>(DOCUMENTED_ENGINES.map((e) => [e.id, e]));
@@ -95,7 +96,9 @@ export class VeniceClient {
     const c = this.consentOf(status, json); if (c) return c;
     if (status < 200 || status >= 300) return { ok: false, error: json, status };
     const j = json as Record<string, unknown>;
-    const usd = Number(j["quote_usd"] ?? j["price_usd"] ?? j["usd"] ?? j["cost"] ?? (j["quote"] as Record<string, unknown> | undefined)?.["usd"] ?? Number.NaN);
+    // Observed 2026-09-22: `{"quote": 0.44}`. The other names stay as fallbacks.
+    const q = j["quote"];
+    const usd = Number(typeof q === "number" || typeof q === "string" ? q : j["quote_usd"] ?? j["price_usd"] ?? j["usd"] ?? j["cost"] ?? (q as Record<string, unknown> | undefined)?.["usd"] ?? Number.NaN);
     if (!Number.isFinite(usd)) return { ok: false, error: { message: "quote without a recognisable USD field", body: json }, status };
     return { ok: true, quoteUsd: usd, raw: json };
   }

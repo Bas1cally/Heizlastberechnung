@@ -75,3 +75,13 @@ describe("venice client", () => {
     expect(outputFileName(12, "../x")).not.toContain("..");
   });
 });
+
+describe("venice quote as observed live", () => {
+  it('parses {"quote": 0.44} and asks /models for video models', async () => {
+    const { fetch, calls } = fakeFetch((c) => (c.url.includes("/models") ? { status: 200, body: { data: [] } } : { status: 200, body: { quote: 0.44 } }));
+    const client = new VeniceClient({ apiKey: "k", fetch });
+    expect(await client.quote(req)).toMatchObject({ ok: true, quoteUsd: 0.44 });
+    await client.listEngines();
+    expect(calls[1]?.url).toContain("/models?type=video");
+  });
+});

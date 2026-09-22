@@ -24,7 +24,7 @@ export const ReviewFixSchema = z.object({
 });
 export type ReviewFix = z.infer<typeof ReviewFixSchema>;
 
-const TranslationSchema = z.object({ text_en: z.string() });
+export const TranslationSchema = z.object({ text_en: z.string() });
 
 export interface ClaudeUsage { input_tokens: number; output_tokens: number; model: string }
 export interface ClaudeResult<T> { value: T; usage: ClaudeUsage; request: unknown; response: unknown }
@@ -44,11 +44,25 @@ export interface ReviewFixInput extends DraftInput {
   readonly gateFindings: readonly string[];
 }
 
-const DRAFT_SYSTEM = "You fill in the fields of one shot card for an AI video production. Output only the requested JSON fields. Use the film vocabulary given, never synonyms. The action must be physical, happen completely within the frame, and show its cause before its effect. Do not comment on the card's correctness or on rules; do not include prose.";
+export const DRAFT_SYSTEM = "You fill in the fields of one shot card for an AI video production. Output only the requested JSON fields. Use the film vocabulary given, never synonyms. The action must be physical, happen completely within the frame, and show its cause before its effect. Do not comment on the card's correctness or on rules; do not include prose.";
 
-export class ClaudeCalls {
+export const TRANSLATE_SYSTEM = "Translate the German text to precise, literal English for a film production database. Keep names, numbers and technical terms. Output only the translation.";
+
+/** The three text-model calls of spec §6, whoever serves them (Anthropic directly, or a text model on Venice). */
+export interface TextCalls {
+  readonly provider: "anthropic" | "venice";
+  readonly model: string;
+  draft(i: DraftInput): Promise<ClaudeResult<Draft>>;
+  reviewFix(i: ReviewFixInput): Promise<ClaudeResult<ReviewFix>>;
+  translate(textDe: string): Promise<ClaudeResult<string>>;
+}
+
+export class ClaudeCalls implements TextCalls {
+  readonly provider = "anthropic" as const;
+  readonly model: string;
   private readonly client: Anthropic;
   constructor(private readonly opts: { apiKey?: string | undefined; model: string; client?: Anthropic }) {
+    this.model = opts.model;
     this.client = opts.client ?? new Anthropic(opts.apiKey ? { apiKey: opts.apiKey } : {});
   }
 
@@ -76,7 +90,7 @@ export class ClaudeCalls {
 
   async translate(textDe: string): Promise<ClaudeResult<string>> {
     const request = {
-      model: this.opts.model, max_tokens: 1200, temperature: 0, system: "Translate the German text to precise, literal English for a film production database. Keep names, numbers and technical terms. Output only the translation.",
+      model: this.opts.model, max_tokens: 1200, temperature: 0, system: TRANSLATE_SYSTEM,
       messages: [{ role: "user" as const, content: textDe }],
       output_config: { format: zodOutputFormat(TranslationSchema) },
     };

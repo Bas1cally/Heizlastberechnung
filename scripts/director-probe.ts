@@ -28,7 +28,8 @@ const raw = async (path: string, init?: { method?: string; body?: string }) => {
   return { status: r.status, headers: Object.fromEntries([...r.headers.entries()].filter(([k]) => !/auth|cookie|key/i.test(k))), body: json };
 };
 
-out["models"] = await raw(ENDPOINTS.models);
+out["models_video"] = await raw(`${ENDPOINTS.models}?type=video`);
+out["models_text_ids"] = (((await raw(`${ENDPOINTS.models}?type=text`)).body as { data?: { id: string }[] })?.data ?? []).map((m) => m.id);
 const client = new VeniceClient({ apiKey: key });
 const t2v = { model: "seedance-2-0-text-to-video", prompt: "Wide shot. Slow dolly in. A paper boat drifts across a puddle and bumps the kerb. Soft overcast light.", duration: "5s", aspect_ratio: "16:9", resolution: "480p" };
 out["quote_t2v_body"] = client.wireBody(t2v);
@@ -41,4 +42,4 @@ if (image) {
 }
 mkdirSync("reports", { recursive: true });
 writeFileSync("reports/venice-probe.json", JSON.stringify(out, null, 2));
-console.log(JSON.stringify({ models: (out["models"] as { status: number }).status, quote_t2v: (out["quote_t2v"] as { status: number }).status, quote_r2v: image ? (out["quote_r2v"] as { status: number }).status : "skipped", file: "reports/venice-probe.json" }));
+console.log(JSON.stringify({ models_video: (out["models_video"] as { status: number }).status, quote_t2v: (out["quote_t2v"] as { status: number }).status, quote_r2v: image ? (out["quote_r2v"] as { status: number }).status : "skipped", file: "reports/venice-probe.json" }));

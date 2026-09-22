@@ -5,9 +5,10 @@
  *   pnpm director                  # http://127.0.0.1:8787
  *   pnpm director -- --port 9000
  *
- * Env: VENICE_API_KEY (quote/queue), ANTHROPIC_API_KEY + CLAUDE_MODEL
- * (draft / review_fix / translate), TYPESAFE_API_KEY (Jev gate),
- * DIRECTOR_PORT, DIRECTOR_DATA (default data/director), FFMPEG / FFPROBE.
+ * Env: VENICE_API_KEY (quote/queue and, by default, the text model for
+ * draft / review_fix / translate: VENICE_TEXT_MODEL, default kimi-k2-6),
+ * TEXT_PROVIDER=anthropic with ANTHROPIC_API_KEY + CLAUDE_MODEL instead,
+ * TYPESAFE_API_KEY (Jev gate), DIRECTOR_PORT, DIRECTOR_DATA, FFMPEG / FFPROBE.
  * Missing keys disable the matching buttons; nothing else breaks.
  */
 import { execFile } from "node:child_process";
@@ -20,7 +21,8 @@ import { openDirectorDb } from "../src/director/schema.js";
 import { DirectorRepo } from "../src/director/repo.js";
 import { EngineRegistry } from "../src/director/engines.js";
 import { loadVocabulary } from "../src/director/vocabulary.js";
-import { ClaudeCalls } from "../src/director/claude.js";
+import { ClaudeCalls, type TextCalls } from "../src/director/claude.js";
+import { VeniceTextCalls, veniceTextPricing } from "../src/director/text-venice.js";
 import { createGateCall } from "../src/director/jev-gate.js";
 import { VeniceClient } from "../src/director/venice.js";
 import { DirectorService } from "../src/director/service.js";
@@ -41,10 +43,23 @@ const vocabulary = loadVocabulary("director/vocabulary.json");
 
 const veniceKey = process.env["VENICE_API_KEY"];
 const venice = veniceKey ? new VeniceClient({ apiKey: veniceKey }) : undefined;
-const model = process.env["CLAUDE_MODEL"] ?? "claude-opus-5";
-const claude = process.env["ANTHROPIC_API_KEY"] ? new ClaudeCalls({ apiKey: process.env["ANTHROPIC_API_KEY"], model }) : undefined;
-// USD per million tokens for the cost ledger; override for another model.
-const claudePrice = { inPerM: Number(process.env["CLAUDE_USD_PER_MTOKEN_IN"] ?? 15), outPerM: Number(process.env["CLAUDE_USD_PER_MTOKEN_OUT"] ?? 75) };
+// The text model behind draft / review_fix / translate. Default: a text model on the Venice
+// account (TEXT_PROVIDER=venice, VENICE_TEXT_MODEL, default kimi-k2-6); TEXT_PROVIDER=anthropic
+// uses ANTHROPIC_API_KEY + CLAUDE_MODEL instead.
+const provider = process.env["TEXT_PROVIDER"] ?? (veniceKey ? "venice" : process.env["ANTHROPIC_API_KEY"] ? "anthropic" : "none");
+let text: TextCalls | undefined;
+let textPrice = { inPerM: Number(process.env["TEXT_USD_PER_MTOKEN_IN"] ?? 0), outPerM: Number(process.env["TEXT_USD_PER_MTOKEN_OUT"] ?? 0) };
+if (provider === "venice" && veniceKey) {
+  const model = process.env["VENICE_TEXT_MODEL"] ?? "kimi-k2-6";
+  text = new VeniceTextCalls({ apiKey: veniceKey, model, reasoningEffort: process.env["VENICE_TEXT_REASONING"] ?? "low" });
+  if (!textPrice.inPerM && !textPrice.outPerM) {
+    const p = await veniceTextPricing(veniceKey, model).catch(() => undefined);
+    if (p) textPrice = p; else log.warn("text model price unknown; cost counter stays at 0 for text calls", { model });
+  }
+} else if (provider === "anthropic" && process.env["ANTHROPIC_API_KEY"]) {
+  text = new ClaudeCalls({ apiKey: process.env["ANTHROPIC_API_KEY"], model: process.env["CLAUDE_MODEL"] ?? "claude-opus-5" });
+  if (!textPrice.inPerM && !textPrice.outPerM) textPrice = { inPerM: 15, outPerM: 75 };
+}
 const typesafeKey = process.env["TYPESAFE_API_KEY"];
 const gate = typesafeKey ? createGateCall(new TypeSafeClient({ apiKey: typesafeKey, timeout: 20_000, retry: { maxRetries: 0 }, logLevel: "off" })) : undefined;
 const tools = { ffmpeg: process.env["FFMPEG"] ?? "ffmpeg", ffprobe: process.env["FFPROBE"] ?? "ffprobe" };
@@ -62,8 +77,8 @@ if (venice) {
   }
 }
 
-const service = new DirectorService({ repo, engines, vocabulary, claude, claudePrice, gate, venice, dataDir, tools, log: (m, f) => log.info(m, f) });
-const capabilities = { claude: Boolean(claude), gate: Boolean(gate), venice: Boolean(venice), ffmpeg };
-log.info("capabilities", { ...capabilities, model, dataDir });
+const service = new DirectorService({ repo, engines, vocabulary, text, textPrice, gate, venice, dataDir, tools, log: (m, f) => log.info(m, f) });
+const capabilities = { text: Boolean(text), textModel: text?.model ?? "", textProvider: text?.provider ?? "none", gate: Boolean(gate), venice: Boolean(venice), ffmpeg };
+log.info("capabilities", { ...capabilities, textPrice, dataDir });
 if (!capabilities.gate) log.warn("TYPESAFE_API_KEY missing: the Jev gate button is off");
 startDirectorServer({ repo, service, engines, vocabulary, dataDir, capabilities, log: (m, f) => log.info(m, f) }, port);
