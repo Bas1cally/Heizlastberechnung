@@ -34,8 +34,10 @@ import { createUpdateCheck, EXIT_UPDATE } from "../src/app/self-update.js";
 import { buildHoldRateTable, type HoldRateTable } from "../src/analytics/hold-rate.js";
 import { LiveEngine, type LiveClientLike } from "../src/execution/live-engine.js";
 import type { MarketIdentity } from "../src/market/market-state.js";
+import { haltIfStopped } from "../src/app/stop.js";
 
 loadEnvFile();
+await haltIfStopped();
 const cfg = loadConfig();
 const log = createLogger({ level: (process.env["LOG_LEVEL"] as never) ?? "info", write: teeSink("logs/live.log") });
 

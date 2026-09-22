@@ -22,8 +22,10 @@ import { loadEnvFile } from "../src/app/env.js";
 import { loadConfig } from "../src/app/config.js";
 import { exportCompact } from "../src/persistence/export.js";
 import { fileSink } from "../src/observability/file-sink.js";
+import { haltIfStopped } from "../src/app/stop.js";
 
 loadEnvFile();
+await haltIfStopped();
 const cfg = loadConfig();
 const argv = process.argv.slice(2);
 const everyIdx = argv.indexOf("--every");

@@ -244,6 +244,31 @@ Morning of 22 Sep, after 92 markets overnight (Jev -848 USD, copy -101 and
   to the observer (three runners had twelve subscriptions; one runner's
   streams went silent for whole markets while the others were fine).
 
+## Operation ended (2026-09-22, 08:45Z)
+
+The operator ended the experiment. Final state of every question the
+brief asked:
+
+- Jev as a directional decision-maker against the 5-minute market: no
+  edge. 302 fills, the bought side won 21.5%, the market's price said
+  28.8%, the table said 45.8%.
+- The reference trader's sequence: volume farming at zero net (1.2 M USD
+  turnover, -63 USD, +424 rebates over eight days), no edge to copy; the
+  copy on a home connection hedged 9 of 22 markets against his 15,
+  4,500-5,900 shares queued ahead at the 0.99 level by decision time.
+- Jev at the two judgment moments of that sequence (policy-animal-jev):
+  4 markets before the API died; unmeasurable, and the sequence itself
+  has no edge for a judgment to improve.
+- A delta-neutral volume loop with 14 USD: fees on prints are 0 bps, but
+  a complete set costs 1.011 at the touch (0 of 2,879 decisions at or
+  under 1.00 in the first four minutes), one percent of volume per cycle.
+- The consistency scan: 20,000 markets, 6,000 candidate pairs, 0 judged;
+  TypeSafe credits were exhausted at 06:58Z (402) after ~20,000 calls a
+  day from the two Jev runners. "Jev costs nothing" was a credit balance.
+
+A STOP file at the repository root idles every bot script; the runners
+pick it up with their next update. Delete it to run anything again.
+
 ## Consistency scan: Jev over the long tail (2026-09-22, 07:30Z)
 
 The one use of Jev that plays to what it is (cheap, fast, typed judgments

@@ -37,8 +37,10 @@ import { PaperLiveEngine } from "../src/execution/paper-live-engine.js";
 import { DEFAULT_FILL_PARAMS } from "../src/replay/paper-fill-model.js";
 import { animalPolicyCall } from "../src/jev/policy-animal.js";
 import { animalJevPolicyCall } from "../src/jev/policy-animal-jev.js";
+import { haltIfStopped } from "../src/app/stop.js";
 
 loadEnvFile();
+await haltIfStopped();
 const cfg = loadConfig();
 // --policy animal | animal-plus | animal-jev: the benchmark policies (src/jev/policy-animal*.ts)
 // in place of Jev, on the same pipeline, in its own database (pnpm auto -- animal).

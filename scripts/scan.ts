@@ -16,8 +16,10 @@ import { loadConfig } from "../src/app/config.js";
 import { createFocusedAsk } from "../src/jev/client.js";
 import { openDatabase } from "../src/persistence/database.js";
 import { candidatePairs, checkPrices, RELATION_QUESTION, renderReport, type JudgedPair, type Relation, type ScanMarket } from "../src/analytics/consistency.js";
+import { haltIfStopped } from "../src/app/stop.js";
 
 loadEnvFile();
+await haltIfStopped();
 const cfg = loadConfig();
 const argv = process.argv.slice(2);
 const opt = (n: string, d: number) => { const i = argv.indexOf(`--${n}`); const v = i >= 0 ? Number(argv[i + 1]) : d; return Number.isFinite(v) ? v : d; };

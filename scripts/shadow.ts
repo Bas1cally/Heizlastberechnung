@@ -32,8 +32,10 @@ import { sdkSigner, signingSurface } from "../src/execution/sdk-signer.js";
 import { buildOrders } from "../src/execution/order-builder.js";
 import { DEFAULT_FILL_PARAMS } from "../src/replay/paper-fill-model.js";
 import type { Urgency } from "../src/jev/decision-types.js";
+import { haltIfStopped } from "../src/app/stop.js";
 
 loadEnvFile();
+await haltIfStopped();
 const cfg = loadConfig();
 const log = createLogger({ level: (process.env["LOG_LEVEL"] as never) ?? "info", write: teeSink("logs/shadow.log") });
 // Every 15 minutes the reports, a compact database export and the log tails
