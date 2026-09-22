@@ -51,7 +51,9 @@ let jevDown: string | undefined;
 // ---- measure mode: recognition rate on hand-labelled screenshots ----
 const measureDir = opt("measure");
 if (measureDir) {
+  if (!existsSync(measureDir)) { console.error(`Ordner nicht gefunden: ${measureDir}. Screenshots aus Planungsphasen (Win+Druck landet in Bilder\\Screenshots) in einen Ordner legen und den Pfad angeben.`); process.exit(1); }
   const files = readdirSync(measureDir).filter((f) => /\.(png|jpe?g|webp)$/i.test(f)).sort();
+  if (!files.length) { console.error(`Keine Bilder (png/jpg/webp) in ${measureDir}.`); process.exit(1); }
   const out: Record<string, unknown>[] = [];
   for (const f of files) {
     const t0 = performance.now();
