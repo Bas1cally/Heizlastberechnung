@@ -236,6 +236,19 @@ describe("PaperLiveEngine maker fills", () => {
     expect(s.position.downShares).toBe(3);
   });
 
+  it("fills from taker buys of the other token at 1 - p or better (complementary matching), and lets such buys above our level eat the queue", () => {
+    const { e, fills } = engine({ latencyMs: 0 });
+    takeTail(e, 0);
+    e.onApproved(decision("ADD_COMPLEMENT", "IMMEDIATE", "PAIR"), snapshot(tailBook(), leaderBook(100)), 1000); // 100 ahead at 0.99
+    e.onBook(leaderBook(100), 1000);
+    e.onTrade({ assetId: "UP", price: 0.005, size: 60, side: "BUY", tsMs: undefined }, 1100); // UP bought at 0.005 = DOWN at 0.995: above us, eats 60 of the queue
+    e.onTrade({ assetId: "UP", price: 0.01, size: 47, side: "BUY", tsMs: undefined }, 1200);  // UP bought at 0.01 = DOWN at 0.99: 40 more ahead, 7 reach us
+    expect(fills().filter((f) => f.side === "DOWN")).toEqual([expect.objectContaining({ side: "DOWN", size: 7 })]);
+    e.onTrade({ assetId: "UP", price: 0.02, size: 50, side: "BUY", tsMs: undefined }, 1300);  // UP at 0.02 = DOWN at 0.98: through our price, the remaining 3 fill
+    expect(e.summary().position.downShares).toBe(10);
+    e.onTrade({ assetId: "UP", price: 0.01, size: 50, side: "SELL", tsMs: undefined }, 1400); // a sell of the other token is not flow for us
+  });
+
   it("keeps a hedge resting until the close rather than the 20 s TTL", () => {
     const { e, orders } = engine({ latencyMs: 0 });
     takeTail(e, 0);

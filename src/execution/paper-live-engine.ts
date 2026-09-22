@@ -131,22 +131,36 @@ export class PaperLiveEngine {
     }
   }
 
-  /** A match printed on the market channel: taker sells at or through a resting bid's price work through its queue and then fill it. */
+  /**
+   * A match printed on the market channel. Two kinds of flow reach a
+   * resting bid at p: taker SELLS of the same token at or through p, and
+   * taker BUYS of the complementary token at 1 - p or better - Polymarket's
+   * CLOB matches a bid for DOWN at 0.99 against a bid for UP at 0.01 by
+   * minting the set. Measured over 20 markets: the complementary flow was
+   * 2.2x the same-side sells, and the reference trader's 0.99 hedges were
+   * filled mostly by tail buyers, not by sellers.
+   */
   onTrade(t: Trade, nowMono: number): void {
-    if (t.side !== "SELL" || t.size <= 0) return;
+    if (t.size <= 0) return;
+    const otherOf = (asset: string) => asset === this.o.market.upAssetId ? this.o.market.downAssetId : asset === this.o.market.downAssetId ? this.o.market.upAssetId : undefined;
     for (let i = this.resting.length - 1; i >= 0; i--) {
       const r = this.resting[i]!;
-      if (r.order.assetId !== t.assetId || nowMono < r.placedAtMono + this.o.latencyMs) continue;
+      if (nowMono < r.placedAtMono + this.o.latencyMs) continue;
+      // The trade expressed on our token: a sell of ours at q, or a buy of the other token at 1 - q.
+      let q: number;
+      if (t.assetId === r.order.assetId && t.side === "SELL") q = t.price;
+      else if (t.assetId === otherOf(r.order.assetId) && t.side === "BUY") q = 1 - t.price;
+      else continue;
       if (r.queueAhead === undefined) {
-        const book = this.latest.get(t.assetId);
+        const book = this.latest.get(r.order.assetId);
         if (!book) continue; // not in the book yet as far as the model knows
         r.queueAhead = queueAheadOf(r.order, book);
       }
-      // A sell above our price consumed bids that were ahead of us; one at or below our price reaches us once they are gone.
+      // Flow above our price consumed bids that were ahead of us; flow at or below our price reaches us once they are gone.
       const ahead = r.queueAhead;
       const consumed = Math.min(ahead, t.size);
       r.queueAhead = ahead - consumed;
-      if (t.price > r.order.price + 1e-12) continue;
+      if (q > r.order.price + 1e-12) continue;
       const reaching = t.size - consumed;
       if (reaching <= 0) continue;
       const qty = Math.min(reaching, r.order.size - r.filled);
@@ -154,7 +168,7 @@ export class PaperLiveEngine {
       r.filled += qty;
       const done = r.order.size - r.filled < 1e-9;
       if (done) this.resting.splice(i, 1);
-      this.applyFillResult(r.id, r.decisionId, r.order, { status: done ? "FILLED" : "PARTIAL", filledQty: qty, avgPrice: r.order.price, fee: qty * this.o.fill.makerFee, reason: `maker fill: a taker sell of ${t.size} at ${t.price} reached the queue` }, r.version);
+      this.applyFillResult(r.id, r.decisionId, r.order, { status: done ? "FILLED" : "PARTIAL", filledQty: qty, avgPrice: r.order.price, fee: qty * this.o.fill.makerFee, reason: `maker fill: a taker ${t.side === "SELL" ? "sell" : "buy of the other side"} of ${t.size} at ${t.price} reached the queue` }, r.version);
     }
   }
 
@@ -237,7 +251,9 @@ export class PaperLiveEngine {
         // A hedge keeps its place in the queue until the close; anything else lives for its TTL.
         const ttl = order.completesSet ? Math.max(order.style.ttlMs ?? 20_000, this.o.market.closesAtMs - this.o.wall()) : (order.style.ttlMs ?? 20_000);
         const bookAtDecision = order.side === "UP" ? snap.upBook : snap.downBook;
-        this.resting.push({ order, decisionId: d.decisionId, placedAtMono: decisionMono, expiresAtMono: decisionMono + ttl, booksSeen: [], version: d.stateVersion, id, queueAhead: bookAtDecision ? queueAheadOf(order, bookAtDecision) : undefined, filled: 0 });
+        const queueAhead = bookAtDecision ? queueAheadOf(order, bookAtDecision) : undefined;
+        this.o.log("paper rest", { orderId: id, side: order.side, price: order.price, size: order.size, queueAhead, ttlMs: ttl });
+        this.resting.push({ order, decisionId: d.decisionId, placedAtMono: decisionMono, expiresAtMono: decisionMono + ttl, booksSeen: [], version: d.stateVersion, id, queueAhead, filled: 0 });
       }
     }
     this.publish();

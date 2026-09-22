@@ -217,6 +217,15 @@ queue is now the book at decision time. Where the level already held 10k
 when we decided, we are behind, and that is the honest measurement of a
 copy with a one-second decision loop against his bot.
 
+01:47Z, 20 more markets with tails at 0.01 and hedges at 0.99: the
+trader hedged 15 of them, the copy 4 to 7. The flow that fills a 0.99
+bid is not only sells of that token: Polymarket's CLOB matches a bid for
+DOWN at 0.99 against a bid for UP at 0.01 by minting the set, so every
+tail buyer fills a hedger. Measured after our placements: 26.5k shares of
+same-side sells, 58.8k of complementary buys, his fills 14.6k. The paper
+engine now counts both kinds of flow; the reference trader's fills are
+the check for the next stretch.
+
 ## Benchmark: the mechanical copy runs beside Jev (added 2026-09-21)
 
 `src/jev/policy-animal.ts` plays the measured pattern deterministically and
