@@ -244,6 +244,23 @@ Morning of 22 Sep, after 92 markets overnight (Jev -848 USD, copy -101 and
   to the observer (three runners had twelve subscriptions; one runner's
   streams went silent for whole markets while the others were fine).
 
+## Consistency scan: Jev over the long tail (2026-09-22, 07:30Z)
+
+The one use of Jev that plays to what it is (cheap, fast, typed judgments
+over structured text, thousands at a time) and not to what it is not (a
+forecaster against a liquid price): `pnpm scan` fetches every active
+market with at least 500 USD of liquidity, pairs markets that could be
+logically related (same event; rare tokens shared across events), asks
+Jev ONE question per pair, the logical relation between "A resolves YES"
+and "B resolves YES" from the questions and rules alone (implies,
+equivalent, exclusive, unrelated, unsure), and checks the prices against
+it. A broken constraint is a set of positions that pays at least 1.00 in
+every outcome for less than 1.00 now, not a forecast. Judgments are
+cached in `data/scan.sqlite`; `reports/consistency.txt` lists the pairs
+that are executable after crossing the spreads, then those broken at
+mid. The verdict after one run over a few thousand pairs is either a
+list of real cases with liquidity, or nothing, and both are quick.
+
 ## Correction: the reference trader is not profitable (2026-09-22, 06:50Z)
 
 The "+3,992 USD over 1,580 settled markets" above was wrong. A market

@@ -65,6 +65,7 @@ pnpm probe              # 20 s of raw feed events, unfiltered
 pnpm auto               # run the paper bot unattended: pulls updates, restarts on new commits and after crashes (pnpm auto -- observe|shadow)
 pnpm auto -- animal     # benchmark: the mechanical Animal00 copy in data/animal.sqlite (pnpm auto -- animalplus: with the measured improvements)
 pnpm auto -- animaljev  # the copy as skeleton, Jev asked only at the two moments where a judgment exists (tail now/wait/skip; keep/pull the hedge bid)
+pnpm scan               # consistency scan over all active markets: Jev judges the logical relation of candidate pairs, code checks the prices -> reports/consistency.{txt,json}
 pnpm bot:observe        # Phase 1 observer; never submits an order
 pnpm report             # what the observer recorded
 pnpm calibrate          # calibration + naive edge reports from recorded outcomes
