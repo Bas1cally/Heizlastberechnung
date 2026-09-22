@@ -44,6 +44,10 @@ export interface AnimalPolicyOptions {
   readonly noNewAfterS?: number;
   /** plus: hedge at the latest with this many seconds left, reversal or not. Default 12. */
   readonly hedgeLatestS?: number;
+  /** Tails per market. Default 1: the reference trader buys once; re-buying after every merge multiplied the copy's unhedged tails. */
+  readonly maxTailsPerMarket?: number;
+  /** Tails already bought in this market (kept by the call wrapper); the pure policy only reads it. */
+  readonly tailsBought?: number;
 }
 
 const choice = <T extends string>(c: T, others: readonly T[], confidence = 0.9) => ({
@@ -83,6 +87,7 @@ export function animalPolicy(s: JevInputState, o: AnimalPolicyOptions): PolicyDe
   if (inv.pairedShares > 0) return { action: "HOLD", inventory: "MERGE", urgency: "NORMAL", why: "merge the set" };
   if (inv.upShares > 0 || inv.downShares > 0) return { action: "HOLD", inventory: "NONE", urgency: "NORMAL", why: "position held" };
   if (inv.openOrders > 0) return { action: "HOLD", inventory: "NONE", urgency: "NORMAL", why: "tail order in flight" };
+  if ((o.tailsBought ?? 0) >= (o.maxTailsPerMarket ?? 1)) return { action: "HOLD", inventory: "NONE", urgency: "NORMAL", why: "tail already bought this market" };
   // 3. Flat: buy the tail inside the window while it is cheap.
   if (!leader || m.secondsRemaining < noNewAfter) return { action: "HOLD", inventory: "NONE", urgency: "NORMAL", why: "no leader or too late" };
   const tailSide = leader === "UP" ? "DOWN" : "UP";
@@ -91,7 +96,8 @@ export function animalPolicy(s: JevInputState, o: AnimalPolicyOptions): PolicyDe
   // plus: earlier too, when the measured reversal rate is worth more than the tail costs.
   const reversalWorthIt = o.variant === "plus" && m.leadHeldRate !== null && (1 - m.leadHeldRate) > b.tailAsk + 0.01 && b.tailAsk <= 0.05;
   if (cheap && (inWindow || reversalWorthIt)) {
-    return { action: tailSide === "UP" ? "BUY_UP" : "BUY_DOWN", inventory: tailSide === "UP" ? "ADD_UP" : "ADD_DOWN", urgency: "NORMAL", why: reversalWorthIt && !inWindow ? "tail early: measured reversal rate exceeds its price" : "tail inside the window" };
+    // PAIR: the engine places the hedge bid the instant the tail fills (measured: waiting for the next decision put 10-25k shares ahead of it).
+    return { action: tailSide === "UP" ? "BUY_UP" : "BUY_DOWN", inventory: "PAIR", urgency: "NORMAL", why: reversalWorthIt && !inWindow ? "tail early: measured reversal rate exceeds its price" : "tail inside the window" };
   }
   return { action: "HOLD", inventory: "NONE", urgency: "NORMAL", why: cheap ? "outside the window" : "tail not cheap" };
 }
@@ -99,8 +105,13 @@ export function animalPolicy(s: JevInputState, o: AnimalPolicyOptions): PolicyDe
 /** Wraps the policy as a JevCall so the whole pipeline runs unchanged. */
 export function animalPolicyCall(o: AnimalPolicyOptions): JevCall {
   const model = `policy-animal${o.variant === "plus" ? "-plus" : ""}`;
+  // Tails bought per market (by the market's open), so the copy buys once like the trader does.
+  const tails = new Map<number, number>();
   return async (state) => {
-    const d = animalPolicy(state, o);
+    const key = state.market.openedAtMs;
+    for (const k of tails.keys()) if (k < key - 3_600_000) tails.delete(k);
+    const d = animalPolicy(state, { ...o, tailsBought: tails.get(key) ?? 0 });
+    if (d.action === "BUY_UP" || d.action === "BUY_DOWN") tails.set(key, (tails.get(key) ?? 0) + 1);
     const leader = state.orderbook.leader ?? "UP";
     const pLead = state.market.leadHeldRate ?? 0.5;
     const answers: JevAnswers = {

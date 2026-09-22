@@ -23,6 +23,8 @@ export type Urgency = (typeof URGENCIES)[number];
 /** The compact snapshot Jev sees. Serializable, auditable, reproducible. */
 export interface JevInputState {
   readonly market: {
+    /** The market's open, epoch ms: identifies the market for per-market bookkeeping. Constant within a market. */
+    readonly openedAtMs: number;
     readonly secondsRemaining: number;
     readonly settlementStartPrice: number;
     readonly settlementCurrentPrice: number;

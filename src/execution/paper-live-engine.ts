@@ -48,9 +48,11 @@ export interface PaperLiveOptions {
   readonly log: (msg: string, fields?: Record<string, unknown>) => void;
 }
 
-interface PendingMarketable { order: OrderIntent; decisionId: string; arriveAtMono: number; version: bigint }
+interface PendingMarketable { order: OrderIntent; decisionId: string; arriveAtMono: number; version: bigint; pairOnFill: boolean }
 interface Resting {
   order: OrderIntent; decisionId: string; placedAtMono: number; expiresAtMono: number; version: bigint; id: string;
+  /** The decision said PAIR: the moment this fills, the hedge for the filled shares is placed, without waiting for another decision. */
+  pairOnFill: boolean;
   /** Books (after the latency) whose ask reached the order's price; enough for the taker-side fill rules. */
   booksSeen: OrderBook[];
   /** Shares queued ahead: bids at the order's price or better in the book the decision was made on; undefined only when that book was missing. */
@@ -91,7 +93,7 @@ export class PaperLiveEngine {
     return id;
   }
 
-  private applyFillResult(id: string, decisionId: string, order: OrderIntent, r: FillResult, version: bigint): void {
+  private applyFillResult(id: string, decisionId: string, order: OrderIntent, r: FillResult, version: bigint, pairOnFill = false): void {
     const now = this.o.wall();
     this.o.db.run(`UPDATE orders SET status = ?, updated_ms = ? WHERE order_id = ?`, [r.status, now, id]);
     this.o.log("paper fill", { orderId: id, side: order.side, type: order.style.type, price: order.price, size: order.size, status: r.status, filled: r.filledQty, at: r.avgPrice, reason: r.reason });
@@ -102,6 +104,46 @@ export class PaperLiveEngine {
     this.fillFees += r.fee;
     if (r.status === "PARTIAL") this.counts.partials++; else this.counts.fills++;
     this.o.db.run(`INSERT INTO inventory_snapshots (market_id, mode, ts_ms, inventory_json) VALUES (?,?,?,?)`, [this.o.market.marketId, "paper", now, JSON.stringify(computeInventory(this.position))]);
+    this.publish();
+    if (pairOnFill && !order.completesSet) this.hedgeNow(order, r, decisionId, version);
+  }
+
+  /**
+   * The hedge for a just-filled tail, placed in the same instant: a bid for
+   * the other side at 1.00 minus the fill price for the filled shares, taken
+   * at once when that side is offered under the cap, resting until the
+   * close otherwise. Measured 2026-09-22: by the time the next decision
+   * placed the hedge, 10-25k shares were queued ahead at 0.99 (the level
+   * opens and fills within seconds of the ask emptying); the reference
+   * trader hedged 11 of 16 markets, the copy 2.
+   */
+  private hedgeNow(tail: OrderIntent, r: FillResult, decisionId: string, version: bigint): void {
+    if (this.killed || this.settled) return;
+    const side = tail.side === "UP" ? "DOWN" : "UP";
+    const assetId = side === "UP" ? this.o.market.upAssetId : this.o.market.downAssetId;
+    const tick = this.o.market.tickSize ?? 0.001;
+    const cap = Math.floor((1 - r.avgPrice) / tick + 1e-9) * tick;
+    if (cap < tick) return;
+    const price = Number(cap.toFixed(4));
+    const open = [...this.pending.map((p) => p.order), ...this.resting.map((x) => x.order)].filter((o) => o.assetId === assetId && o.completesSet).reduce((s, o) => s + o.size, 0)
+      - this.resting.filter((x) => x.order.assetId === assetId && x.order.completesSet).reduce((s, x) => s + x.filled, 0);
+    const size = Math.floor(r.filledQty - Math.max(0, open));
+    if (size < (this.o.market.minOrderSize ?? 5)) return;
+    const book = this.latest.get(assetId);
+    const ask = book?.asks[0]?.price;
+    const nowMono = this.o.mono();
+    if (ask !== undefined && ask <= price + 1e-12) {
+      const order: OrderIntent = { side, assetId, price, size, style: { type: "FOK", aggressionTicks: 0, ttlMs: 20_000 }, sizedBy: "complement", completesSet: true };
+      this.pending.push({ order, decisionId, arriveAtMono: nowMono + this.o.latencyMs, version, pairOnFill: false });
+      this.o.log("paper hedge now", { side, price, size, reason: "offered under the cap" });
+    } else {
+      const order: OrderIntent = { side, assetId, price, size, style: { type: "GTC", aggressionTicks: 0, ttlMs: 20_000 }, sizedBy: "complement", completesSet: true };
+      const id = this.record(order, decisionId, version, "RESTING");
+      const ttl = Math.max(20_000, this.o.market.closesAtMs - this.o.wall());
+      const queueAhead = book ? queueAheadOf(order, book) : undefined;
+      this.o.log("paper rest", { orderId: id, side, price, size, queueAhead, ttlMs: ttl, reason: "hedge on tail fill" });
+      this.resting.push({ order, decisionId, placedAtMono: nowMono, expiresAtMono: nowMono + ttl, booksSeen: [], version, id, queueAhead, filled: 0, pairOnFill: false });
+    }
     this.publish();
   }
 
@@ -117,7 +159,7 @@ export class PaperLiveEngine {
       if (p.order.assetId !== book.assetId || nowMono < p.arriveAtMono) continue;
       this.pending.splice(i, 1);
       const id = this.record(p.order, p.decisionId, p.version, "SUBMITTED");
-      this.applyFillResult(id, p.decisionId, p.order, fillMarketable(p.order, book, this.o.fill), p.version);
+      this.applyFillResult(id, p.decisionId, p.order, fillMarketable(p.order, book, this.o.fill), p.version, p.pairOnFill);
     }
     for (let i = this.resting.length - 1; i >= 0; i--) {
       const r = this.resting[i]!;
@@ -168,7 +210,7 @@ export class PaperLiveEngine {
       r.filled += qty;
       const done = r.order.size - r.filled < 1e-9;
       if (done) this.resting.splice(i, 1);
-      this.applyFillResult(r.id, r.decisionId, r.order, { status: done ? "FILLED" : "PARTIAL", filledQty: qty, avgPrice: r.order.price, fee: qty * this.o.fill.makerFee, reason: `maker fill: a taker ${t.side === "SELL" ? "sell" : "buy of the other side"} of ${t.size} at ${t.price} reached the queue` }, r.version);
+      this.applyFillResult(r.id, r.decisionId, r.order, { status: done ? "FILLED" : "PARTIAL", filledQty: qty, avgPrice: r.order.price, fee: qty * this.o.fill.makerFee, reason: `maker fill: a taker ${t.side === "SELL" ? "sell" : "buy of the other side"} of ${t.size} at ${t.price} reached the queue` }, r.version, r.pairOnFill);
     }
   }
 
@@ -189,7 +231,7 @@ export class PaperLiveEngine {
       this.publish();
       return;
     }
-    this.applyFillResult(r.id, r.decisionId, r.order, res, r.version);
+    this.applyFillResult(r.id, r.decisionId, r.order, res, r.version, r.pairOnFill);
   }
 
   cancelAll(reason: string): void {
@@ -233,6 +275,7 @@ export class PaperLiveEngine {
     const intents = buildOrders(d.requestedAction, d.answers.execution_urgency.choice as Urgency, { ...snap, inventory: live }, {
       maxOrderSizeShares: this.o.limits.maxOrderSizeShares, riskAllowanceUsd: allowance, tickSize: this.o.market.tickSize ?? 0.001, minOrderSize: this.o.market.minOrderSize ?? 5,
     });
+    const pairOnFill = d.answers.inventory_action.choice === "PAIR";
     for (const intent of intents) {
       let order = intent;
       if (order.completesSet) {
@@ -245,7 +288,7 @@ export class PaperLiveEngine {
       }
       const bookAtBuild = order.side === "UP" ? snap.upBook : snap.downBook;
       if (bookAtBuild && isMarketable(order, bookAtBuild)) {
-        this.pending.push({ order, decisionId: d.decisionId, arriveAtMono: decisionMono + this.o.latencyMs, version: d.stateVersion });
+        this.pending.push({ order, decisionId: d.decisionId, arriveAtMono: decisionMono + this.o.latencyMs, version: d.stateVersion, pairOnFill: pairOnFill && !order.completesSet });
       } else {
         const id = this.record(order, d.decisionId, d.stateVersion, "RESTING");
         // A hedge keeps its place in the queue until the close; anything else lives for its TTL.
@@ -253,7 +296,7 @@ export class PaperLiveEngine {
         const bookAtDecision = order.side === "UP" ? snap.upBook : snap.downBook;
         const queueAhead = bookAtDecision ? queueAheadOf(order, bookAtDecision) : undefined;
         this.o.log("paper rest", { orderId: id, side: order.side, price: order.price, size: order.size, queueAhead, ttlMs: ttl });
-        this.resting.push({ order, decisionId: d.decisionId, placedAtMono: decisionMono, expiresAtMono: decisionMono + ttl, booksSeen: [], version: d.stateVersion, id, queueAhead, filled: 0 });
+        this.resting.push({ order, decisionId: d.decisionId, placedAtMono: decisionMono, expiresAtMono: decisionMono + ttl, booksSeen: [], version: d.stateVersion, id, queueAhead, filled: 0, pairOnFill: pairOnFill && !order.completesSet });
       }
     }
     this.publish();

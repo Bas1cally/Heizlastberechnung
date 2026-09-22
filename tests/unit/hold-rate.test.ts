@@ -24,15 +24,32 @@ describe("hold-rate table", () => {
 
     const table = buildHoldRateTable(db, 4 * 1_000_000 + 10_000);
     expect(table.markets).toBe(2);
-    const e = table.estimate(8, 200, 20, 1)!;          // 5-10bps @ 300-120s: market 1 held, market 2 held too (reversal came later)
-    expect(e.bucket).toBe("5-10bps @ 300-120s");
+    const e = table.estimate(8, 200, 0, 20, 1)!;          // 5-10bps @ 300-120s: market 1 held, market 2 held too (reversal came later)
+    expect(e.bucket).toBe("5-10bps @ 300-120s (spot agrees)");
     expect(e.rate).toBe(0.5);                    // per-second samples: half from market 1 (won), half from market 2 (lost)
     expect(e.seconds).toBe(2 * 171);             // seconds 10..180 of each market have >= 120 s left
     expect(e.samples).toBe(2);                   // two markets behind it
     expect(table.estimate(8, 200)).toBeUndefined(); // fewer than 5 markets: no estimate by default
-    expect(table.estimate(8, 1, 20, 1)).toBeUndefined(); // <2s bucket for 5-10 bps: market 2 is at -1 bps there, market 1 alone has 2 samples: too few
-    expect(table.estimate(8, 200, 100_000, 1)).toBeUndefined();
-    expect(HoldRateTable.bucketFor(-3, 45)).toEqual({ distance: "2.5-5bps", time: "60-30s" });
+    expect(table.estimate(8, 1, 0, 20, 1)).toBeUndefined(); // <2s bucket for 5-10 bps: market 2 is at -1 bps there, market 1 alone has 2 samples: too few
+    expect(table.estimate(8, 200, 0, 100_000, 1)).toBeUndefined();
+    expect(HoldRateTable.bucketFor(-3, 45)).toEqual({ distance: "2.5-5bps", time: "60-30s", spot: "agrees" });
+    expect(HoldRateTable.bucketFor(-3, 45, 2)).toEqual({ distance: "2.5-5bps", time: "60-30s", spot: "disagrees" });
     expect(table.toJSON().cells.every((c) => c.n > 0)).toBe(true);
+  });
+});
+
+describe("spot side", () => {
+  it("splits the cells by whether spot is on the leader's side of the TWAP", async () => {
+    const { spotSideOf, HoldRateTable } = await import("../../src/analytics/hold-rate.js");
+    expect(spotSideOf(8, 2)).toBe("agrees");
+    expect(spotSideOf(8, -2)).toBe("disagrees");
+    expect(spotSideOf(-8, -0.5)).toBe("agrees");
+    expect(spotSideOf(-8, 3)).toBe("disagrees");
+    expect(spotSideOf(0, 3)).toBe("agrees");
+    const table = new HoldRateTable([{ distance: "5-10bps", time: "300-120s", spot: "agrees", n: 100, held: 90, markets: 10 }, { distance: "5-10bps", time: "300-120s", spot: "disagrees", n: 100, held: 50, markets: 10 }], 10);
+    expect(table.estimate(8, 200, 1)?.rate).toBe(0.9);
+    expect(table.estimate(8, 200, -1)?.rate).toBe(0.5);
+    expect(table.estimate(-8, 200, 1)?.rate).toBe(0.5);
+    expect(table.rows().filter((r) => r.n > 0)).toHaveLength(2);
   });
 });

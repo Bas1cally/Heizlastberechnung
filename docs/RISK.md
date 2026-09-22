@@ -43,6 +43,12 @@ mispricing. Added after the first paper hour under the rule: nine markets,
 -171 USD, all of it early directional buys at 0.40-0.45 against measured
 rates of 0.55-0.60 from a few dozen samples.
 
+The measurement is taken from the cell that matches the lead, the time
+left AND whether spot is on the leader's side of the TWAP (added
+2026-09-22): the TWAP lags spot by up to a minute, and a marginal over
+"spot still extending the lead" and "spot already back across" is what the
+market's own price knows better.
+
 A tail at or under `maxFreeTailPrice` (0.05) is exempt: its downside is
 its price, held by the unpaired-exposure limit, and the hedge that makes it
 free is a bid resting at 1.00 minus the tail, not something that has to be

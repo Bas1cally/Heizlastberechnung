@@ -7,7 +7,7 @@ const ask = (call: ReturnType<typeof animalPolicyCall>, s: JevInputState) => cal
 
 // Late in a market: DOWN leads at 0.98, UP (the tail) is offered at 0.01 with a hedge on the book.
 const base: JevInputState = {
-  market: { secondsRemaining: 60, settlementStartPrice: 85000, settlementCurrentPrice: 84990, distanceUsd: -10, distanceBps: -1.2, spotPrice: 84988, spotVsTwapBps: -0.2, leadHeldRate: 0.97, leadHeldSamples: 200 },
+  market: { openedAtMs: 1_790_000_000_000, secondsRemaining: 60, settlementStartPrice: 85000, settlementCurrentPrice: 84990, distanceUsd: -10, distanceBps: -1.2, spotPrice: 84988, spotVsTwapBps: -0.2, leadHeldRate: 0.97, leadHeldSamples: 200 },
   movement: { return1s: 0, return3s: 0, return5s: 0, return10s: 0, return30s: 0, realizedVol5s: 0, realizedVol10s: 0, realizedVol30s: 0 },
   orderbook: { upBid: 0.0, upAsk: 0.01, downBid: 0.97, downAsk: 0.98, upDepth: 5000, downDepth: 400, pairAskCost: 0.99, pairExecutableQty: 400, pairEdge: 0.01, upSpread: 0.01, downSpread: 0.01, imbalanceUp: 0, imbalanceDown: 0, leader: "DOWN", leaderAsk: 0.98, leaderAskDepth: 400, tailAsk: 0.01, tailAskDepth: 5000 },
   inventory: { upShares: 0, downShares: 0, avgUpEntry: 0, avgDownEntry: 0, pairedShares: 0, unpairedUpShares: 0, unpairedDownShares: 0, pnlIfUp: 0, pnlIfDown: 0, guaranteedPairPnl: 0, hedgePriceCap: null, hedgeAvailable: false, openOrders: 0 },
@@ -23,7 +23,7 @@ describe("animalPolicy: flat", () => {
   it("buys the tail inside the window when it is cheap, whether or not the leader is offered", () => {
     const d = animalPolicy(base, plain);
     expect(d.action).toBe("BUY_UP");
-    expect(d.inventory).toBe("ADD_UP");
+    expect(d.inventory).toBe("PAIR"); // the engine hedges the instant the tail fills
     expect(d.urgency).toBe("NORMAL");
     // The measured case: the leader's ask side is empty (recorded as 1.00, depth 0). The hedge will be a resting bid.
     expect(animalPolicy(st({ orderbook: { leaderAsk: 1, leaderAskDepth: 0 } }), plain).action).toBe("BUY_UP");
@@ -32,31 +32,36 @@ describe("animalPolicy: flat", () => {
   it("buys the other tail when UP leads", () => {
     const d = animalPolicy(st({ orderbook: { leader: "UP", upAsk: 0.98, downAsk: 0.01, leaderAsk: 0.98, tailAsk: 0.01 } }), plain);
     expect(d.action).toBe("BUY_DOWN");
-    expect(d.inventory).toBe("ADD_DOWN");
+    expect(d.inventory).toBe("PAIR");
+  });
+
+  it("buys one tail per market", () => {
+    expect(animalPolicy(st({}), { ...plain, tailsBought: 1 }).why).toBe("tail already bought this market");
+    expect(animalPolicy(st({}), { ...plain, tailsBought: 1, maxTailsPerMarket: 2 }).action).toBe("BUY_UP");
   });
 
   it("holds outside the window, when the tail is not cheap or has no depth, and while a tail order is in flight", () => {
-    expect(animalPolicy(st({ market: { secondsRemaining: 200 } }), plain).why).toBe("outside the window");
+    expect(animalPolicy(st({ market: { openedAtMs: 1_790_000_000_000, secondsRemaining: 200 } }), plain).why).toBe("outside the window");
     expect(animalPolicy(st({ orderbook: { tailAsk: 0.02 } }), plain).why).toBe("tail not cheap"); // 0.02 would put the hedge a tick below the 0.99 queue
     expect(animalPolicy(st({ orderbook: { tailAskDepth: 0 } }), plain).action).toBe("HOLD");
     expect(animalPolicy(st({ inventory: { openOrders: 1 } }), plain).why).toBe("tail order in flight");
   });
 
   it("initiates nothing in the last seconds or without a leader", () => {
-    expect(animalPolicy(st({ market: { secondsRemaining: 5 } }), plain).action).toBe("HOLD");
+    expect(animalPolicy(st({ market: { openedAtMs: 1_790_000_000_000, secondsRemaining: 5 } }), plain).action).toBe("HOLD");
     expect(animalPolicy(st({ orderbook: { leader: null } }), plain).action).toBe("HOLD");
   });
 
   it("plus: takes the tail early when the measured reversal rate exceeds its price, plain does not", () => {
     // 3% of such leads reverse; the tail costs 0.01: worth more than it costs.
-    const early = st({ market: { secondsRemaining: 200, leadHeldRate: 0.97 }, orderbook: { tailAsk: 0.01 } });
+    const early = st({ market: { openedAtMs: 1_790_000_000_000, secondsRemaining: 200, leadHeldRate: 0.97 }, orderbook: { tailAsk: 0.01 } });
     expect(animalPolicy(early, plus).action).toBe("BUY_UP");
     expect(animalPolicy(early, plus).why).toMatch(/early/);
     expect(animalPolicy(early, plain).action).toBe("HOLD");
     // 1% reverse: not worth 0.01 plus a cent of margin.
-    expect(animalPolicy(st({ market: { secondsRemaining: 200, leadHeldRate: 0.99 }, orderbook: { tailAsk: 0.01 } }), plus).action).toBe("HOLD");
+    expect(animalPolicy(st({ market: { openedAtMs: 1_790_000_000_000, secondsRemaining: 200, leadHeldRate: 0.99 }, orderbook: { tailAsk: 0.01 } }), plus).action).toBe("HOLD");
     // No measurement: window only.
-    expect(animalPolicy(st({ market: { secondsRemaining: 200, leadHeldRate: null } }), plus).action).toBe("HOLD");
+    expect(animalPolicy(st({ market: { openedAtMs: 1_790_000_000_000, secondsRemaining: 200, leadHeldRate: null } }), plus).action).toBe("HOLD");
   });
 });
 
@@ -107,7 +112,7 @@ describe("animalPolicyCall", () => {
     expect((await ask(animalPolicyCall(plain), base)).model).toBe("policy-animal");
     expect(r.usage).toEqual({ input_tokens: 0, output_tokens: 0 });
     expect(r.answers.action.choice).toBe("BUY_UP");
-    expect(r.answers.inventory_action.choice).toBe("ADD_UP");
+    expect(r.answers.inventory_action.choice).toBe("PAIR");
     expect(r.answers.execution_urgency.choice).toBe("NORMAL");
     expect(r.answers.settlement_direction.choice).toBe("DOWN");
     expect(r.answers.settlement_direction.probabilities["DOWN"]).toBeCloseTo(0.97);
@@ -115,8 +120,15 @@ describe("animalPolicyCall", () => {
     expect(p).toBeCloseTo(1);
   });
 
-  it("is deterministic: the same state gives the same answer", async () => {
+  it("is deterministic: the same state gives the same answer from a fresh policy", async () => {
+    expect(await ask(animalPolicyCall(plain), base)).toEqual(await ask(animalPolicyCall(plain), base));
+  });
+
+  it("remembers the tail it bought in this market, and starts afresh in the next one", async () => {
     const call = animalPolicyCall(plain);
-    expect(await ask(call, base)).toEqual(await ask(call, base));
+    expect((await ask(call, base)).answers.action.choice).toBe("BUY_UP");
+    expect((await ask(call, base)).answers.action.choice).toBe("HOLD");
+    const next = st({ market: { openedAtMs: base.market.openedAtMs + 300_000 } });
+    expect((await ask(call, next)).answers.action.choice).toBe("BUY_UP");
   });
 });

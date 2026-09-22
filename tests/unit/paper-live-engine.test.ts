@@ -261,6 +261,40 @@ describe("PaperLiveEngine maker fills", () => {
   });
 });
 
+describe("PaperLiveEngine hedge on fill", () => {
+  const leaderBook = (bid99 = 500, ask?: number) => normalizeBook({ assetId: "DOWN", bids: [{ price: 0.99, size: bid99 }], asks: ask === undefined ? [] : [{ price: ask, size: 1000 }], receivedAtMs: 0 });
+  const tailBook = () => book("UP", 0.0, 0.01, 5000);
+
+  it("rests the hedge at 1 - fill price the instant a PAIR tail fills, behind the bids in the book at that moment", () => {
+    const { e, orders, fills } = engine({ latencyMs: 300 });
+    e.onBook(leaderBook(120), 0);
+    e.onApproved(decision("BUY_UP", "IMMEDIATE", "PAIR"), snapshot(tailBook(), leaderBook(120)), 1000);
+    e.onBook(tailBook(), 1300); // tail fills at 0.01
+    const o = orders();
+    expect(o).toHaveLength(2);
+    expect(o[1]).toMatchObject({ status: "RESTING", order_type: "GTC", size: 10 });
+    expect(o[1]?.price).toBeCloseTo(0.99, 9);
+    // 120 ahead: a sell of 125 at 0.99 fills 5.
+    e.onTrade({ assetId: "DOWN", price: 0.99, size: 125, side: "SELL", tsMs: undefined }, 1700);
+    expect(fills().filter((f) => f.side === "DOWN")).toEqual([expect.objectContaining({ size: 5 })]);
+  });
+
+  it("takes the hedge at once when the other side is offered under the cap, and does nothing without PAIR", () => {
+    const { e, orders } = engine({ latencyMs: 0 });
+    e.onBook(leaderBook(0, 0.98), 0);
+    e.onApproved(decision("BUY_UP", "IMMEDIATE", "PAIR"), snapshot(tailBook(), leaderBook(0, 0.98)), 1000);
+    e.onBook(tailBook(), 1000);
+    e.onBook(leaderBook(0, 0.98), 1000); // the FOK hedge arrives
+    expect(orders().map((x) => x.status)).toEqual(["FILLED", "FILLED"]);
+    expect(e.summary().position.downShares).toBe(10);
+
+    const plain = engine({ latencyMs: 0 });
+    plain.e.onApproved(decision("BUY_UP", "IMMEDIATE", "ADD_UP"), snapshot(tailBook(), leaderBook(0, 0.98)), 1000);
+    plain.e.onBook(tailBook(), 1000);
+    expect(plain.orders()).toHaveLength(1);
+  });
+});
+
 describe("PaperLiveEngine hedge sizing", () => {
   it("sizes a hedge against the live position and does not hedge a tail twice while the first hedge is in flight", () => {
     const { e, orders, fills } = engine({ latencyMs: 300 });

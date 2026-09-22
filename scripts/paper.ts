@@ -167,10 +167,10 @@ while (!shuttingDown) {
     {
       cfg, log: mlog, clock, repo, jevCall,
       marketSubscribe: marketSubscribe(client as unknown as RealtimeClientLike),
-      chainlinkSubscribe: chainlinkSubscribe(client as unknown as RealtimeClientLike),
-      chainlinkTwapSubscribe: chainlinkTwapSubscribe(client as unknown as RealtimeClientLike, cfg.chainlinkTwapSeconds),
+      chainlinkSubscribe: tape.subscribeFn("spot"),
+      ...(tape.hasTwap() ? { chainlinkTwapSubscribe: tape.subscribeFn("twap") } : {}),
       settlementStart: startPriceFor(market.openedAtMs),
-      holdRate: (d, t) => holdTable?.estimate(d, t),
+      holdRate: (d, t, s) => holdTable?.estimate(d, t, s),
       executionMode: "simulated",
       processName,
       onKill: (state) => { mlog.error("kill: cancelling resting paper orders, no new ones", { reasons: state.reasons }); engine.kill(); },

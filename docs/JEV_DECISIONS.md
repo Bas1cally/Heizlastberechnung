@@ -226,6 +226,23 @@ same-side sells, 58.8k of complementary buys, his fills 14.6k. The paper
 engine now counts both kinds of flow; the reference trader's fills are
 the check for the next stretch.
 
+Morning of 22 Sep, after 92 markets overnight (Jev -848 USD, copy -101 and
+-99, the trader hedging 11-15 of 16 markets against the copy's 2-7):
+
+- The hedge is placed the instant the tail fills, by the engine, when the
+  decision's inventory intent is PAIR (`hedgeNow`): taken at once when the
+  other side is offered under the cap, resting at 1.00 minus the fill price
+  otherwise. Waiting for the next decision had put 10-25k shares ahead of
+  the bid ("paper rest" logs the queue at placement).
+- The copy buys one tail per market (the trader buys once; the copy had
+  re-bought after every merge, up to six tails, six chances to lose one).
+- The hold-rate cells are split by whether spot is on the leader's side
+  of the TWAP. Jev's buys at 0.26-0.31 had passed the gate "under" a 0.40
+  marginal that pooled both situations; the market's price already knew.
+- One Chainlink socket per stream per process: the tape fans its ticks out
+  to the observer (three runners had twelve subscriptions; one runner's
+  streams went silent for whole markets while the others were fine).
+
 ## Benchmark: the mechanical copy runs beside Jev (added 2026-09-21)
 
 `src/jev/policy-animal.ts` plays the measured pattern deterministically and

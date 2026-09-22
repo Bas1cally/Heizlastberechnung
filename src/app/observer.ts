@@ -40,7 +40,7 @@ export interface ObserverDeps {
    */
   readonly settlementStart?: SettlementStart | Promise<SettlementStart | undefined> | undefined;
   /** Empirical hold-rate lookup for the Jev state (analytics/hold-rate.ts). */
-  readonly holdRate?: ((distanceBps: number, secondsRemaining: number) => { rate: number; samples: number } | undefined) | undefined;
+  readonly holdRate?: ((distanceBps: number, secondsRemaining: number, spotVsTwapBps: number) => { rate: number; samples: number } | undefined) | undefined;
   readonly repo: DecisionRepository;
   readonly display?: (line: string) => void;
   /** Execution mode handed to the risk gate. "none" in observe. */
@@ -373,7 +373,8 @@ export class MarketObserver {
       const completesSet = side === "UP" ? snap.inventory.unpairedDownShares > 0 : snap.inventory.unpairedUpShares > 0;
       if (completesSet || snap.settlementStartPrice === undefined || snap.settlementCurrentPrice === undefined) return {};
       const dist = ((snap.settlementCurrentPrice - snap.settlementStartPrice) / snap.settlementStartPrice) * 10_000;
-      const held = this.deps.holdRate?.(dist, snap.secondsRemaining);
+      const spotVsTwap = snap.spotPrice !== undefined ? ((snap.spotPrice - snap.settlementCurrentPrice) / snap.settlementCurrentPrice) * 10_000 : 0;
+      const held = this.deps.holdRate?.(dist, snap.secondsRemaining, spotVsTwap);
       if (!held) return {};
       const leader = dist >= 0 ? "UP" : "DOWN";
       const book = side === "UP" ? snap.upBook : snap.downBook;

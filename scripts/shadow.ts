@@ -150,10 +150,10 @@ while (!shuttingDown) {
     {
       cfg, log: mlog, clock, repo, jevCall,
       marketSubscribe: marketSubscribe(publicClient as unknown as RealtimeClientLike),
-      chainlinkSubscribe: chainlinkSubscribe(publicClient as unknown as RealtimeClientLike),
-      chainlinkTwapSubscribe: chainlinkTwapSubscribe(publicClient as unknown as RealtimeClientLike, cfg.chainlinkTwapSeconds),
+      chainlinkSubscribe: tape.subscribeFn("spot"),
+      ...(tape.hasTwap() ? { chainlinkTwapSubscribe: tape.subscribeFn("twap") } : {}),
       settlementStart: startPriceFor(market.openedAtMs),
-      holdRate: (d, t) => holdTable?.estimate(d, t),
+      holdRate: (d, t, s) => holdTable?.estimate(d, t, s),
       executionMode: "simulated",
       processName: "shadow",
       onKill: (state) => { mlog.error("kill: no further orders will be signed", { reasons: state.reasons }); engine.flush(() => undefined); },

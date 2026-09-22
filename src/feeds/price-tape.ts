@@ -1,4 +1,4 @@
-import { ChainlinkFeed, type ChainlinkSubscribeFn, type ChainlinkTick } from "./chainlink-feed.js";
+import { ChainlinkFeed, type ChainlinkEvent, type ChainlinkSubscribeFn, type ChainlinkTick, type SubscriptionLike } from "./chainlink-feed.js";
 import type { Logger } from "../observability/logger.js";
 
 /**
@@ -36,25 +36,67 @@ export class PriceTape {
   private readonly spotTicks: TapeTick[] = [];
   private readonly twapTicks: TapeTick[] = [];
   private readonly keepMs: number;
+  private readonly listeners = { spot: new Set<(t: ChainlinkTick) => void>(), twap: new Set<(t: ChainlinkTick) => void>() };
 
   constructor(private readonly o: PriceTapeOptions) {
     this.keepMs = o.keepMs ?? 15 * 60_000;
-    const push = (arr: TapeTick[]) => (t: ChainlinkTick) => {
+    const push = (arr: TapeTick[], kind: "spot" | "twap") => (t: ChainlinkTick) => {
       arr.push({ ts: t.ts, price: t.price, receivedAtMs: o.wall() });
       const cutoff = o.wall() - this.keepMs;
       while (arr.length && arr[0]!.receivedAtMs < cutoff) arr.shift();
+      for (const l of this.listeners[kind]) l(t);
     };
-    this.spot = new ChainlinkFeed({ symbol: o.symbol, subscribe: o.spotSubscribe, now: o.mono, log: o.log.child({ feed: "tape-spot" }), onTick: push(this.spotTicks), ...(o.onStreamError ? { onStreamError: (r: string) => o.onStreamError!("chainlink", r) } : {}) });
+    this.spot = new ChainlinkFeed({ symbol: o.symbol, subscribe: o.spotSubscribe, now: o.mono, log: o.log.child({ feed: "tape-spot" }), onTick: push(this.spotTicks, "spot"), ...(o.onStreamError ? { onStreamError: (r: string) => o.onStreamError!("chainlink", r) } : {}) });
     this.twap = o.twapSubscribe
-      ? new ChainlinkFeed({ symbol: o.symbol, subscribe: o.twapSubscribe, now: o.mono, log: o.log.child({ feed: "tape-twap" }), onTick: push(this.twapTicks), ...(o.onStreamError ? { onStreamError: (r: string) => o.onStreamError!("chainlink-twap", r) } : {}) })
+      ? new ChainlinkFeed({ symbol: o.symbol, subscribe: o.twapSubscribe, now: o.mono, log: o.log.child({ feed: "tape-twap" }), onTick: push(this.twapTicks, "twap"), ...(o.onStreamError ? { onStreamError: (r: string) => o.onStreamError!("chainlink-twap", r) } : {}) })
       : undefined;
+  }
+
+  hasTwap(): boolean { return !!this.twap; }
+
+  /**
+   * The tape as a subscription source for a market observer, so a process
+   * holds ONE socket per stream instead of one per stream per consumer
+   * (three runners x four streams was twelve; a stream that went silent for
+   * whole markets on one runner while the others were fine pointed at the
+   * subscription count). The observer's own ChainlinkFeed keeps its parsing,
+   * staleness and watchdog; a silent tape stream is the tape's to reconnect.
+   */
+  subscribeFn(kind: "spot" | "twap"): ChainlinkSubscribeFn {
+    return async (symbols) => {
+      const symbol = symbols[0] ?? this.o.symbol;
+      const queue: ChainlinkEvent[] = [];
+      let wake: (() => void) | undefined;
+      let closed = false;
+      const listener = (t: ChainlinkTick) => {
+        if (t.symbol.toLowerCase() !== symbol.toLowerCase()) return;
+        queue.push({ type: "update", payload: { symbol: t.symbol, timestamp: t.ts, value: t.price } });
+        wake?.();
+      };
+      this.listeners[kind].add(listener);
+      const listeners = this.listeners[kind];
+      const sub: SubscriptionLike<ChainlinkEvent> = {
+        close: async () => { closed = true; listeners.delete(listener); wake?.(); },
+        async *[Symbol.asyncIterator]() {
+          while (!closed) {
+            if (queue.length) { yield queue.shift()!; continue; }
+            await new Promise<void>((r) => { wake = r; });
+            wake = undefined;
+          }
+        },
+      };
+      return sub;
+    };
   }
 
   start(): void { this.spot.start(); this.twap?.start(); }
   async stop(): Promise<void> { await Promise.all([this.spot.stop(), this.twap?.stop()]); }
 
-  /** Exposed for tests: feed ticks directly. */
-  push(source: "spot" | "twap", tick: TapeTick): void { (source === "spot" ? this.spotTicks : this.twapTicks).push(tick); }
+  /** Exposed for tests: feed ticks directly (listeners see them too). */
+  push(source: "spot" | "twap", tick: TapeTick): void {
+    (source === "spot" ? this.spotTicks : this.twapTicks).push(tick);
+    for (const l of this.listeners[source]) l({ symbol: this.o.symbol, price: tick.price, ts: tick.ts, receivedAtMs: tick.receivedAtMs });
+  }
 
   /** First tick of each stream whose feed timestamp is at or after `openedAtMs`. */
   startAt(openedAtMs: number): StartPrices {

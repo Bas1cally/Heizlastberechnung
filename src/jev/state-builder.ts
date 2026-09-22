@@ -14,7 +14,7 @@ export interface StateBuilderInput {
   readonly pairQty: number;
   readonly feePerSet?: number;
   /** Empirical hold rate lookup (analytics/hold-rate.ts); absent means the feature is null. */
-  readonly holdRate?: ((distanceBps: number, secondsRemaining: number) => { rate: number; samples: number } | undefined) | undefined;
+  readonly holdRate?: ((distanceBps: number, secondsRemaining: number, spotVsTwapBps: number) => { rate: number; samples: number } | undefined) | undefined;
 }
 
 const r = (n: number, d = 6) => (Number.isFinite(n) ? Number(n.toFixed(d)) : 0);
@@ -39,7 +39,7 @@ export function buildJevState(input: StateBuilderInput): JevInputState {
   const start = state.settlementStartPrice ?? 0;
   const current = state.settlementCurrentPrice ?? start;
   const spot = state.spotPrice ?? current;
-  const held = input.holdRate?.(distanceBps(start, current), state.secondsRemaining);
+  const held = input.holdRate?.(distanceBps(start, current), state.secondsRemaining, distanceBps(current, spot));
   const leader: "UP" | "DOWN" | null = up && down ? (upAsk >= downAsk ? "UP" : "DOWN") : null;
   const inv0 = state.inventory;
   const hedgeCap = inv0.unpairedUpShares > 0 ? 1 - inv0.avgUpEntry : inv0.unpairedDownShares > 0 ? 1 - inv0.avgDownEntry : null;
@@ -47,6 +47,7 @@ export function buildJevState(input: StateBuilderInput): JevInputState {
 
   return {
     market: {
+      openedAtMs: state.identity.openedAtMs,
       secondsRemaining: r(state.secondsRemaining, 1),
       settlementStartPrice: r(start, 2),
       settlementCurrentPrice: r(current, 2),

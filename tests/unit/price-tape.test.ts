@@ -30,3 +30,22 @@ describe("PriceTape", () => {
     expect((await t2.waitForStart(5_000, 500)).twap).toBeUndefined();
   });
 });
+
+describe("PriceTape as a subscription source", () => {
+  it("fans the tape's ticks out to a subscriber as Chainlink events and ends the stream on close", async () => {
+    const tape = new PriceTape({ symbol: "btc/usd", spotSubscribe: async () => ({ close: async () => {}, async *[Symbol.asyncIterator]() {} }), mono: () => 0, wall: () => 0, log: createLogger({ level: "error", write: () => {} }) });
+    expect(tape.hasTwap()).toBe(false);
+    const sub = await tape.subscribeFn("spot")(["btc/usd"]);
+    const got: number[] = [];
+    const reader = (async () => { for await (const ev of sub) got.push(Number(ev.payload.value)); })();
+    tape.push("spot", { ts: 1, price: 100, receivedAtMs: 0 });
+    tape.push("twap", { ts: 1, price: 999, receivedAtMs: 0 }); // other stream: not ours
+    tape.push("spot", { ts: 2, price: 101, receivedAtMs: 0 });
+    await new Promise((r) => setTimeout(r, 5));
+    expect(got).toEqual([100, 101]);
+    await sub.close();
+    await reader;
+    tape.push("spot", { ts: 3, price: 102, receivedAtMs: 0 });
+    expect(got).toEqual([100, 101]);
+  });
+});
