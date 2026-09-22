@@ -1,12 +1,12 @@
 /**
  * Pushes the current reports to the branch `share` so they can be read
  * without copy and paste. One orphan commit, force-pushed: the branch never
- * grows. The repository is PUBLIC: only text reports and log tails go up
- * (keys never reach logs, see src/observability/logger.ts); screenshots only
- * with --bild, and then only the last game screenshot, never the desktop.
+ * grows. The repository is PUBLIC: text reports and log tails (keys never
+ * reach logs, see src/observability/logger.ts) and the last five TFT GAME
+ * screenshots with what was read in them; never a desktop screenshot.
  *
- *   pnpm share            # TFT report, card results, vision comparison, log tails
- *   pnpm share -- --bild  # plus the latest TFT game screenshot
+ *   pnpm share                 # reports, logs, last five game screenshots
+ *   pnpm share -- --ohne-bild  # without screenshots
  *
  * Push auth like pnpm sync: GITHUB_SYNC_TOKEN from .env if set, else the
  * git credential manager.
@@ -40,11 +40,13 @@ for (const f of ["tft.log", "director.log"]) {
   writeFileSync(join(DIR, "logs", f.replace(".log", ".tail.log")), readFileSync(p, "utf8").split("\n").slice(-400).join("\n"));
   files.push(`logs/${f} (letzte 400 Zeilen)`);
 }
-if (argv.includes("--bild") && existsSync("data/tft/tft.sqlite")) {
+if (!argv.includes("--ohne-bild") && existsSync("data/tft/tft.sqlite")) {
   const db = openDatabase("data/tft/tft.sqlite");
-  const rows = db.all<{ screenshot: string; read_json: string }>(`SELECT screenshot, read_json FROM tft_reading ORDER BY id DESC LIMIT 100`);
-  const game = rows.find((r) => { const p = (JSON.parse(r.read_json) as { phase?: string }).phase; return p === "planning" || p === "augment_choice"; });
-  if (game && existsSync(game.screenshot)) { cpSync(game.screenshot, join(DIR, "reports", "tft-last-game.jpg")); writeFileSync(join(DIR, "reports", "tft-last-game.read.json"), game.read_json); files.push("letzter Spiel-Screenshot mit Lesung"); }
+  const rows = db.all<{ id: number; screenshot: string; read_json: string }>(`SELECT id, screenshot, read_json FROM tft_reading ORDER BY id DESC LIMIT 300`);
+  const games = rows.filter((r) => { const p = (JSON.parse(r.read_json) as { phase?: string }).phase; return (p === "planning" || p === "augment_choice" || p === "combat" || p === "carousel") && existsSync(r.screenshot); }).slice(0, 5);
+  mkdirSync(join(DIR, "shots"), { recursive: true });
+  for (const g of games) { cpSync(g.screenshot, join(DIR, "shots", `reading-${g.id}.jpg`)); writeFileSync(join(DIR, "shots", `reading-${g.id}.json`), g.read_json); }
+  if (games.length) files.push(`${games.length} Spiel-Screenshots mit Lesung`);
 }
 writeFileSync(join(DIR, "README.md"), `# share\n\nMachine-written by \`pnpm share\` at ${new Date().toISOString()}. One orphan commit, force-pushed.\n\n${files.map((f) => `- ${f}`).join("\n")}\n`);
 

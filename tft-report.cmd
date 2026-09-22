@@ -1,5 +1,6 @@
 @echo off
-rem TFT-Bericht der letzten Sitzung. Oeffnet ihn im Editor zum Kopieren.
+rem TFT-Bericht der letzten Sitzung, dazu teilen mit Claude (Branch share).
 cd /d "%~dp0"
 call pnpm -s tft:report
-start "" notepad reports\tft-report.txt
+call pnpm -s share
+start "" notepad reports\tft-report.txt
