@@ -21,6 +21,7 @@ import { teeSink } from "../src/observability/file-sink.js";
 import { captureScreen, ffmpegAvailable, primaryMonitor, type CaptureBackend, type CaptureSource } from "../src/tft/capture.js";
 import { fingerprint, readBoard } from "../src/tft/vision.js";
 import { ensureMeta } from "../src/tft/meta.js";
+import { ensureSetData, normaliseReading, type SetData } from "../src/tft/setdata.js";
 import { adviseAugmentWithJev, adviseAugmentWithText, adviseWithJev, adviseWithText, createJevAsk, createJevAugmentAsk } from "../src/tft/advisor.js";
 import { TftStore } from "../src/tft/store.js";
 import { startTftServer } from "../src/tft/server.js";
@@ -115,13 +116,20 @@ if (measureDir) {
 let meta: Meta | undefined;
 let lastFingerprint = "";
 let metaError: string | undefined;
-const status = () => ({ ...(veniceError ? { error: veniceError } : {}), capture: backend, vision: visionModel, advisor: jev && !jevDown ? "jev" : `text:${adviceModel}`, ...(jevDown ? { jev: /402|credits/i.test(jevDown) ? "kein Guthaben, Rat über Textmodell" : jevDown.slice(0, 80) } : {}), meta: meta ? `${meta.patch || "?"} (${meta.comps.length} comps)` : metaError ? `Fehler: ${metaError.slice(0, 80)}` : "wird geladen …", interval_s: intervalMs / 1000 });
+const status = () => ({ ...(veniceError ? { error: veniceError } : {}), capture: backend, vision: visionModel, advisor: jev && !jevDown ? "jev" : `text:${adviceModel}`, ...(jevDown ? { jev: /402|credits/i.test(jevDown) ? "kein Guthaben, Rat über Textmodell" : jevDown.slice(0, 80) } : {}), set: setData ? setData.set : setError ? "unbekannt (Riot-Daten nicht erreichbar)" : "wird geladen …", meta: meta ? `${meta.patch || "?"} (${meta.comps.length} comps)` : metaError ? `Fehler: ${metaError.slice(0, 80)}` : "wird geladen …", interval_s: intervalMs / 1000 });
 startTftServer({ store, meta: () => meta, status, log: (m, f) => log.info(m, f) }, port);
 
-// ---- meta ----
+// ---- the live set from Riot's data, then the meta checked against it ----
+let setData: SetData | undefined;
+let setError: string | undefined;
+async function loadSet(): Promise<void> {
+  try { const s = await ensureSetData(join(dataDir, "set.json")); setData = s.data; setError = undefined; log.info("set", { set: setData.set, source: setData.source, champions: setData.champions.length, augments: setData.augments.length, fromCache: s.fromCache }); }
+  catch (err) { setError = err instanceof Error ? err.message : String(err); log.warn("official set data unavailable; names are not checked", { err: setError }); }
+}
 async function loadMeta(force: boolean): Promise<void> {
+  if (!setData && !setError) await loadSet();
   try {
-    const m = await ensureMeta({ apiKey: veniceKey!, model: metaModel, cachePath: join(dataDir, "meta.json") }, force);
+    const m = await ensureMeta({ apiKey: veniceKey!, model: metaModel, cachePath: join(dataDir, "meta.json"), set: setData }, force);
     meta = m.meta; metaError = undefined;
     log.info("meta", { fromCache: m.fromCache, set: meta.set, patch: meta.patch, comps: meta.comps.map((c) => `${c.name} ${c.tier}`), augments: meta.augments.length });
     lastFingerprint = "";
@@ -140,10 +148,16 @@ async function cycle(imagePath?: string): Promise<void> {
   const t0 = performance.now();
   const model = Date.now() < fallbackUntil ? visionFallback : visionModel;
   let r;
-  try { r = await readBoard(shot, { apiKey: veniceKey!, model }, meta ? `TFT ${meta.set} patch ${meta.patch}. Champion names in this set include: ${[...new Set(meta.comps.flatMap((c) => [...c.core_units, ...c.carries]))].join(", ")}.` : ""); }
+  const hint = setData ? `TFT ${setData.set}. The champions of this set are: ${setData.champions.map((c) => (c.de !== c.en ? `${c.en} (German: ${c.de})` : c.en)).join(", ")}. Write the English names.` : "";
+  try { r = await readBoard(shot, { apiKey: veniceKey!, model }, hint); }
   catch (err) {
     if (err instanceof Error && / 429:|no answer within/.test(err.message) && model === visionModel) { fallbackUntil = Date.now() + 120_000; log.warn("vision model overloaded or too slow; using the fallback for 2 min", { model: visionFallback, err: err.message.slice(0, 120) }); r = await readBoard(shot, { apiKey: veniceKey!, model: visionFallback }, ""); }
     else throw err;
+  }
+  if (setData) {
+    const n = normaliseReading(r.value, setData);
+    r = { ...r, value: n.read };
+    if (n.unknown.length) log.info("names outside the set", { unknown: n.unknown.slice(0, 8) });
   }
   const fp = fingerprint(r.value);
   const reading = store.addReading(shot, r.value, fp, r.usage.model, Math.round(performance.now() - t0), r.usage);

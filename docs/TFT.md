@@ -41,6 +41,23 @@ Windows Defender blockierte den Bildschirm-Screenshot als Inline-PowerShell
 das Skript `scripts\tft-capture.ps1` als Datei. Welcher Weg läuft, steht
 beim Start als `capture backend` im Log.
 
+## Offizielle Setdaten
+
+Die Meta per Web-Suche lieferte einmal ein falsches Set („Set 18“ mit
+erfundenen Comps). Deshalb lädt der Berater beim Start Riots eigene Daten
+zum aktuellen Set: Community Dragon, ersatzweise Data Dragon, gecacht einen
+Tag in `data/tft/set.json`. Damit:
+
+- bekommt die Meta-Suche die exakte Championliste und muss sich daran
+  halten; Comps mit Champions außerhalb des Sets fliegen raus, und bleiben
+  weniger als drei übrig, gilt die Meta als fehlgeschlagen;
+- bekommt das Lesemodell die Championliste mit den deutschen Namen;
+- werden gelesene Namen (deutsch, englisch, kleine Tippfehler) per Abgleich
+  auf den offiziellen englischen Namen gebracht; was nicht passt, steht als
+  `names outside the set` im Log.
+
+Oben auf der Browserseite steht, welches Set geladen ist.
+
 ## Augment-Wahl
 
 Zeigt das Spiel Augment-Karten, liest das Modell die drei Namen
@@ -101,7 +118,8 @@ in echten Spielen taugt.
 
 - `src/tft/capture.ts` Screenshot per ffmpeg gdigrab (bevorzugt) oder `scripts/tft-capture.ps1`, JPEG 1600 px
 - `src/tft/vision.ts` Lesen mit JSON-Schema, Fingerprint der Lage
-- `src/tft/meta.ts` Meta per Web-Suche, 24 h Cache in `data/tft/meta.json`
+- `src/tft/setdata.ts` offizielle Setdaten, Namensabgleich, Prüfung der Comps
+- `src/tft/meta.ts` Meta per Web-Suche gegen das offizielle Set geprüft, 24 h Cache in `data/tft/meta.json`
 - `src/tft/advisor.ts` Jev-Fragen (comp, action, on_track, urgency), Text-Fallback
 - `src/tft/store.ts` SQLite `data/tft/tft.sqlite`, `src/tft/server.ts` API und Seite
 - `src/tft/report.ts`, `scripts/tft-report.ts` Auswertung einer Sitzung
