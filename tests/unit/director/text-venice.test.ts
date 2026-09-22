@@ -47,7 +47,19 @@ describe("venice text calls", () => {
     const r = await fenced.reviewFix({ styleGuideEn: "", characters: [], previous: undefined, beatDe: "b", engine: "e", workflow: "t2v", vocabulary, current: { shot_size: "", camera_move: "", lens_note: "", lighting: "", composition: "", action_physical_en: "", action_physical_de: "" }, gateFindings: [] });
     expect(r.value).toEqual({ camera_move: "dolly in" });
     const wrong = new VeniceTextCalls({ apiKey: "k", model: "m", fetch: fakeChat(() => completion({ text_en: 5 })).fetch });
-    await expect(wrong.translate("x")).rejects.toThrow(/schema/);
+    await expect(wrong.translate("x")).rejects.toThrow(/schema.*Raw:/);
+    // a wrong first answer gets one correction round that carries the rejection
+    const fixed = fakeChat((b, n) => (n === 1 ? completion([{ nope: 1 }, { also: 2 }]) : completion({ text_en: "Second try." })));
+    const c2 = new VeniceTextCalls({ apiKey: "k", model: "m", fetch: fixed.fetch });
+    const r2 = await c2.translate("x");
+    expect(r2.value).toBe("Second try.");
+    expect(fixed.bodies).toHaveLength(2);
+    expect(JSON.stringify(fixed.bodies[1]!["messages"])).toContain("Your answer was rejected");
+    expect(r2.usage.input_tokens).toBe(1280);
+    // a list whose element fits is accepted without a second call
+    const listed = fakeChat(() => completion([{ text_en: "Listed." }]));
+    expect((await new VeniceTextCalls({ apiKey: "k", model: "m", fetch: listed.fetch }).translate("x")).value).toBe("Listed.");
+    expect(listed.bodies).toHaveLength(1);
     const down = new VeniceTextCalls({ apiKey: "k", model: "m", fetch: fakeChat(() => ({ status: 402, body: { error: "insufficient balance" } })).fetch });
     await expect(down.translate("x")).rejects.toThrow(/402.*insufficient balance/);
   });

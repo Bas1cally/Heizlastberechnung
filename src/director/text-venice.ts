@@ -55,18 +55,31 @@ export async function chatJson<T>(o: ChatJsonOptions<T>): Promise<ClaudeResult<T
   let r = await post(body);
   if (r.status === 400 && (body["reasoning_effort"] || o.extra)) { delete body["reasoning_effort"]; for (const k of Object.keys(o.extra ?? {})) delete body[k]; r = await post(body); }
   if (r.status < 200 || r.status >= 300) throw new Error(`${o.purpose}: Venice ${r.status}: ${JSON.stringify(r.json).slice(0, 400)}`);
-  const j = r.json as { choices?: { message?: { content?: unknown }; finish_reason?: string }[]; usage?: { prompt_tokens?: number; completion_tokens?: number }; model?: string };
-  const choice = j.choices?.[0];
-  const content = choice?.message?.content;
-  const text = typeof content === "string" ? content : Array.isArray(content) ? content.map((c) => (c as { text?: string }).text ?? "").join("") : "";
-  let parsed: unknown;
-  try { parsed = JSON.parse(stripFences(text)); } catch { throw new Error(`${o.purpose}: no parsable JSON (finish_reason ${choice?.finish_reason ?? "?"}): ${text.slice(0, 200)}`); }
-  // Some models wrap the object in a one-element list; take it.
-  if (Array.isArray(parsed) && parsed.length === 1 && parsed[0] && typeof parsed[0] === "object") parsed = parsed[0];
-  const value = o.schema.safeParse(parsed);
-  if (!value.success) throw new Error(`${o.purpose}: answer does not match the schema: ${value.error.issues.map((i) => `${i.path.join(".")} ${i.message}`).join("; ")}`);
-  const usage = { input_tokens: j.usage?.prompt_tokens ?? 0, output_tokens: j.usage?.completion_tokens ?? 0, model: j.model ?? o.model };
-  return { value: value.data, usage, request: body, response: value.data };
+  const usage = { input_tokens: 0, output_tokens: 0, model: o.model };
+  const attempt = (json: unknown): { ok: true; value: T } | { ok: false; error: string; text: string } => {
+    const j = json as { choices?: { message?: { content?: unknown }; finish_reason?: string }[]; usage?: { prompt_tokens?: number; completion_tokens?: number }; model?: string };
+    usage.input_tokens += j.usage?.prompt_tokens ?? 0; usage.output_tokens += j.usage?.completion_tokens ?? 0; usage.model = j.model ?? o.model;
+    const choice = j.choices?.[0];
+    const content = choice?.message?.content;
+    const text = typeof content === "string" ? content : Array.isArray(content) ? content.map((c) => (c as { text?: string }).text ?? "").join("") : "";
+    let parsed: unknown;
+    try { parsed = JSON.parse(stripFences(text)); } catch { return { ok: false, error: `no parsable JSON (finish_reason ${choice?.finish_reason ?? "?"})`, text }; }
+    // Some models wrap the object in a list; take the first element that fits.
+    const candidates = Array.isArray(parsed) ? parsed : [parsed];
+    for (const c of candidates) { const v = o.schema.safeParse(c); if (v.success) return { ok: true, value: v.data }; }
+    const v = o.schema.safeParse(parsed);
+    return { ok: false, error: `answer does not match the schema: ${v.success ? "" : v.error.issues.map((i) => `${i.path.join(".")} ${i.message}`).join("; ")}`, text };
+  };
+  let a = attempt(r.json);
+  if (!a.ok) {
+    // One correction round: tell the model exactly what was wrong with its answer.
+    const messages = body["messages"] as { role: string; content: unknown }[];
+    body["messages"] = [...messages, { role: "assistant", content: a.text.slice(0, 4000) }, { role: "user", content: `Your answer was rejected: ${a.error}. Reply again with ONE JSON object that matches the schema exactly (not a list, no prose).` }];
+    const r2 = await post(body);
+    if (r2.status >= 200 && r2.status < 300) a = attempt(r2.json);
+  }
+  if (!a.ok) throw new Error(`${o.purpose}: ${a.error}. Raw: ${a.text.replace(/\s+/g, " ").slice(0, 300)}`);
+  return { value: a.value, usage, request: body, response: a.value };
 }
 
 
