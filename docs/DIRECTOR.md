@@ -5,7 +5,10 @@ SQLite-Schicht (`node:sqlite`), gleicher TypeSafe-Client, gleicher
 Env-Loader, gleiche Logger. Der Director läuft als eigener Prozess und rührt
 die Bot-Tabellen und die `STOP`-Datei nicht an.
 
-## Start (PowerShell)
+## Start
+
+Doppelklick auf `director.cmd` im Projektordner startet Server und Seite.
+Von Hand:
 
 ```powershell
 cd C:\Users\Emanuel\Heizlastberechnung

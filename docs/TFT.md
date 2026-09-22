@@ -6,16 +6,18 @@ Overlay zeigt drei Zeilen. Ohne Jev-Guthaben antwortet ein Textmodell auf
 Venice auf dieselben Fragen. Es wird nur der Bildschirm gelesen; kein
 Speicherzugriff, keine Eingaben ins Spiel.
 
-## Start (PowerShell, drei Fenster)
+## Start
 
-Fenster 1, der Berater:
+Doppelklick auf `tft.cmd` im Projektordner. Das holt den neuesten Stand,
+startet den Berater in einem Fenster „TFT-Berater“, das Overlay (immer im
+Vordergrund, per Maus verschiebbar, Rechtsklick schließt es) und die
+Browserseite. Das Fenster „TFT-Berater“ schließen beendet alles.
+
+Von Hand, falls nötig (PowerShell, zwei Fenster):
 ```powershell
 cd C:\Users\Emanuel\Heizlastberechnung
-git pull
 pnpm tft
 ```
-
-Fenster 2, das Overlay (immer im Vordergrund, per Maus verschiebbar, Rechtsklick schließt):
 ```powershell
 cd C:\Users\Emanuel\Heizlastberechnung
 powershell -ExecutionPolicy Bypass -File scripts\tft-overlay.ps1
