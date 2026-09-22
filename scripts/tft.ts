@@ -38,8 +38,8 @@ if (!veniceKey) { console.error("VENICE_API_KEY is not set"); process.exit(1); }
 const dataDir = env("TFT_DATA") ?? "data/tft";
 mkdirSync(join(dataDir, "shots"), { recursive: true });
 const visionModel = env("TFT_VISION_MODEL") ?? "qwen-3-8-flash";
-const metaModel = env("TFT_META_MODEL") ?? "kimi-k2-6";
-const adviceModel = env("TFT_ADVICE_MODEL") ?? "kimi-k2-6";
+const metaModel = env("TFT_META_MODEL") ?? "qwen-3-8-flash";
+const adviceModel = env("TFT_ADVICE_MODEL") ?? "qwen-3-8-flash";
 const intervalMs = Number(opt("interval") ?? env("TFT_INTERVAL_S") ?? 8) * 1000;
 const port = Number(env("TFT_PORT") ?? 8788);
 const width = Number(env("TFT_CAPTURE_WIDTH") ?? 1600);

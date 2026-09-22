@@ -52,9 +52,9 @@ aus der Modellliste mit `supportsVision`: `qwen-3-8-flash`, `kimi-k2-6`,
 | Aufruf | Modell (Standard) | ungefähr |
 | --- | --- | --- |
 | Bild lesen, alle 8 s | qwen-3-8-flash | 0,03 Cent |
-| Meta, einmal täglich | kimi-k2-6 mit Web-Suche | 1 bis 3 Cent |
+| Meta, einmal täglich | qwen-3-8-flash mit Web-Suche | unter 1 Cent |
 | Rat pro Board-Änderung | Jev | 0 (Guthaben) |
-| Rat ohne Jev | kimi-k2-6 | 0,3 Cent |
+| Rat ohne Jev | qwen-3-8-flash | 0,05 Cent |
 
 Ein Spiel liegt damit bei wenigen Cent. Die Kopfzeile der Browser-Seite
 zählt Lesungen, Ratschläge und Tokens.
