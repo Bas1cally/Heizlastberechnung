@@ -76,18 +76,24 @@ const markets = await fetchMarkets();
 const candidates = candidatePairs(markets).slice(0, maxPairs);
 say("candidates", { markets: markets.length, pairs: candidates.length });
 const judged: JudgedPair[] = [];
-let i = 0, failed = 0;
+let i = 0, failed = 0, consecutiveFailures = 0, aborted: string | undefined;
+const firstErrors: string[] = [];
 const started = Date.now();
 await Promise.all(Array.from({ length: concurrency }, async () => {
   for (;;) {
+    if (aborted) return;
     const c = candidates[i++];
     if (!c) return;
     try {
       const j = await judge(c.a, c.b);
+      consecutiveFailures = 0;
       judged.push({ a: c.a, b: c.b, why: c.why, relation: j.relation, confidence: j.confidence, violation: checkPrices(j.relation, c.a, c.b) });
     } catch (err) {
-      failed++;
-      if (failed <= 5) say("judgment failed", { a: c.a.slug, b: c.b.slug, err: err instanceof Error ? err.message : String(err) });
+      failed++; consecutiveFailures++;
+      const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+      if (firstErrors.length < 3) { firstErrors.push(msg); say("judgment failed", { a: c.a.slug, b: c.b.slug, err: msg }); }
+      // A dead API (no credits, bad key, outage) fails every call at once: stop instead of burning 6,000 attempts.
+      if (consecutiveFailures >= 25 && judged.length === 0) { aborted = `stopped after ${consecutiveFailures} consecutive failures: ${firstErrors[0]}`; say("scan aborted", { reason: aborted }); }
     }
     if (judged.length % 200 === 0) say("progress", { judged: judged.length, failed, elapsedS: Math.round((Date.now() - started) / 1000) });
   }
@@ -95,9 +101,9 @@ await Promise.all(Array.from({ length: concurrency }, async () => {
 const btc = markets.filter((m) => /^btc-updown-5m-/.test(m.slug));
 const feeNotes = [`btc-updown-5m markets seen: ${btc.length}, feesEnabled: ${[...new Set(btc.map((m) => String(m.feesEnabled)))].join("/") || "n/a"}`, `all markets with feesEnabled=true: ${markets.filter((m) => m.feesEnabled === true).length} of ${markets.length}`];
 mkdirSync("reports", { recursive: true });
-const meta = { markets: markets.length, candidates: candidates.length, judged: judged.length, generatedAt: new Date().toISOString(), feeNotes };
+const meta = { markets: markets.length, candidates: candidates.length, judged: judged.length, generatedAt: new Date().toISOString(), feeNotes: [...feeNotes, ...(aborted ? [`ABORTED: ${aborted}`] : []), ...firstErrors.map((e) => `error: ${e}`)] };
 writeFileSync("reports/consistency.txt", renderReport(judged, meta));
-writeFileSync("reports/consistency.json", JSON.stringify({ ...meta, failed, pairs: judged.map((p) => ({ a: { id: p.a.id, slug: p.a.slug, question: p.a.question, yes: p.a.yesPrice, bid: p.a.bestBid, ask: p.a.bestAsk, liquidity: p.a.liquidity }, b: { id: p.b.id, slug: p.b.slug, question: p.b.question, yes: p.b.yesPrice, bid: p.b.bestBid, ask: p.b.bestAsk, liquidity: p.b.liquidity }, why: p.why, relation: p.relation, confidence: p.confidence, violation: p.violation ?? null })) }, null, 1));
+writeFileSync("reports/consistency.json", JSON.stringify({ ...meta, failed, aborted: aborted ?? null, errors: firstErrors, pairs: judged.map((p) => ({ a: { id: p.a.id, slug: p.a.slug, question: p.a.question, yes: p.a.yesPrice, bid: p.a.bestBid, ask: p.a.bestAsk, liquidity: p.a.liquidity }, b: { id: p.b.id, slug: p.b.slug, question: p.b.question, yes: p.b.yesPrice, bid: p.b.bestBid, ask: p.b.bestAsk, liquidity: p.b.liquidity }, why: p.why, relation: p.relation, confidence: p.confidence, violation: p.violation ?? null })) }, null, 1));
 say("done", { judged: judged.length, failed, executable: judged.filter((p) => (p.violation?.executable ?? 0) > 0.005).length, tookS: Math.round((Date.now() - started) / 1000) });
 process.stdout.write(renderReport(judged, meta).split("\n").slice(0, 60).join("\n") + "\n");
 db.close();
