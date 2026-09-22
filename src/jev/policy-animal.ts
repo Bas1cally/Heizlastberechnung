@@ -50,14 +50,14 @@ export interface AnimalPolicyOptions {
   readonly tailsBought?: number;
 }
 
-const choice = <T extends string>(c: T, others: readonly T[], confidence = 0.9) => ({
+export const pick = <T extends string>(c: T, others: readonly T[], confidence = 0.9) => ({
   type: "choice" as const, choice: c, confidence,
   probabilities: Object.fromEntries([[c, confidence], ...others.filter((o) => o !== c).map((o) => [o, (1 - confidence) / Math.max(1, others.length - 1)])]) as Record<string, number>,
 });
-const score = (s: number) => ({ type: "score" as const, score: s, confidence: 0.8, legend: {}, probabilities: {} as Record<string, number> });
-const ACTIONS = ["BUY_UP", "BUY_DOWN", "BUY_PAIR", "ADD_COMPLEMENT", "HOLD", "CANCEL", "ABSTAIN"] as const;
-const INV = ["NONE", "ADD_UP", "ADD_DOWN", "PAIR", "MERGE", "REDUCE_RISK"] as const;
-const URG = ["PASSIVE", "NORMAL", "URGENT", "IMMEDIATE"] as const;
+export const score = (s: number) => ({ type: "score" as const, score: s, confidence: 0.8, legend: {}, probabilities: {} as Record<string, number> });
+export const ACTIONS = ["BUY_UP", "BUY_DOWN", "BUY_PAIR", "ADD_COMPLEMENT", "HOLD", "CANCEL", "ABSTAIN"] as const;
+export const INV = ["NONE", "ADD_UP", "ADD_DOWN", "PAIR", "MERGE", "REDUCE_RISK"] as const;
+export const URG = ["PASSIVE", "NORMAL", "URGENT", "IMMEDIATE"] as const;
 
 export interface PolicyDecision { readonly action: (typeof ACTIONS)[number]; readonly inventory: (typeof INV)[number]; readonly urgency: (typeof URG)[number]; readonly why: string }
 
@@ -112,16 +112,21 @@ export function animalPolicyCall(o: AnimalPolicyOptions): JevCall {
     for (const k of tails.keys()) if (k < key - 3_600_000) tails.delete(k);
     const d = animalPolicy(state, { ...o, tailsBought: tails.get(key) ?? 0 });
     if (d.action === "BUY_UP" || d.action === "BUY_DOWN") tails.set(key, (tails.get(key) ?? 0) + 1);
-    const leader = state.orderbook.leader ?? "UP";
-    const pLead = state.market.leadHeldRate ?? 0.5;
-    const answers: JevAnswers = {
-      action: choice(d.action, ACTIONS),
-      settlement_direction: { type: "choice", choice: leader, confidence: pLead, probabilities: { UP: leader === "UP" ? pLead : 1 - pLead, DOWN: leader === "DOWN" ? pLead : 1 - pLead, UNRESOLVED: 0 } } as unknown as JevAnswers["settlement_direction"],
-      market_mispricing: choice("NONE", ["UP_UNDERVALUED", "DOWN_UNDERVALUED", "PAIR_UNDERVALUED", "NONE", "UNCERTAIN"]),
-      inventory_action: choice(d.inventory, INV),
-      execution_urgency: choice(d.urgency, URG),
-      winner_confidence: score(3), reversal_risk: score(1), adverse_selection_risk: score(1),
-    } as unknown as JevAnswers;
-    return { answers, model, usage: { input_tokens: 0, output_tokens: 0 } };
+    return { answers: policyAnswers(d, state), model, usage: { input_tokens: 0, output_tokens: 0 } };
   };
+}
+
+/** A policy decision in Jev's answer shape, so observer, gate, engines and analytics treat it like any other. */
+export function policyAnswers(d: PolicyDecision, state: JevInputState): JevAnswers {
+  const leader = state.orderbook.leader ?? "UP";
+  const pLead = state.market.leadHeldRate ?? 0.5;
+  return {
+    action: pick(d.action, ACTIONS),
+    settlement_direction: { type: "choice", choice: leader, confidence: pLead, probabilities: { UP: leader === "UP" ? pLead : 1 - pLead, DOWN: leader === "DOWN" ? pLead : 1 - pLead, UNRESOLVED: 0 } } as unknown as JevAnswers["settlement_direction"],
+    market_mispricing: pick("NONE", ["UP_UNDERVALUED", "DOWN_UNDERVALUED", "PAIR_UNDERVALUED", "NONE", "UNCERTAIN"]),
+    inventory_action: pick(d.inventory, INV),
+    execution_urgency: pick(d.urgency, URG),
+    winner_confidence: score(3), reversal_risk: score(1), adverse_selection_risk: score(1),
+    note: d.why,
+  } as unknown as JevAnswers;
 }

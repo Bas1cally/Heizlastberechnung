@@ -113,6 +113,17 @@ export interface JevAnswers {
   readonly winner_confidence: ScoreResponse;
   readonly reversal_risk: ScoreResponse;
   readonly adverse_selection_risk: ScoreResponse;
+  /** A policy runner's focused Jev judgment at the one moment it was asked (policy-animal-jev). Absent when nothing was asked. */
+  readonly focused?: {
+    readonly name: string;
+    readonly choice: string;
+    readonly confidence: number;
+    readonly probabilities: Record<string, number>;
+    readonly latencyMs: number;
+    readonly model: string;
+  };
+  /** Why a policy decided what it decided, for the record. */
+  readonly note?: string;
 }
 
 export type RiskGateResult = "APPROVED" | "REJECTED";

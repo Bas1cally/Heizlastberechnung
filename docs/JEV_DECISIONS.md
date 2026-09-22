@@ -243,6 +243,29 @@ Morning of 22 Sep, after 92 markets overnight (Jev -848 USD, copy -101 and
   to the observer (three runners had twelve subscriptions; one runner's
   streams went silent for whole markets while the others were fine).
 
+## Jev where the judgment is (added 2026-09-22)
+
+The overnight answer to §45 as originally framed is no: 92 markets, -848
+USD, every loss a directional buy at 0.26-0.31 that the market priced
+better than the hold-rate table. That framing put Jev in the seat of a
+directional trader with a question set that rewards exactly that. The
+sequence that made money has two judgments in it and nothing else:
+whether to take the tail in this market, and whether to keep the hedge
+bid while the lead reverses. `src/jev/policy-animal-jev.ts`
+(`pnpm auto -- animaljev`, `data/animal-jev.sqlite`) is the copy's
+skeleton with Jev asked ONE focused question at each of those moments:
+
+- tail at 0.01 inside 180 s: TAKE_NOW / WAIT / SKIP;
+- tail filled, hedge bid resting (placed by the engine the instant the
+  tail filled): KEEP_BID / PULL_BID; once pulled: REBID / STAY_UNHEDGED;
+  forced back with 8 s left.
+
+The hedge placement is never Jev's: the 0.99 level fills within seconds of
+opening and a judgment in that path can only lose the queue. Each answer
+is recorded with its probabilities and latency (`answers_json.focused`);
+the measurement is policy-animal-jev against policy-animal on the same
+markets, and that difference is what Jev adds, nothing else.
+
 ## Benchmark: the mechanical copy runs beside Jev (added 2026-09-21)
 
 `src/jev/policy-animal.ts` plays the measured pattern deterministically and

@@ -13,14 +13,14 @@ import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { EXIT_UPDATE } from "../src/app/self-update.js";
 
 const mode = process.argv[2] && !process.argv[2].startsWith("-") ? process.argv[2] : "paper";
-const script = { observe: "scripts/observe.ts", paper: "scripts/paper.ts", shadow: "scripts/shadow.ts", live: "scripts/live.ts", animal: "scripts/paper.ts", animalplus: "scripts/paper.ts" }[mode];
-if (!script) { console.error(`unknown bot '${mode}'; use observe, paper, shadow, live, animal or animalplus`); process.exit(1); }
+const script = { observe: "scripts/observe.ts", paper: "scripts/paper.ts", shadow: "scripts/shadow.ts", live: "scripts/live.ts", animal: "scripts/paper.ts", animalplus: "scripts/paper.ts", animaljev: "scripts/paper.ts" }[mode];
+if (!script) { console.error(`unknown bot '${mode}'; use observe, paper, shadow, live, animal, animalplus or animaljev`); process.exit(1); }
 // Live needs the explicit flag on the command line as well as ENABLE_LIVE_TRADING in .env.
 // The benchmark policies run the paper pipeline in their own database, never sync themselves,
 // and read the measured hold rates from the main database.
-const extraArgs = mode === "live" ? ["--mode", "live"] : mode === "animal" ? ["--policy", "animal", "--no-sync"] : mode === "animalplus" ? ["--policy", "animal-plus", "--no-sync"] : [];
-const extraEnv = mode === "animal" ? { DATABASE_URL: "data/animal.sqlite", HOLD_RATE_DB: process.env["DATABASE_URL"] ?? "data/bot.sqlite" }
-  : mode === "animalplus" ? { DATABASE_URL: "data/animal-plus.sqlite", HOLD_RATE_DB: process.env["DATABASE_URL"] ?? "data/bot.sqlite" } : {};
+const POLICY = { animal: "animal", animalplus: "animal-plus", animaljev: "animal-jev" }[mode];
+const extraArgs = mode === "live" ? ["--mode", "live"] : POLICY ? ["--policy", POLICY, "--no-sync"] : [];
+const extraEnv = POLICY ? { DATABASE_URL: `data/${POLICY}.sqlite`, HOLD_RATE_DB: process.env["DATABASE_URL"] ?? "data/bot.sqlite" } : {};
 
 const say = (msg: string) => process.stdout.write(JSON.stringify({ ts: new Date().toISOString(), level: "info", msg, auto: mode }) + "\n");
 const git = (args: string[]) => execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 60_000 }).trim();

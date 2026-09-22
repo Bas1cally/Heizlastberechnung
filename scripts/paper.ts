@@ -23,7 +23,7 @@ import { createLogger } from "../src/observability/logger.js";
 import { teeSink } from "../src/observability/file-sink.js";
 import { spawn } from "node:child_process";
 import { createClock } from "../src/feeds/clock.js";
-import { createJevCall } from "../src/jev/client.js";
+import { createFocusedAsk, createJevCall } from "../src/jev/client.js";
 import { openDatabase } from "../src/persistence/database.js";
 import { DecisionRepository } from "../src/persistence/repositories/decisions.js";
 import { findCurrentMarket, type DiscoveryClient } from "../src/market/market-discovery.js";
@@ -36,14 +36,15 @@ import { buildHoldRateTable, type HoldRateTable } from "../src/analytics/hold-ra
 import { PaperLiveEngine } from "../src/execution/paper-live-engine.js";
 import { DEFAULT_FILL_PARAMS } from "../src/replay/paper-fill-model.js";
 import { animalPolicyCall } from "../src/jev/policy-animal.js";
+import { animalJevPolicyCall } from "../src/jev/policy-animal-jev.js";
 
 loadEnvFile();
 const cfg = loadConfig();
-// --policy animal | animal-plus: the deterministic benchmark (src/jev/policy-animal.ts)
+// --policy animal | animal-plus | animal-jev: the benchmark policies (src/jev/policy-animal*.ts)
 // in place of Jev, on the same pipeline, in its own database (pnpm auto -- animal).
 const policyIdx = process.argv.indexOf("--policy");
 const policy = policyIdx >= 0 ? process.argv[policyIdx + 1] : undefined;
-if (policy !== undefined && policy !== "animal" && policy !== "animal-plus") { console.error(`unknown --policy ${policy}`); process.exit(1); }
+if (policy !== undefined && policy !== "animal" && policy !== "animal-plus" && policy !== "animal-jev") { console.error(`unknown --policy ${policy}`); process.exit(1); }
 const processName = policy ?? "paper";
 const log = createLogger({ level: (process.env["LOG_LEVEL"] as never) ?? "info", write: teeSink(`logs/${processName}.log`) });
 // Every 15 minutes the reports, a compact database export and the log tails
@@ -61,7 +62,7 @@ const latencyMs = opt("latency", Number(process.env["PAPER_LATENCY_MS"] ?? 350))
 const FILL = { ...DEFAULT_FILL_PARAMS, slippage: 0 };
 const seed = opt("seed", 1);
 
-if (!cfg.typesafeApiKey && !policy) { log.error("TYPESAFE_API_KEY is not set"); process.exit(1); }
+if (!cfg.typesafeApiKey && (!policy || policy === "animal-jev")) { log.error("TYPESAFE_API_KEY is not set"); process.exit(1); }
 if (cfg.mode !== "observe" && cfg.mode !== "paper") {
   log.error(`bot:paper only runs in paper mode (got ${cfg.mode}); live execution does not exist`);
   process.exit(1);
@@ -109,7 +110,9 @@ const startPriceFor = (openedAtMs: number) => tape.waitForStart(openedAtMs, 12_0
   .then((s) => (s.twap ? { price: s.twap.price, ts: s.twap.ts, source: `chainlink-twap${cfg.chainlinkTwapSeconds}` } : undefined));
 const db = openDatabase(cfg.databaseUrl);
 const repo = new DecisionRepository(db);
-const jevCall = policy ? animalPolicyCall({ variant: policy === "animal-plus" ? "plus" : "plain" }) : createJevCall({ apiKey: cfg.typesafeApiKey!, model: cfg.typesafeModel, timeoutMs: 5_000 });
+const jevCall = policy === "animal-jev" ? animalJevPolicyCall({ ask: createFocusedAsk({ apiKey: cfg.typesafeApiKey!, model: cfg.typesafeModel, timeoutMs: 5_000 }) })
+  : policy ? animalPolicyCall({ variant: policy === "animal-plus" ? "plus" : "plain" })
+  : createJevCall({ apiKey: cfg.typesafeApiKey!, model: cfg.typesafeModel, timeoutMs: 5_000 });
 
 log.info("paper starting", { mode: "paper", policy: policy ?? "jev", latencyMs, seed, fill: FILL, limits: cfg.limits, db: cfg.databaseUrl, model: policy ?? cfg.typesafeModel ?? "jev-latest" });
 
