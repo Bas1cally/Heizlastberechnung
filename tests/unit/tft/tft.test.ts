@@ -114,7 +114,7 @@ describe("tft advisor", () => {
 describe("tft store and server", () => {
   it("keeps readings and advice; the api renders three overlay lines", () => {
     const store = new TftStore(openDatabase(":memory:"), () => 42);
-    const api = createTftApi({ store, meta: () => meta, status: () => ({ vision: "v" }), log: () => {} });
+    const api = createTftApi({ store, now: () => 42, meta: () => meta, status: () => ({ vision: "v" }), log: () => {} });
     expect(api.advice().line1).toContain("warte");
     const reading = store.addReading("/shots/1.jpg", read, fingerprint(read), "qwen", 800, { input_tokens: 1500, output_tokens: 100 });
     expect(api.advice().line1).toBe("Stage 3-2 · 34 Gold · Lvl 6");
