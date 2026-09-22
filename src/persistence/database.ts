@@ -29,7 +29,7 @@ export function openDatabase(path: string): Db {
   db.exec("PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
   db.exec(SCHEMA_SQL);
   // Columns added after the first release; SQLite has no ADD COLUMN IF NOT EXISTS.
-  for (const ddl of ["ALTER TABLE markets ADD COLUMN start_lag_ms INTEGER", "ALTER TABLE markets ADD COLUMN start_source TEXT", "ALTER TABLE markets ADD COLUMN resolved_source TEXT"]) {
+  for (const ddl of ["ALTER TABLE markets ADD COLUMN start_lag_ms INTEGER", "ALTER TABLE markets ADD COLUMN start_source TEXT", "ALTER TABLE markets ADD COLUMN resolved_source TEXT", "ALTER TABLE trades ADD COLUMN fee_rate_bps REAL"]) {
     try { db.exec(ddl); } catch { /* already there */ }
   }
 

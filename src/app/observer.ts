@@ -198,7 +198,7 @@ export class MarketObserver {
           deps.onResolved?.(outcome, p);
         },
         onTrade: (t) => {
-          this.persist("trade", () => deps.repo.saveTrade(market.marketId, t.assetId, t.tsMs, clock.wall(), t.price, t.size, t.side));
+          this.persist("trade", () => deps.repo.saveTrade(market.marketId, t.assetId, t.tsMs, clock.wall(), t.price, t.size, t.side, t.feeRateBps));
           deps.onTrade?.(t, clock.mono());
         },
         onReconnect: (n) => log.warn("market feed reconnected", { attempt: n }),

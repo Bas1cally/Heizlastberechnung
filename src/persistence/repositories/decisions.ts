@@ -79,8 +79,8 @@ export class DecisionRepository {
   }
 
   /** A match from the market channel; `side` is the taker's. */
-  saveTrade(marketId: string, assetId: string, tsMs: number | undefined, receivedAtMs: number, price: number, size: number, side: "BUY" | "SELL"): void {
-    this.db.run(`INSERT INTO trades (market_id, asset_id, ts_ms, received_at_ms, price, size, side) VALUES (?,?,?,?,?,?,?)`, [marketId, assetId, tsMs ?? null, receivedAtMs, price, size, side]);
+  saveTrade(marketId: string, assetId: string, tsMs: number | undefined, receivedAtMs: number, price: number, size: number, side: "BUY" | "SELL", feeRateBps?: number): void {
+    this.db.run(`INSERT INTO trades (market_id, asset_id, ts_ms, received_at_ms, price, size, side, fee_rate_bps) VALUES (?,?,?,?,?,?,?,?)`, [marketId, assetId, tsMs ?? null, receivedAtMs, price, size, side, feeRateBps ?? null]);
   }
 
   saveBook(marketId: string, assetId: string, receivedAtMs: number, bids: unknown, asks: unknown): void {

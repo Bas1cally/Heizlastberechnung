@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS trades (
   received_at_ms INTEGER NOT NULL,
   price REAL NOT NULL,
   size REAL NOT NULL,
-  side TEXT NOT NULL
+  side TEXT NOT NULL,
+  fee_rate_bps REAL
 );
 CREATE INDEX IF NOT EXISTS trades_market_received ON trades(market_id, received_at_ms);
 

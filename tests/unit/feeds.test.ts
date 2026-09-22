@@ -114,8 +114,8 @@ describe("BookFeed trades", () => {
   it("forwards last_trade_price as a numeric trade with the taker side, and drops unusable ones", () => {
     const trades: unknown[] = [];
     const feed = new BookFeed({ assetIds: ["UP"], subscribe: async () => scripted([]), now: () => 5, log, handlers: { onBook: () => {}, onTrade: (t) => trades.push(t) } });
-    feed.dispatch({ type: "last_trade_price", payload: { assetId: "UP", price: "0.99", size: "307.5", side: "SELL", timestamp: 1789994438054 } });
-    expect(trades).toEqual([{ assetId: "UP", price: 0.99, size: 307.5, side: "SELL", tsMs: 1789994438054 }]);
+    feed.dispatch({ type: "last_trade_price", payload: { assetId: "UP", price: "0.99", size: "307.5", side: "SELL", timestamp: 1789994438054, feeRateBps: "25" } });
+    expect(trades).toEqual([{ assetId: "UP", price: 0.99, size: 307.5, side: "SELL", tsMs: 1789994438054, feeRateBps: 25 }]);
     feed.dispatch({ type: "last_trade_price", payload: { assetId: "UP", price: "0.99", size: null, side: "SELL" } });
     feed.dispatch({ type: "last_trade_price", payload: { assetId: "UP", price: "x", size: "1", side: "BUY" } });
     expect(trades).toHaveLength(1);

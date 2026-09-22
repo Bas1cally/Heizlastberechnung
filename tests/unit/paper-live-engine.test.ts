@@ -207,13 +207,13 @@ describe("PaperLiveEngine maker fills", () => {
 
     // Behind the 500 shares at 0.99 that were in the decision's book; the 900 that arrive during the latency are behind us.
     e.onBook(leaderBook(1400), 1400);
-    e.onTrade({ assetId: "DOWN", price: 0.99, size: 300, side: "SELL", tsMs: undefined }, 1500);
+    e.onTrade({ assetId: "DOWN", price: 0.99, size: 300, side: "SELL", tsMs: undefined, feeRateBps: undefined }, 1500);
     expect(fills().filter((f) => f.side === "DOWN")).toHaveLength(0); // 200 still ahead
-    e.onTrade({ assetId: "DOWN", price: 0.995, size: 100, side: "SELL", tsMs: undefined }, 1600); // a sell above our price only eats the queue
-    e.onTrade({ assetId: "DOWN", price: 0.99, size: 104, side: "SELL", tsMs: undefined }, 1700); // 100 ahead left, 4 reach us
+    e.onTrade({ assetId: "DOWN", price: 0.995, size: 100, side: "SELL", tsMs: undefined, feeRateBps: undefined }, 1600); // a sell above our price only eats the queue
+    e.onTrade({ assetId: "DOWN", price: 0.99, size: 104, side: "SELL", tsMs: undefined, feeRateBps: undefined }, 1700); // 100 ahead left, 4 reach us
     expect(fills().filter((f) => f.side === "DOWN")).toEqual([expect.objectContaining({ side: "DOWN", size: 4 })]);
     expect(hedge(orders)?.status).toBe("PARTIAL");
-    e.onTrade({ assetId: "DOWN", price: 0.98, size: 50, side: "SELL", tsMs: undefined }, 1800); // through our price: the remaining 6 fill
+    e.onTrade({ assetId: "DOWN", price: 0.98, size: 50, side: "SELL", tsMs: undefined, feeRateBps: undefined }, 1800); // through our price: the remaining 6 fill
     expect(fills().filter((f) => f.side === "DOWN")).toHaveLength(2);
     expect(hedge(orders)?.status).toBe("FILLED");
     expect(e.summary().position.downShares).toBe(10);
@@ -225,10 +225,10 @@ describe("PaperLiveEngine maker fills", () => {
     takeTail(e, 0);
     e.onApproved(decision("ADD_COMPLEMENT", "IMMEDIATE", "PAIR"), snapshot(tailBook(), leaderBook(0)), 1000); // nobody ahead in the decision's book
     e.onBook(leaderBook(0), 1000);
-    e.onTrade({ assetId: "DOWN", price: 0.99, size: 50, side: "BUY", tsMs: undefined }, 1100); // a taker buy lifts asks, never our bid
-    e.onTrade({ assetId: "UP", price: 0.99, size: 50, side: "SELL", tsMs: undefined }, 1100);
+    e.onTrade({ assetId: "DOWN", price: 0.99, size: 50, side: "BUY", tsMs: undefined, feeRateBps: undefined }, 1100); // a taker buy lifts asks, never our bid
+    e.onTrade({ assetId: "UP", price: 0.99, size: 50, side: "SELL", tsMs: undefined, feeRateBps: undefined }, 1100);
     expect(fills().filter((f) => f.side === "DOWN")).toHaveLength(0);
-    e.onTrade({ assetId: "DOWN", price: 0.99, size: 3, side: "SELL", tsMs: undefined }, 1200);
+    e.onTrade({ assetId: "DOWN", price: 0.99, size: 3, side: "SELL", tsMs: undefined, feeRateBps: undefined }, 1200);
     expect(fills().filter((f) => f.side === "DOWN")).toEqual([expect.objectContaining({ side: "DOWN", size: 3 })]);
     const s = e.settleAt("DOWN", 2000);
     expect(hedge(orders)?.status).toBe("PARTIAL");
@@ -241,12 +241,12 @@ describe("PaperLiveEngine maker fills", () => {
     takeTail(e, 0);
     e.onApproved(decision("ADD_COMPLEMENT", "IMMEDIATE", "PAIR"), snapshot(tailBook(), leaderBook(100)), 1000); // 100 ahead at 0.99
     e.onBook(leaderBook(100), 1000);
-    e.onTrade({ assetId: "UP", price: 0.005, size: 60, side: "BUY", tsMs: undefined }, 1100); // UP bought at 0.005 = DOWN at 0.995: above us, eats 60 of the queue
-    e.onTrade({ assetId: "UP", price: 0.01, size: 47, side: "BUY", tsMs: undefined }, 1200);  // UP bought at 0.01 = DOWN at 0.99: 40 more ahead, 7 reach us
+    e.onTrade({ assetId: "UP", price: 0.005, size: 60, side: "BUY", tsMs: undefined, feeRateBps: undefined }, 1100); // UP bought at 0.005 = DOWN at 0.995: above us, eats 60 of the queue
+    e.onTrade({ assetId: "UP", price: 0.01, size: 47, side: "BUY", tsMs: undefined, feeRateBps: undefined }, 1200);  // UP bought at 0.01 = DOWN at 0.99: 40 more ahead, 7 reach us
     expect(fills().filter((f) => f.side === "DOWN")).toEqual([expect.objectContaining({ side: "DOWN", size: 7 })]);
-    e.onTrade({ assetId: "UP", price: 0.02, size: 50, side: "BUY", tsMs: undefined }, 1300);  // UP at 0.02 = DOWN at 0.98: through our price, the remaining 3 fill
+    e.onTrade({ assetId: "UP", price: 0.02, size: 50, side: "BUY", tsMs: undefined, feeRateBps: undefined }, 1300);  // UP at 0.02 = DOWN at 0.98: through our price, the remaining 3 fill
     expect(e.summary().position.downShares).toBe(10);
-    e.onTrade({ assetId: "UP", price: 0.01, size: 50, side: "SELL", tsMs: undefined }, 1400); // a sell of the other token is not flow for us
+    e.onTrade({ assetId: "UP", price: 0.01, size: 50, side: "SELL", tsMs: undefined, feeRateBps: undefined }, 1400); // a sell of the other token is not flow for us
   });
 
   it("keeps a hedge resting until the close rather than the 20 s TTL", () => {
@@ -276,7 +276,7 @@ describe("PaperLiveEngine hedge on fill", () => {
     expect(hedge).toMatchObject({ status: "RESTING", order_type: "GTC", size: 10 });
     expect(hedge.price).toBeCloseTo(0.99, 9);
     // 120 ahead: a sell of 125 at 0.99 fills 5.
-    e.onTrade({ assetId: "DOWN", price: 0.99, size: 125, side: "SELL", tsMs: undefined }, 1700);
+    e.onTrade({ assetId: "DOWN", price: 0.99, size: 125, side: "SELL", tsMs: undefined, feeRateBps: undefined }, 1700);
     expect(fills().filter((f) => f.side === "DOWN")).toEqual([expect.objectContaining({ size: 5 })]);
   });
 
@@ -288,7 +288,7 @@ describe("PaperLiveEngine hedge on fill", () => {
     expect(orders()[0]?.price).toBeCloseTo(0.99, 9);
     e.onBook(tailBook(), 1300); // tail fills: the hedge stays as it is
     expect(orders().map((o) => o.status).sort()).toEqual(["FILLED", "RESTING"]);
-    e.onTrade({ assetId: "DOWN", price: 0.99, size: 45, side: "SELL", tsMs: undefined }, 1400);
+    e.onTrade({ assetId: "DOWN", price: 0.99, size: 45, side: "SELL", tsMs: undefined, feeRateBps: undefined }, 1400);
     expect(fills().filter((f) => f.side === "DOWN")).toEqual([expect.objectContaining({ size: 5 })]);
 
     const gone = engine({ latencyMs: 300 });

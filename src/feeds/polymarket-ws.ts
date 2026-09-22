@@ -45,6 +45,7 @@ export interface LastTradeEvent {
     readonly size?: string | number | null;
     readonly side: "BUY" | "SELL";
     readonly timestamp?: number | null;
+    readonly feeRateBps?: string | number | null;
   };
 }
 export interface Trade {
@@ -55,6 +56,8 @@ export interface Trade {
   readonly side: "BUY" | "SELL";
   /** Server timestamp when present, else local receive time (wall clock is the caller's business; this is the feed's `now`). */
   readonly tsMs: number | undefined;
+  /** The taker fee the exchange reports for this match, in bps of notional; undefined when absent. The number that decides whether a volume loop bleeds. */
+  readonly feeRateBps: number | undefined;
 }
 export interface ResolvedEvent {
   readonly type: "market_resolved";
@@ -177,7 +180,8 @@ export class BookFeed {
         const p = (ev as LastTradeEvent).payload;
         const price = Number(p.price), size = Number(p.size ?? Number.NaN);
         if (!Number.isFinite(price) || !Number.isFinite(size) || size <= 0 || (p.side !== "BUY" && p.side !== "SELL")) return;
-        this.opts.handlers.onTrade?.({ assetId: p.assetId, price, size, side: p.side, tsMs: typeof p.timestamp === "number" ? p.timestamp : undefined });
+        const fee = p.feeRateBps === undefined || p.feeRateBps === null ? Number.NaN : Number(p.feeRateBps);
+        this.opts.handlers.onTrade?.({ assetId: p.assetId, price, size, side: p.side, tsMs: typeof p.timestamp === "number" ? p.timestamp : undefined, feeRateBps: Number.isFinite(fee) ? fee : undefined });
         return;
       }
       case "market_resolved":
