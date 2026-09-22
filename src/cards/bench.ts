@@ -154,9 +154,9 @@ export function scoreEquity(results: readonly Result[]) {
   for (const v of Object.values(byStreet)) v.mae /= v.n;
   // Two-fold cross-validated linear recalibration: learn truth = a + b * said on one half, measure on the other.
   const fit = (xs: typeof ok) => { const n = xs.length; if (n < 3) return { a: 0, b: 1 }; const mx2 = xs.reduce((s, r) => s + Number(r.answer.value), 0) / n, my2 = xs.reduce((s, r) => s + r.item.truth, 0) / n; const sxy = xs.reduce((s, r) => s + (Number(r.answer.value) - mx2) * (r.item.truth - my2), 0), sxx = xs.reduce((s, r) => s + (Number(r.answer.value) - mx2) ** 2, 0); const b = sxx ? sxy / sxx : 1; return { a: my2 - b * mx2, b }; };
-  const halves = [ok.filter((_, i) => i % 2 === 0), ok.filter((_, i) => i % 2 === 1)];
+  const even = ok.filter((_, i) => i % 2 === 0), odd = ok.filter((_, i) => i % 2 === 1);
   let calErr = 0;
-  for (const [train, test] of [[halves[0]!, halves[1]!], [halves[1]!, halves[0]!]]) { const f = fit(train); for (const r of test) calErr += Math.abs(Math.min(1, Math.max(0, f.a + f.b * Number(r.answer.value))) - r.item.truth); }
+  for (const [train, held] of [[even, odd], [odd, even]] as const) { const f = fit(train); for (const r of held) calErr += Math.abs(Math.min(1, Math.max(0, f.a + f.b * Number(r.answer.value))) - r.item.truth); }
   const full = fit(ok);
   return { calibratedMae: ok.length ? calErr / ok.length : 0, calibration: full, n: ok.length, errors: results.length - ok.length, mae: d.length ? d.reduce((s, x) => s + Math.abs(x), 0) / d.length : 0, bias: d.length ? d.reduce((s, x) => s + x, 0) / d.length : 0, within5: d.length ? d.filter((x) => Math.abs(x) <= 0.05).length / d.length : 0, correlation: vx && vy ? cov / Math.sqrt(vx * vy) : 0, buckets, byStreet, msMedian: median(ok.map((r) => r.answer.ms)) };
 }
