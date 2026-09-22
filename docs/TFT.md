@@ -11,7 +11,8 @@ Speicherzugriff, keine Eingaben ins Spiel.
 Doppelklick auf `tft.cmd` im Projektordner. Das holt den neuesten Stand,
 startet den Berater in einem Fenster „TFT-Berater“, das Overlay (immer im
 Vordergrund, per Maus verschiebbar, Rechtsklick schließt es) und die
-Browserseite. Das Fenster „TFT-Berater“ schließen beendet alles.
+Browserseite. `tft-stop.cmd` beendet Berater und Overlay wieder (oder das
+Fenster „TFT-Berater“ schließen und das Overlay per Rechtsklick).
 
 Von Hand, falls nötig (PowerShell, zwei Fenster):
 ```powershell

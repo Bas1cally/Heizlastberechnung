@@ -1,5 +1,5 @@
 @echo off
-rem TFT-Berater: alles mit einem Doppelklick. Holt den neuesten Stand, startet den Berater,
+rem TFT-Berater START. Stopp: tft-stop.cmd. Holt den neuesten Stand, startet den Berater,
 rem das Overlay (Rechtsklick schliesst es) und die Browserseite. Fenster "TFT-Berater" schliessen = Stopp.
 cd /d "%~dp0"
 git pull --ff-only
