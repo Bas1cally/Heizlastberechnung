@@ -8,8 +8,9 @@
  *   pnpm share                 # reports, logs, last five game screenshots
  *   pnpm share -- --ohne-bild  # without screenshots
  *
- * Push auth like pnpm sync: GITHUB_SYNC_TOKEN from .env if set, else the
- * git credential manager.
+ * Needs GITHUB_SYNC_TOKEN in .env (fine-grained, Contents read/write on this
+ * repository). Without it the script stops instead of opening the git
+ * credential manager's browser sign-in, which failed on this machine.
  */
 import { execFileSync, spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -55,6 +56,7 @@ git(["add", "-A"]);
 git(["-c", "user.name=jev-bot", "-c", "user.email=jev-bot@localhost", "commit", "-q", "--allow-empty", "-m", `share ${new Date().toISOString()}`]);
 git(["branch", "-M", "share"]);
 const token = process.env["GITHUB_SYNC_TOKEN"]?.trim();
+if (!token) { say("Kein GITHUB_SYNC_TOKEN in der .env: nichts geteilt. Bericht stattdessen aus reports\\tft-report.txt kopieren."); process.exit(0); }
 const m = remote.match(/^(?:https:\/\/(?:[^@]+@)?github\.com\/|git@github\.com:)([^/]+\/[^/]+?)(?:\.git)?$/);
 const url = token && m ? `https://x-access-token:${token}@github.com/${m[1]}.git` : "origin";
 try { git(["push", "-q", "--force", url, "share:share"]); }
