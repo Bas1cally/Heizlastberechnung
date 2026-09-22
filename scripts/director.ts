@@ -29,10 +29,12 @@ import { DirectorService } from "../src/director/service.js";
 import { startDirectorServer } from "../src/director/server.js";
 
 loadEnvFile();
+// An empty line in .env (`DIRECTOR_DATA=`) means "not set", not "".
+const env = (name: string): string | undefined => { const v = process.env[name]?.trim(); return v ? v : undefined; };
 const argv = process.argv.slice(2);
 const opt = (n: string) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? argv[i + 1] : undefined; };
-const port = Number(opt("port") ?? process.env["DIRECTOR_PORT"] ?? 8787);
-const dataDir = process.env["DIRECTOR_DATA"] ?? "data/director";
+const port = Number(opt("port") ?? env("DIRECTOR_PORT") ?? 8787);
+const dataDir = env("DIRECTOR_DATA") ?? "data/director";
 mkdirSync(dataDir, { recursive: true });
 const log = createLogger({ write: teeSink("logs/director.log"), bindings: { component: "director" } });
 
@@ -41,28 +43,28 @@ const repo = new DirectorRepo(db);
 const engines = EngineRegistry.load("director/engines.json");
 const vocabulary = loadVocabulary("director/vocabulary.json");
 
-const veniceKey = process.env["VENICE_API_KEY"];
+const veniceKey = env("VENICE_API_KEY");
 const venice = veniceKey ? new VeniceClient({ apiKey: veniceKey }) : undefined;
 // The text model behind draft / review_fix / translate. Default: a text model on the Venice
 // account (TEXT_PROVIDER=venice, VENICE_TEXT_MODEL, default kimi-k2-6); TEXT_PROVIDER=anthropic
 // uses ANTHROPIC_API_KEY + CLAUDE_MODEL instead.
-const provider = process.env["TEXT_PROVIDER"] ?? (veniceKey ? "venice" : process.env["ANTHROPIC_API_KEY"] ? "anthropic" : "none");
+const provider = env("TEXT_PROVIDER") ?? (veniceKey ? "venice" : env("ANTHROPIC_API_KEY") ? "anthropic" : "none");
 let text: TextCalls | undefined;
-let textPrice = { inPerM: Number(process.env["TEXT_USD_PER_MTOKEN_IN"] ?? 0), outPerM: Number(process.env["TEXT_USD_PER_MTOKEN_OUT"] ?? 0) };
+let textPrice = { inPerM: Number(env("TEXT_USD_PER_MTOKEN_IN") ?? 0), outPerM: Number(env("TEXT_USD_PER_MTOKEN_OUT") ?? 0) };
 if (provider === "venice" && veniceKey) {
-  const model = process.env["VENICE_TEXT_MODEL"] ?? "kimi-k2-6";
-  text = new VeniceTextCalls({ apiKey: veniceKey, model, reasoningEffort: process.env["VENICE_TEXT_REASONING"] ?? "low" });
+  const model = env("VENICE_TEXT_MODEL") ?? "kimi-k2-6";
+  text = new VeniceTextCalls({ apiKey: veniceKey, model, reasoningEffort: env("VENICE_TEXT_REASONING") ?? "low" });
   if (!textPrice.inPerM && !textPrice.outPerM) {
     const p = await veniceTextPricing(veniceKey, model).catch(() => undefined);
     if (p) textPrice = p; else log.warn("text model price unknown; cost counter stays at 0 for text calls", { model });
   }
-} else if (provider === "anthropic" && process.env["ANTHROPIC_API_KEY"]) {
-  text = new ClaudeCalls({ apiKey: process.env["ANTHROPIC_API_KEY"], model: process.env["CLAUDE_MODEL"] ?? "claude-opus-5" });
+} else if (provider === "anthropic" && env("ANTHROPIC_API_KEY")) {
+  text = new ClaudeCalls({ apiKey: env("ANTHROPIC_API_KEY"), model: env("CLAUDE_MODEL") ?? "claude-opus-5" });
   if (!textPrice.inPerM && !textPrice.outPerM) textPrice = { inPerM: 15, outPerM: 75 };
 }
-const typesafeKey = process.env["TYPESAFE_API_KEY"];
+const typesafeKey = env("TYPESAFE_API_KEY");
 const gate = typesafeKey ? createGateCall(new TypeSafeClient({ apiKey: typesafeKey, timeout: 20_000, retry: { maxRetries: 0 }, logLevel: "off" })) : undefined;
-const tools = { ffmpeg: process.env["FFMPEG"] ?? "ffmpeg", ffprobe: process.env["FFPROBE"] ?? "ffprobe" };
+const tools = { ffmpeg: env("FFMPEG") ?? "ffmpeg", ffprobe: env("FFPROBE") ?? "ffprobe" };
 const ffmpeg = await new Promise<boolean>((res) => execFile(tools.ffmpeg, ["-version"], (err) => res(!err)));
 
 // Engines: the documented Seedance ids are always known; GET /models refines them once per start when the key is there.

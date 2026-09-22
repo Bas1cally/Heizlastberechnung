@@ -14,7 +14,7 @@ import { loadEnvFile } from "../src/app/env.js";
 import { VeniceClient, ENDPOINTS } from "../src/director/venice.js";
 
 loadEnvFile();
-const key = process.env["VENICE_API_KEY"];
+const key = process.env["VENICE_API_KEY"]?.trim() || undefined;
 if (!key) { console.error("VENICE_API_KEY is not set"); process.exit(1); }
 const argv = process.argv.slice(2);
 const opt = (n: string) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? argv[i + 1] : undefined; };
