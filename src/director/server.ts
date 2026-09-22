@@ -66,13 +66,31 @@ export function createApi(d: ServerDeps) {
       return { project, characters: repo.characters(id), references: repo.references(id), rules: repo.rules(id, false), shots, jobs: repo.jobs().filter((j) => shots.some((s) => s.id === j.shot_id)) };
     },
     createProject: (b: Record<string, unknown>) => { need(b["name"], "name"); return repo.createProject(b as { name: string }); },
-    updateProject: (id: number, b: Record<string, unknown>) => { repo.updateProject(id, b); return repo.project(id); },
+    /** Saving German text clears its English twin; the text model refills it when available (errors are reported, not fatal). */
+    updateProject: async (id: number, b: Record<string, unknown>) => {
+      const before = repo.project(id); if (!before) throw new HttpError(404, "project not found");
+      repo.updateProject(id, b);
+      if (typeof b["style_guide_de"] === "string" && b["style_guide_de"] !== before.style_guide_de && b["style_guide_en"] === undefined) repo.updateProject(id, { style_guide_en: "" });
+      let translate_error: string | undefined;
+      if (d.capabilities.text) await service.ensureEnglish(id).catch((e: unknown) => { translate_error = e instanceof Error ? e.message : String(e); });
+      return { ...repo.project(id)!, ...(translate_error ? { translate_error } : {}) };
+    },
     createCharacter: (pid: number, b: Record<string, unknown>) => { need(b["name"], "name"); return repo.createCharacter({ ...b, project_id: pid } as { project_id: number; name: string }); },
-    updateCharacter: (id: number, b: Record<string, unknown>) => { repo.updateCharacter(id, b); return repo.character(id); },
+    updateCharacter: async (id: number, b: Record<string, unknown>) => {
+      const before = repo.character(id); if (!before) throw new HttpError(404, "character not found");
+      repo.updateCharacter(id, b);
+      if (typeof b["fixed_attributes_de"] === "string" && b["fixed_attributes_de"] !== before.fixed_attributes_de && b["fixed_attributes_en"] === undefined) repo.updateCharacter(id, { fixed_attributes_en: "" });
+      let translate_error: string | undefined;
+      if (d.capabilities.text) await service.ensureEnglish(before.project_id).catch((e: unknown) => { translate_error = e instanceof Error ? e.message : String(e); });
+      return { ...repo.character(id)!, ...(translate_error ? { translate_error } : {}) };
+    },
     /** Raw upload: the bytes become data/<project>/refs/<sha>.<ext>; the row remembers the sha. */
     addReference: (pid: number, q: URLSearchParams, bytes: Buffer) => {
       const project = repo.project(pid); if (!project) throw new HttpError(404, "project not found");
-      const name = q.get("name") ?? "reference.bin"; const kind = q.get("kind") as ReferenceKind; const role = q.get("role") as ReferenceRole;
+      const name = q.get("name") ?? "reference.bin";
+      const ext = extname(name).toLowerCase();
+      const kind = (q.get("kind") ?? (/\.(mp4|mov|webm|mkv)$/.test(ext) ? "video" : /\.(wav|mp3|m4a|ogg)$/.test(ext) ? "audio" : "image")) as ReferenceKind;
+      const role = (q.get("role") ?? (kind === "audio" ? "audio" : kind === "video" ? "motion" : q.get("character_id") ? "identity" : "style")) as ReferenceRole;
       if (!REF_KINDS.includes(kind)) throw new HttpError(400, `kind must be one of ${REF_KINDS.join(", ")}`);
       if (!REF_ROLES.includes(role)) throw new HttpError(400, `role must be one of ${REF_ROLES.join(", ")}`);
       if (!bytes.length) throw new HttpError(400, "empty upload");
@@ -84,7 +102,13 @@ export function createApi(d: ServerDeps) {
       return repo.addReference({ project_id: pid, character_id: cid ? num(cid) : null, kind, path, role_default: role, duration_s: dur ? Number(dur) : null, sha256 });
     },
     setConsent: (id: number, b: Record<string, unknown>) => { if (!repo.reference(id)) throw new HttpError(404, "reference not found"); repo.setReferenceConsent(id, b["consent"] ?? b); return repo.reference(id); },
-    addRule: (pid: number, b: Record<string, unknown>) => { need(b["text_de"], "text_de"); return repo.addRule(pid, { text_de: String(b["text_de"]), text_en: String(b["text_en"] ?? ""), severity: (b["severity"] === "warn" ? "warn" : "block") as Rule["severity"], check_type: String(b["check_type"] ?? "jev"), origin: String(b["origin"] ?? "user") }); },
+    /** A rule without English gets it from the text model, since Jev reads text_en. */
+    addRule: async (pid: number, b: Record<string, unknown>) => {
+      need(b["text_de"], "text_de");
+      const rule = repo.addRule(pid, { text_de: String(b["text_de"]), text_en: String(b["text_en"] ?? ""), severity: (b["severity"] === "warn" ? "warn" : "block") as Rule["severity"], check_type: String(b["check_type"] ?? "jev"), origin: String(b["origin"] ?? "user") });
+      if (!rule.text_en && d.capabilities.text) await service.ensureEnglish(pid).catch(() => undefined);
+      return repo.rules(pid, false).find((r) => r.id === rule.id) ?? rule;
+    },
     setRuleActive: (id: number, active: boolean) => { repo.setRuleActive(id, active); return { id, active }; },
     createShot: (pid: number, b: Record<string, unknown>) => { if (!repo.project(pid)) throw new HttpError(404, "project not found"); return repo.createShot({ ...b, project_id: pid } as Partial<Shot> & { project_id: number }); },
     updateShot: (id: number, b: Record<string, unknown>) => { if (!repo.shot(id)) throw new HttpError(404, "shot not found"); repo.updateShot(id, b as Partial<Shot>); return shotDetail(id); },
@@ -97,6 +121,8 @@ export function createApi(d: ServerDeps) {
     },
     translate: async (pid: number) => { await service.ensureEnglish(pid); return { ok: true }; },
     draft: async (id: number) => { await service.draft(id); return shotDetail(id); },
+    prepare: async (id: number) => { await service.prepare(id); return shotDetail(id); },
+    check: async (id: number) => { const r = await service.check(id); return { ...shotDetail(id), check: { built: r.built, checks: r.checks, gate: r.gate ? { verdict: r.gate.evaluation.verdict, reasons: r.gate.evaluation.reasons } : null, ...(r.gateError ? { gateError: r.gateError } : {}) } }; },
     build: (id: number) => ({ result: service.build(id), ...shotDetail(id) }),
     gate: async (id: number) => { const run = await service.gate(id); return { ...shotDetail(id), gate_run: run }; },
     reviewFix: async (id: number) => { await service.reviewFix(id); return shotDetail(id); },
@@ -106,10 +132,12 @@ export function createApi(d: ServerDeps) {
     poll: (jobId: number) => service.poll(jobId, { once: true }),
     jobs: () => repo.jobs(),
     review: (id: number) => { const review = repo.review(id); if (!review) throw new HttpError(404, "review not found"); return { ...review, frames: JSON.parse(review.frame_paths_json), checklist: JSON.parse(review.checklist_json), shot: repo.shot(review.shot_id), job: repo.job(review.job_id), references: repo.shotReferences(review.shot_id) }; },
-    verdict: (id: number, b: Record<string, unknown>) => {
+    verdict: async (id: number, b: Record<string, unknown>) => {
       const v = b["verdict"]; if (v !== "pass" && v !== "fail") throw new HttpError(400, "verdict must be pass or fail");
       const nr = b["new_rule"] as { text_de?: string; text_en?: string; severity?: string } | undefined;
-      return service.verdict(id, v, String(b["notes"] ?? ""), Array.isArray(b["checklist"]) ? (b["checklist"] as { rule: string; pass: boolean | null }[]) : [], nr && nr.text_de ? { text_de: nr.text_de, text_en: nr.text_en ?? "", severity: nr.severity === "warn" ? "warn" : "block" } : undefined);
+      const review = service.verdict(id, v, String(b["notes"] ?? ""), Array.isArray(b["checklist"]) ? (b["checklist"] as { rule: string; pass: boolean | null }[]) : [], nr && nr.text_de ? { text_de: nr.text_de, text_en: nr.text_en ?? "", severity: nr.severity === "warn" ? "warn" : "block" } : undefined);
+      if (nr?.text_de && !nr.text_en && d.capabilities.text) await service.ensureEnglish(repo.shot(review.shot_id)!.project_id).catch(() => undefined);
+      return review;
     },
     /** Files under data/ only; anything else is 404. */
     filePath: (rel: string): string => {
@@ -152,12 +180,12 @@ export function startDirectorServer(d: ServerDeps, port: number, host = "127.0.0
         case "GET state": out = api.state(); break;
         case "POST projects": out = api.createProject(b()); break;
         case "GET projects/:id": out = api.project(id()); break;
-        case "PATCH projects/:id": out = api.updateProject(id(), b()); break;
+        case "PATCH projects/:id": out = await api.updateProject(id(), b()); break;
         case "POST projects/:id/characters": out = api.createCharacter(id(), b()); break;
-        case "PATCH characters/:id": out = api.updateCharacter(id(), b()); break;
+        case "PATCH characters/:id": out = await api.updateCharacter(id(), b()); break;
         case "PUT projects/:id/references": out = api.addReference(id(), url.searchParams, body); break;
         case "POST references/:id/consent": out = api.setConsent(id(), b()); break;
-        case "POST projects/:id/rules": out = api.addRule(id(), b()); break;
+        case "POST projects/:id/rules": out = await api.addRule(id(), b()); break;
         case "PATCH rules/:id": out = api.setRuleActive(id(), Boolean(b()["active"])); break;
         case "POST projects/:id/shots": out = api.createShot(id(), b()); break;
         case "POST projects/:id/translate": out = await api.translate(id()); break;
@@ -165,6 +193,8 @@ export function startDirectorServer(d: ServerDeps, port: number, host = "127.0.0
         case "PATCH shots/:id": out = api.updateShot(id(), b()); break;
         case "PUT shots/:id/references": out = api.setShotReferences(id(), b()["references"]); break;
         case "POST shots/:id/draft": out = await api.draft(id()); break;
+        case "POST shots/:id/prepare": out = await api.prepare(id()); break;
+        case "POST shots/:id/check": out = await api.check(id()); break;
         case "POST shots/:id/build": out = api.build(id()); break;
         case "POST shots/:id/gate": out = await api.gate(id()); break;
         case "POST shots/:id/review-fix": out = await api.reviewFix(id()); break;
@@ -174,7 +204,7 @@ export function startDirectorServer(d: ServerDeps, port: number, host = "127.0.0
         case "POST jobs/:id/queue": out = await api.queue(id()); break;
         case "POST jobs/:id/poll": out = await api.poll(id()); break;
         case "GET reviews/:id": out = api.review(id()); break;
-        case "POST reviews/:id/verdict": out = api.verdict(id(), b()); break;
+        case "POST reviews/:id/verdict": out = await api.verdict(id(), b()); break;
         default: void id2; throw new HttpError(404, `no route ${route}`);
       }
       json(res, 200, out);

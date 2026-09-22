@@ -146,7 +146,7 @@ describe("director service through the api", () => {
     let r = await s.api.poll(q.job.id); r = await s.api.poll(q.job.id); r = await s.api.poll(q.job.id);
     const review = s.api.review(r.review!.id);
     expect(review.checklist.map((c: { rule: string }) => c.rule)).toEqual(["R6", "R7", "R8"]);
-    const out = s.api.verdict(review.id, { verdict: "fail", notes: "Narbe fehlt", checklist: [{ rule: "R7", pass: false }], new_rule: { text_de: "Narbe links sichtbar.", text_en: "Scar on the left brow visible.", severity: "block" } });
+    const out = await s.api.verdict(review.id, { verdict: "fail", notes: "Narbe fehlt", checklist: [{ rule: "R7", pass: false }], new_rule: { text_de: "Narbe links sichtbar.", text_en: "Scar on the left brow visible.", severity: "block" } });
     expect(out.verdict).toBe("fail");
     expect(s.repo.shot(shot.id)).toMatchObject({ status: "draft", review_note: "Narbe fehlt" });
     const rule = s.repo.rules(p.id).find((x) => x.origin === `review:${shot.id}`);
@@ -166,5 +166,57 @@ describe("director service through the api", () => {
     expect(() => s.api.filePath("/etc/passwd")).toThrow(HttpError);
     expect(() => s.api.filePath("../../etc/passwd")).toThrow(HttpError);
     expect(() => s.api.addReference(p.id, new URLSearchParams({ name: "x.png", kind: "gif", role: "style" }), Buffer.from("x"))).toThrow(/kind/);
+  });
+});
+
+describe("guided flow: prepare and check", () => {
+  it("prepare attaches the identity photo of every named character, switches to R2V, then drafts", async () => {
+    const s = setup();
+    const p = s.api.createProject({ name: "Film" });
+    const mara = s.api.createCharacter(p.id, { name: "Mara", fixed_attributes_de: "rote Haare" });
+    const ben = s.api.createCharacter(p.id, { name: "Ben", fixed_attributes_de: "Bart" });
+    const png = readFileSync(pngFile(s.dataDir, "src.png"));
+    const refMara = s.api.addReference(p.id, new URLSearchParams({ name: "mara.png", character_id: String(mara.id) }), png);
+    expect(refMara).toMatchObject({ kind: "image", role_default: "identity" });
+    s.api.addReference(p.id, new URLSearchParams({ name: "ben.jpg", character_id: String(ben.id) }), png);
+    const shot = s.api.createShot(p.id, { beat_de: "Mara reicht Ben die Tasse.", workflow: "t2v", engine: "seedance-2-0-text-to-video-basic" });
+    const d = await s.api.prepare(shot.id);
+    expect(d.references.map((r) => [r.slot, r.subject_label, r.role])).toEqual([["Image 1", "Mara", "identity"], ["Image 2", "Ben", "identity"]]);
+    expect(d.shot.workflow).toBe("r2v_reference");
+    expect(d.shot.engine).toBe("seedance-2-0-reference-to-video-basic");
+    expect(d.shot.status).toBe("claude");
+    // a second prepare does not duplicate the slots
+    const again = await s.api.prepare(shot.id);
+    expect(again.references).toHaveLength(2);
+  });
+
+  it("check builds the prompt, runs the code checks and the gate in one call", async () => {
+    const s = setup();
+    const { shot } = await greenShot(s);
+    const r = await s.api.check(shot.id);
+    expect(r.check.built.ok).toBe(true);
+    expect(r.check.gate?.verdict).toBe("green");
+    expect(r.shot.status).toBe("gated");
+  });
+
+  it("check survives a failing gate: prompt and code checks come back with the error", async () => {
+    const s = setup();
+    const { p } = await greenShot(s);
+    const shot = s.api.createShot(p.id, { beat_de: "Mara hebt die Tasse." });
+    const failing = new DirectorService({ repo: s.repo, engines, vocabulary, text: fakeText(), textPrice: { inPerM: 0, outPerM: 0 }, gate: async () => { throw new Error("402 no credits"); }, dataDir: s.dataDir, log: () => {} });
+    await failing.prepare(shot.id);
+    const r = await failing.check(shot.id);
+    expect(r.built.ok).toBe(true);
+    expect(r.gateError).toMatch(/402/);
+    expect(s.repo.shot(shot.id)?.status).toBe("claude");
+  });
+
+  it("a rule added without English is translated for the gate; an upload without kind is typed by its extension", async () => {
+    const s = setup();
+    const p = s.api.createProject({ name: "Film" });
+    const rule = await s.api.addRule(p.id, { text_de: "Keine Sonnenbrille." });
+    expect(rule.text_en).toMatch(/^translated \d+$/);
+    const clip = s.api.addReference(p.id, new URLSearchParams({ name: "walk.MP4", duration_s: "5" }), Buffer.from("x"));
+    expect(clip).toMatchObject({ kind: "video", role_default: "motion", duration_s: 5 });
   });
 });

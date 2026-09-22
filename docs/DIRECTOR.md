@@ -42,16 +42,16 @@ eine Quote gibt es nur bei grünem Gate, also erst wieder mit Guthaben.
 2. **Board**: Shot als Beat anlegen; Spalten = Status
    `draft → claude → gated → approved → queued → done → review → failed`.
 3. **Karte**: Referenzen den Slots zuordnen (`Image 1`, `Image 2`, `Video 1`),
-   dann `1 · Entwurf` (das Textmodell füllt Einstellungsgröße, Kamerabewegung, Licht,
+   dann „Entwurf erstellen“ (Fotos der genannten Figuren werden zugeordnet, das Textmodell füllt Einstellungsgröße, Kamerabewegung, Licht,
    Komposition, Aktion DE/EN; ein Aufruf, kein Verlauf, JSON-Schema,
-   max 800 Output-Tokens), `2 · Prompt bauen` (deterministisch, Reihenfolge
+   max 800 Output-Tokens), „Prüfen“ baut den Prompt (deterministisch, Reihenfolge
    Bindung → Einstellungsgröße → Kamerabewegung → Objektiv → Aktion → Licht →
-   Komposition → Stil; Meta-Sätze werden entfernt), `3 · Jev-Gate` (elf Fragen
+   Komposition → Stil; Meta-Sätze werden entfernt), und lässt Jev prüfen (elf Fragen
    in einem Aufruf, englischer State nur mit den beteiligten Figuren; plus
    Code-Checks R1/R2/R3/R5/ENGINE/R9/R10). Verdict grün/gelb/rot mit
-   Wahrscheinlichkeit je Frage. Gelb → `3b · Korrektur` ändert nur die
+   Wahrscheinlichkeit je Frage. Gelb → „Korrigieren“ ändert nur die
    beanstandeten Felder, dann Gate erneut.
-4. **Jobs**: `4 · Venice-Quote` (nur bei grün) legt einen Job mit dem exakten
+4. **Jobs**: „Angebot holen“ (nur bei grün) legt einen Job mit dem exakten
    Request-Body an. **Freigeben** ist der Klick, ohne den nichts an Venice
    geht. Dann **An Venice senden** (queue), **Status abfragen** (ein
    Retrieve pro Klick; die Service-Schicht kann auch mit Backoff 5→30 s

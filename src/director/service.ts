@@ -1,13 +1,13 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { codeChecks, type CodeCheck } from "./code-checks.js";
+import { codeChecks, namedCharacters, type CodeCheck } from "./code-checks.js";
 import { usdFor, type ClaudeResult, type TextCalls } from "./claude.js";
 import type { EngineRegistry } from "./engines.js";
 import { buildGateState, evaluateGate, GATE_QUESTIONS, type GateCall, type GateEvaluation } from "./jev-gate.js";
 import { buildPrompt, type BuildResult, type VeniceVideoRequest } from "./prompt-builder.js";
 import type { DirectorRepo } from "./repo.js";
 import { checklistFrom, compareImage, extractFrames } from "./review.js";
-import type { Job, Review, Rule, Shot } from "./types.js";
+import type { Job, Reference, Review, Rule, Shot, ShotReference } from "./types.js";
 import { outputFileName, type VeniceClient } from "./venice.js";
 import type { Vocabulary } from "./vocabulary.js";
 
@@ -87,6 +87,51 @@ export class DirectorService {
     this.d.repo.updateShot(shot.id, { shot_size: v.shot_size, camera_move: v.camera_move, lens_note: v.lens_note, lighting: v.lighting, composition: v.composition, action_physical_en: v.action_physical_en, action_physical_de: v.action_physical_de, status: "claude" });
     void characters;
     return this.d.repo.shot(shot.id)!;
+  }
+
+  /**
+   * Every character named in the beat or the action gets its identity image as the next
+   * free `Image n` slot (R1), and a card that names characters runs as R2V, not T2V. Slots the
+   * user set by hand stay untouched.
+   */
+  autoReferences(shotId: number): (ShotReference & { reference: Reference })[] {
+    const { shot, characters, references } = this.ctx(shotId);
+    const named = namedCharacters(shot, characters);
+    const current = references.map((r) => ({ reference_id: r.reference_id, slot: r.slot, role: r.role, subject_label: r.subject_label }));
+    let changed = false;
+    for (const c of named) {
+      if (current.some((r) => r.role === "identity" && references.find((x) => x.reference_id === r.reference_id)?.reference.character_id === c.id)) continue;
+      const identity = this.d.repo.references(shot.project_id).find((r) => r.character_id === c.id && r.kind === "image" && r.role_default === "identity");
+      if (!identity) continue;
+      const used = new Set(current.map((r) => r.slot));
+      let n = 1; while (used.has(`Image ${n}`)) n++;
+      current.push({ reference_id: identity.id, slot: `Image ${n}`, role: "identity", subject_label: c.name });
+      changed = true;
+    }
+    if (changed) this.d.repo.setShotReferences(shot.id, current);
+    if (current.some((r) => r.role === "identity") && !shot.workflow.startsWith("r2v")) {
+      const engine = this.d.engines.get(shot.engine);
+      const r2v = engine?.workflows.some((w) => w.startsWith("r2v")) ? shot.engine : this.d.repo.project(shot.project_id)!.default_engine;
+      this.d.repo.updateShot(shot.id, { workflow: "r2v_reference", engine: r2v });
+    }
+    return this.d.repo.shotReferences(shot.id);
+  }
+
+  /** The "Entwurf" button: references from the bible, then the text model fills the card. */
+  async prepare(shotId: number): Promise<Shot> {
+    this.autoReferences(shotId);
+    return this.draft(shotId);
+  }
+
+  /** The "Prüfen" button: prompt + code checks, and the Jev gate when a key is there. */
+  async check(shotId: number): Promise<{ built: BuildResult; checks: CodeCheck[]; gate?: Awaited<ReturnType<DirectorService["gate"]>>; gateError?: string }> {
+    this.autoReferences(shotId);
+    const built = this.build(shotId);
+    const checks = this.codeChecks(shotId);
+    if (!this.d.gate) return { built, checks };
+    // Jev unreachable or out of credit: the prompt and the code checks still count; the card just does not turn "gated".
+    try { return { built, checks, gate: await this.gate(shotId) }; }
+    catch (err) { const gateError = err instanceof Error ? err.message : String(err); this.d.log("gate failed", { shot: shotId, gateError }); return { built, checks, gateError }; }
   }
 
   /** Deterministic prompt + request body (spec §4); stored on the card. */
