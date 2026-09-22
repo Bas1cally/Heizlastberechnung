@@ -7,6 +7,7 @@ import { ffmpegArgs } from "../../../src/tft/capture.js";
 import { ensureMeta, loadCachedMeta } from "../../../src/tft/meta.js";
 import { createTftApi, overlayText } from "../../../src/tft/server.js";
 import { TftStore } from "../../../src/tft/store.js";
+import { buildReport, renderReport, sessionStart } from "../../../src/tft/report.js";
 import { BoardReadSchema, type BoardRead, type Meta } from "../../../src/tft/types.js";
 import { fingerprint, readBoard } from "../../../src/tft/vision.js";
 import { openDatabase } from "../../../src/persistence/database.js";
@@ -160,5 +161,37 @@ describe("tft augment choice", () => {
     expect(loadCachedMeta(cache, 1e12, 10)).toBeUndefined();
     writeFileSync(cache, JSON.stringify({ fetchedAt: 5, meta }));
     expect(loadCachedMeta(cache, 1e12, 10)?.meta.augments).toHaveLength(2);
+  });
+});
+
+describe("tft report", () => {
+  it("summarises the last session: phases, advice by source, augment picks, errors by kind, cost", () => {
+    let now = 1_000_000;
+    const store = new TftStore(openDatabase(":memory:"), () => now);
+    store.addReading("/old.jpg", read, "x", "gemma", 3000, { input_tokens: 1, output_tokens: 1 });
+    now += 3_600_000; // an hour later: a new session
+    const r1 = store.addReading("/1.jpg", { ...read, phase: "augment_choice", augment_options: ["A", "B", "C"] }, "a", "gemma", 3000, { input_tokens: 2000, output_tokens: 200 });
+    store.addAdvice(r1.id, { augment: { pick: "B", options: ["A", "B", "C"], why: "" }, comp: "X", compKey: "x", action: "SAVE", buy: [], urgency: "low", onTrack: 0, confidence: 0.5, reasons: [], source: "text", model: "deepseek", latencyMs: 4000 }, { input_tokens: 1000, output_tokens: 100 });
+    now += 8000;
+    const r2 = store.addReading("/2.jpg", read, "b", "gemma", 5000, { input_tokens: 2000, output_tokens: 200 });
+    store.addAdvice(r2.id, { comp: "Star Guardian Reroll", compKey: "sg", action: "ROLL", buy: ["Syndra"], urgency: "high", onTrack: 0.8, confidence: 0.8, reasons: [], source: "jev", model: "jev", latencyMs: 400 }, { input_tokens: 800, output_tokens: 8 });
+    store.addError("tft_read: Venice 429: overloaded");
+    store.addError("tft_read: Venice 429: overloaded");
+    store.addError("tft_advice: no parsable JSON (finish_reason length). Raw: ");
+    const all = store.readingsSince(0);
+    expect(sessionStart(all)).toBe(r1.ts);
+    const rep = buildReport(store, { gemma: { inPerM: 0.12, outPerM: 0.36 }, deepseek: { inPerM: 0.14, outPerM: 0.28 } });
+    expect(rep.readings).toBe(2);
+    expect(rep.phases).toEqual({ augment_choice: 1, planning: 1 });
+    expect(rep.augmentScreens).toBe(1);
+    expect(rep.bySource).toEqual({ text: { n: 1, msMedian: 4000 }, jev: { n: 1, msMedian: 400 } });
+    expect(rep.augmentAdvice[0]).toMatchObject({ pick: "B", source: "text" });
+    expect(rep.errors.find((e) => e.kind === "venice_overloaded")?.n).toBe(2);
+    expect(rep.usd).toBeCloseTo((2 * (2000 * 0.12 + 200 * 0.36) + 1000 * 0.14 + 100 * 0.28) / 1e6);
+    const text = renderReport(rep);
+    expect(text).toContain("Augment 3-2: B  aus  A | B | C  [text]");
+    expect(text).toContain("jev 1× (Median 0.4 s)");
+    expect(text).toContain("Modell überlastet (429): 2×");
+    expect(text).toContain("Antwort abgeschnitten (Token-Limit): 1×");
   });
 });

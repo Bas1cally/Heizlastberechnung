@@ -140,7 +140,7 @@ async function cycle(imagePath?: string): Promise<void> {
 const image = opt("image");
 if (image && !existsSync(image)) { console.error(`no such file: ${image}`); process.exit(1); }
 if (flag("once") || image) {
-  await cycle(image).catch((err) => log.error("cycle failed", { err: err instanceof Error ? err.message : String(err) }));
+  await cycle(image).catch((err) => { const m = err instanceof Error ? err.message : String(err); store.addError(m); log.error("cycle failed", { err: m }); });
   log.info("done; the page stays up on http://127.0.0.1:" + port + " until Ctrl+C");
 } else {
   log.info("loop", { intervalMs, port, overlay: "powershell -ExecutionPolicy Bypass -File scripts\\tft-overlay.ps1" });
@@ -152,6 +152,7 @@ if (flag("once") || image) {
     catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       log.error("cycle failed", { n, err: msg });
+      store.addError(msg);
       if (/ 402:|Insufficient .* balance/i.test(msg)) { veniceError = "Venice: kein Guthaben (402), Pause 60 s"; venicePausedUntil = Date.now() + 60_000; }
     }
     n++; setTimeout(loop, Math.max(1000, intervalMs - (performance.now() - t)));

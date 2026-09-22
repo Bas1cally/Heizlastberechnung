@@ -14,6 +14,11 @@ Vordergrund, per Maus verschiebbar, Rechtsklick schließt es) und die
 Browserseite. `tft-stop.cmd` beendet Berater und Overlay wieder (oder das
 Fenster „TFT-Berater“ schließen und das Overlay per Rechtsklick).
 
+Nach dem Spiel: Doppelklick auf `tft-report.cmd` (oder `pnpm tft:report`).
+Das zeigt die letzte Sitzung auf einer Seite: Lesungen und Phasen, erkannte
+Augment-Bildschirme mit gewählter Karte, Ratschläge nach Quelle (Jev oder
+Textmodell) mit Median-Latenz, Fehler nach Art und die Venice-Kosten.
+
 Von Hand, falls nötig (PowerShell, zwei Fenster):
 ```powershell
 cd C:\Users\Emanuel\Heizlastberechnung
@@ -90,4 +95,5 @@ in echten Spielen taugt.
 - `src/tft/meta.ts` Meta per Web-Suche, 24 h Cache in `data/tft/meta.json`
 - `src/tft/advisor.ts` Jev-Fragen (comp, action, on_track, urgency), Text-Fallback
 - `src/tft/store.ts` SQLite `data/tft/tft.sqlite`, `src/tft/server.ts` API und Seite
-- `scripts/tft.ts`, `scripts/tft-overlay.ps1`, `tests/unit/tft/`
+- `src/tft/report.ts`, `scripts/tft-report.ts` Auswertung einer Sitzung
+- `scripts/tft.ts`, `scripts/tft-overlay.ps1`, `tft.cmd`, `tft-stop.cmd`, `tft-report.cmd`, `tests/unit/tft/`
