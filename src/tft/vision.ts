@@ -24,7 +24,7 @@ export function imagePart(path: string): { type: "image_url"; image_url: { url: 
 
 export async function readBoard(imagePath: string, o: VisionOptions, hint = ""): Promise<ClaudeResult<BoardRead>> {
   const user: ChatContent = [{ type: "text", text: `Read this TFT screenshot.${hint ? ` Context: ${hint}` : ""}` }, imagePart(imagePath)];
-  return chatJson({ apiKey: o.apiKey, model: o.model, purpose: "tft_read", system: SYSTEM, user, schema: BoardReadSchema, maxTokens: 900, temperature: 0, reasoningEffort: o.reasoningEffort ?? "none", fetch: o.fetch, base: o.base });
+  return chatJson({ apiKey: o.apiKey, model: o.model, purpose: "tft_read", system: SYSTEM, user, schema: BoardReadSchema, maxTokens: 900, temperature: 0, reasoningEffort: o.reasoningEffort ?? "none", fetch: o.fetch, base: o.base, timeoutMs: 60_000 });
 }
 
 /** What changed between two readings, for deciding whether to ask the advisor again. */

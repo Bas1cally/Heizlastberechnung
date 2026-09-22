@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { promisify } from "node:util";
 
@@ -29,6 +29,8 @@ export function captureScript(outPath: string, width: number, quality: number): 
 export async function captureScreen(outPath: string, opts: { width?: number; quality?: number; powershell?: string } = {}): Promise<string> {
   mkdirSync(dirname(outPath), { recursive: true });
   const script = captureScript(outPath, opts.width ?? 1600, opts.quality ?? 85);
-  await run(opts.powershell ?? "powershell.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script], { windowsHide: true, timeout: 15_000 });
+  try { await run(opts.powershell ?? "powershell.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script], { windowsHide: true, timeout: 20_000 }); }
+  catch (err) { const e = err as { stderr?: string; message?: string; killed?: boolean }; throw new Error(`screenshot failed${e.killed ? " (timeout)" : ""}: ${(e.stderr || e.message || "").toString().trim().slice(0, 300)}`); }
+  if (!existsSync(outPath)) throw new Error("screenshot failed: PowerShell wrote no file");
   return outPath;
 }

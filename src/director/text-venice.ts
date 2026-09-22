@@ -31,6 +31,8 @@ export interface ChatJsonOptions<T> {
   /** Extra top-level fields (e.g. venice_parameters); dropped together with reasoning_effort on a 400. */
   readonly extra?: Record<string, unknown> | undefined;
   readonly fetch?: FetchLike | undefined; readonly base?: string | undefined;
+  /** Abort after this long (default 90 s); "fetch failed" without a cause is what a hung connection looks like otherwise. */
+  readonly timeoutMs?: number | undefined;
 }
 
 /**
@@ -43,7 +45,9 @@ export async function chatJson<T>(o: ChatJsonOptions<T>): Promise<ClaudeResult<T
   const body: Record<string, unknown> = { model: o.model, messages: [{ role: "system", content: o.system }, { role: "user", content: o.user }], max_completion_tokens: o.maxTokens, temperature: o.temperature ?? 0.2, response_format: toSchema(o.purpose, o.schema), ...(o.extra ?? {}) };
   if (o.reasoningEffort) body["reasoning_effort"] = o.reasoningEffort;
   const post = async (b: Record<string, unknown>) => {
-    const r = await fetchImpl(`${base}${ENDPOINTS.chat}`, { method: "POST", headers: { Authorization: `Bearer ${o.apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify(b) });
+    let r;
+    try { r = await fetchImpl(`${base}${ENDPOINTS.chat}`, { method: "POST", headers: { Authorization: `Bearer ${o.apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify(b), signal: AbortSignal.timeout(o.timeoutMs ?? 90_000) }); }
+    catch (err) { throw new Error(`${o.purpose}: ${describeFetchError(err, o.timeoutMs ?? 90_000)}`); }
     const text = await r.text();
     let json: unknown; try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
     return { status: r.status, json };
@@ -89,6 +93,17 @@ export class VeniceTextCalls implements TextCalls {
     const r = await this.complete("translate", TRANSLATE_SYSTEM, textDe, TranslationSchema, 1200, 0);
     return { ...r, value: r.value.text_en };
   }
+}
+
+/** undici hides the reason in `cause`; a timeout arrives as TimeoutError. */
+export function describeFetchError(err: unknown, timeoutMs: number): string {
+  if (err instanceof Error) {
+    if (err.name === "TimeoutError" || err.name === "AbortError") return `no answer within ${Math.round(timeoutMs / 1000)} s`;
+    const cause = (err as { cause?: unknown }).cause;
+    const c = cause instanceof Error ? `${cause.name}: ${cause.message}` : cause ? String(cause) : "";
+    return `${err.message}${c ? ` (${c})` : ""}`;
+  }
+  return String(err);
 }
 
 const stripFences = (s: string) => s.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");

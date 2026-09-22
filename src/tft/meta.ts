@@ -28,7 +28,7 @@ export async function fetchMeta(o: MetaOptions): Promise<{ meta: Meta; usage: { 
   const today = new Date(now()).toISOString().slice(0, 10);
   const r = await chatJson({
     apiKey: o.apiKey, model: o.model, purpose: "tft_meta", system: SYSTEM, user: `Today is ${today}. Find the current TFT meta comps.`, schema: MetaSchema, maxTokens: 4000, temperature: 0.1, reasoningEffort: "low",
-    extra: { venice_parameters: { enable_web_search: "on", include_venice_system_prompt: false } }, fetch: o.fetch, base: o.base,
+    extra: { venice_parameters: { enable_web_search: "on", include_venice_system_prompt: false } }, fetch: o.fetch, base: o.base, timeoutMs: 180_000,
   });
   mkdirSync(dirname(o.cachePath), { recursive: true });
   writeFileSync(o.cachePath, JSON.stringify({ fetchedAt: now(), meta: r.value }, null, 2));

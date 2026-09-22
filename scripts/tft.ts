@@ -12,7 +12,7 @@
  * Overlay (second window):  powershell -ExecutionPolicy Bypass -File scripts\tft-overlay.ps1
  * Browser view:             http://127.0.0.1:8788
  */
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
 import { loadEnvFile } from "../src/app/env.js";
@@ -84,7 +84,10 @@ await loadMeta(flag("refresh-meta"));
 
 let lastFingerprint = "";
 async function cycle(imagePath?: string): Promise<void> {
+  const tc = performance.now();
   const shot = imagePath ?? (await captureScreen(join(dataDir, "shots", `shot-${Date.now()}.jpg`), { width }));
+  const bytes = statSync(shot).size;
+  log.info("captured", { shot, kb: Math.round(bytes / 1024), ms: Math.round(performance.now() - tc) });
   const t0 = performance.now();
   const r = await readBoard(shot, { apiKey: veniceKey!, model: visionModel }, meta ? `TFT ${meta.set} patch ${meta.patch}.` : "");
   const fp = fingerprint(r.value);
@@ -110,6 +113,7 @@ if (flag("once") || image) {
   log.info("done; the page stays up on http://127.0.0.1:" + port + " until Ctrl+C");
 } else {
   log.info("loop", { intervalMs, port, overlay: "powershell -ExecutionPolicy Bypass -File scripts\\tft-overlay.ps1" });
-  const loop = async () => { try { await cycle(); } catch (err) { log.error("cycle failed", { err: err instanceof Error ? err.message : String(err) }); } setTimeout(loop, intervalMs); };
+  let n = 0;
+  const loop = async () => { const t = performance.now(); try { await cycle(); } catch (err) { log.error("cycle failed", { n, err: err instanceof Error ? err.message : String(err) }); } n++; setTimeout(loop, Math.max(1000, intervalMs - (performance.now() - t))); };
   void loop();
 }

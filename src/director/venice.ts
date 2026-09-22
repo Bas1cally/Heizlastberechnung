@@ -26,7 +26,7 @@ export const ENDPOINTS = {
   chat: "/chat/completions",
 } as const;
 
-export type FetchLike = (url: string, init?: { method?: string; headers?: Record<string, string>; body?: string }) => Promise<{ status: number; ok: boolean; json(): Promise<unknown>; text(): Promise<string>; body?: unknown; headers: { get(name: string): string | null } }>;
+export type FetchLike = (url: string, init?: { method?: string; headers?: Record<string, string>; body?: string; signal?: AbortSignal }) => Promise<{ status: number; ok: boolean; json(): Promise<unknown>; text(): Promise<string>; body?: unknown; headers: { get(name: string): string | null } }>;
 
 export interface ConsentRequired { readonly ok: false; readonly kind: "needs_consent"; readonly consent: unknown; readonly raw: unknown }
 export type QuoteResult = { ok: true; quoteUsd: number; raw: unknown } | { ok: false; error: unknown; status: number } | ConsentRequired;
