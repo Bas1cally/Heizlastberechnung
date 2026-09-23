@@ -39,6 +39,7 @@
     "tft": "tsx scripts/tft.ts",
     "tft:report": "tsx scripts/tft-report.ts",
     "cards": "tsx scripts/cards.ts",
+    "sets": "tsx scripts/sets.ts",
     "share": "tsx scripts/share.ts"
   },
   "dependencies": {
